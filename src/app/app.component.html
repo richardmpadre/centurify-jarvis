@@ -1,8 +1,25 @@
-<amplify-authenticator>
+<!-- Public routes (no auth required) -->
+<div *ngIf="isPublicRoute" class="public-container">
+  <header class="public-header">
+    <h1>{{ title }}</h1>
+  </header>
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+<!-- Protected routes (auth required) -->
+<amplify-authenticator *ngIf="!isPublicRoute">
   <ng-template amplifySlot="authenticated" let-user="user" let-signOut="signOut">
     <div class="app-container">
       <header>
-        <h1>{{ title }}</h1>
+        <div class="header-left">
+          <h1>{{ title }}</h1>
+          <nav class="nav-links">
+            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Health</a>
+            <a routerLink="/integrations" routerLinkActive="active">Integrations</a>
+          </nav>
+        </div>
         <div class="user-info">
           <span>{{ user.username }}</span>
           <button (click)="signOut()" class="sign-out-btn">Sign Out</button>

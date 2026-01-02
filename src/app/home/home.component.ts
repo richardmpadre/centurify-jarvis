@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../services/health-data.service';
+import { WhoopService } from '../services/whoop.service';
 
 interface HealthEntry {
   id: string;
@@ -19,7 +21,7 @@ interface HealthEntry {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
@@ -30,10 +32,16 @@ export class HomeComponent implements OnInit {
   isLoadingEntries = true;
   showForm = false;
   entries: HealthEntry[] = [];
+  
+  // Whoop integration
+  whoopConnected = false;
+  whoopLoading = false;
+  whoopMessage = '';
 
   constructor(
     private fb: FormBuilder,
-    private healthDataService: HealthDataService
+    private healthDataService: HealthDataService,
+    private whoopService: WhoopService
   ) {
     this.healthForm = this.fb.group({
       date: [new Date().toISOString().split('T')[0], Validators.required],
@@ -49,6 +57,7 @@ export class HomeComponent implements OnInit {
   }
 
   async ngOnInit() {
+    this.whoopConnected = this.whoopService.isConnected();
     await this.loadEntries();
   }
 
@@ -87,6 +96,77 @@ export class HomeComponent implements OnInit {
       dailyScore: ''
     });
     this.saveMessage = '';
+    this.whoopMessage = '';
+  }
+
+  async fetchFromWhoop() {
+    if (!this.whoopConnected) return;
+    
+    this.whoopLoading = true;
+    this.whoopMessage = '';
+    
+    try {
+      const selectedDate = this.healthForm.get('date')?.value;
+      if (!selectedDate) {
+        this.whoopMessage = 'Please select a date first';
+        this.whoopLoading = false;
+        return;
+      }
+      
+      // Fetch data for the selected date (use a range of that day)
+      const recoveryData = await this.whoopService.getRecovery(selectedDate, selectedDate);
+      const sleepData = await this.whoopService.getSleep(selectedDate, selectedDate);
+      const cycleData = await this.whoopService.getCycles(selectedDate, selectedDate);
+      
+      // Log raw responses for debugging
+      console.log('Recovery data:', JSON.stringify(recoveryData, null, 2));
+      console.log('Sleep data:', JSON.stringify(sleepData, null, 2));
+      console.log('Cycle data:', JSON.stringify(cycleData, null, 2));
+      
+      // Get first record from each (already filtered by date in API)
+      const recoveryRecord = recoveryData?.records?.[0];
+      const sleepRecord = sleepData?.records?.[0];
+      const cycleRecord = cycleData?.records?.[0];
+
+      let fieldsUpdated = 0;
+
+      // Update Recovery
+      if (recoveryRecord?.score?.recovery_score != null) {
+        this.healthForm.patchValue({ recovery: recoveryRecord.score.recovery_score });
+        fieldsUpdated++;
+      }
+
+      // Update RHR
+      if (recoveryRecord?.score?.resting_heart_rate != null) {
+        this.healthForm.patchValue({ rhr: recoveryRecord.score.resting_heart_rate });
+        fieldsUpdated++;
+      }
+
+      // Update Sleep (convert milliseconds to hours)
+      if (sleepRecord?.score?.stage_summary?.total_in_bed_time_milli != null) {
+        const sleepHours = sleepRecord.score.stage_summary.total_in_bed_time_milli / (1000 * 60 * 60);
+        this.healthForm.patchValue({ sleep: Math.round(sleepHours * 10) / 10 });
+        fieldsUpdated++;
+      }
+
+      // Update Strain
+      if (cycleRecord?.score?.strain != null) {
+        this.healthForm.patchValue({ strain: Math.round(cycleRecord.score.strain * 10) / 10 });
+        fieldsUpdated++;
+      }
+
+      if (fieldsUpdated > 0) {
+        this.whoopMessage = `Imported ${fieldsUpdated} field(s) from Whoop`;
+      } else {
+        this.whoopMessage = `No Whoop data found for ${selectedDate}`;
+      }
+    } catch (error: any) {
+      console.error('Whoop fetch error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      this.whoopMessage = `Error: ${error.message || 'Failed to fetch Whoop data'}`;
+    } finally {
+      this.whoopLoading = false;
+    }
   }
 
   async onSubmit() {

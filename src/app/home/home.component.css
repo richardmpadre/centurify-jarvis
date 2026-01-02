@@ -44,6 +44,78 @@ h2 {
   margin-bottom: 1.5rem;
 }
 
+.form-row.date-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-row.date-row .form-group {
+  flex: 0 0 auto;
+}
+
+/* Whoop Import */
+.whoop-import {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 1rem;
+}
+
+.whoop-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #ff6b35;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.whoop-btn:hover:not(:disabled) {
+  background-color: #e55a2b;
+}
+
+.whoop-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.whoop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.whoop-message {
+  font-size: 0.85rem;
+  color: #2e7d32;
+}
+
+.whoop-connect {
+  margin-left: 1rem;
+}
+
+.connect-link {
+  font-size: 0.85rem;
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.connect-link:hover {
+  text-decoration: underline;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;

@@ -8,10 +8,23 @@
 
   <!-- Entry Form -->
   <form *ngIf="showForm" [formGroup]="healthForm" (ngSubmit)="onSubmit()" class="health-form">
-    <div class="form-row">
+    <div class="form-row date-row">
       <div class="form-group">
         <label for="date">Date</label>
         <input type="date" id="date" formControlName="date" required>
+      </div>
+      
+      <!-- Whoop Import Button -->
+      <div class="whoop-import" *ngIf="whoopConnected">
+        <button type="button" (click)="fetchFromWhoop()" class="whoop-btn" [disabled]="whoopLoading">
+          <span class="whoop-icon">W</span>
+          {{ whoopLoading ? 'Fetching...' : 'Import from Whoop' }}
+        </button>
+        <span *ngIf="whoopMessage" class="whoop-message">{{ whoopMessage }}</span>
+      </div>
+      
+      <div class="whoop-connect" *ngIf="!whoopConnected">
+        <a routerLink="/integrations" class="connect-link">Connect Whoop to auto-fill</a>
       </div>
     </div>
 

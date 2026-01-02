@@ -1,0 +1,79 @@
+<div class="integrations-container">
+  <h2>Integrations</h2>
+  <p class="subtitle">Connect your health devices and services</p>
+
+  <!-- Whoop Integration Card -->
+  <div class="integration-card">
+    <div class="integration-header">
+      <div class="integration-info">
+        <h3>Whoop</h3>
+        <p class="description">Sync recovery, strain, sleep, and HRV data from your Whoop band.</p>
+      </div>
+      <div class="status-badge" [class.connected]="whoopConnected">
+        {{ whoopConnected ? 'Connected' : 'Not Connected' }}
+      </div>
+    </div>
+
+    <div *ngIf="whoopError" class="error-message">
+      {{ whoopError }}
+    </div>
+
+    <div *ngIf="whoopProfile" class="profile-summary">
+      <span>Connected as: {{ whoopProfile.email || whoopProfile.user_id }}</span>
+    </div>
+
+    <div class="integration-actions">
+      <button *ngIf="!whoopConnected" (click)="connectWhoop()" class="connect-btn" [disabled]="whoopLoading">
+        {{ whoopLoading ? 'Connecting...' : 'Connect Whoop' }}
+      </button>
+      <button *ngIf="whoopConnected" (click)="disconnectWhoop()" class="disconnect-btn">
+        Disconnect
+      </button>
+      <button *ngIf="whoopConnected" (click)="loadWhoopRecovery()" class="action-btn" [disabled]="whoopLoading">
+        Fetch Recovery Data
+      </button>
+    </div>
+
+    <!-- Recovery Data Preview -->
+    <div *ngIf="whoopRecoveryData?.records?.length" class="data-preview">
+      <h4>Recent Recovery</h4>
+      <div class="recovery-item" *ngFor="let record of whoopRecoveryData.records.slice(0, 3)">
+        <span class="date">{{ record.created_at | date:'MMM d' }}</span>
+        <span class="score" *ngIf="record.score"
+              [class.high]="record.score.recovery_score >= 67"
+              [class.medium]="record.score.recovery_score >= 34 && record.score.recovery_score < 67"
+              [class.low]="record.score.recovery_score < 34">
+          {{ record.score.recovery_score }}%
+        </span>
+        <span class="metric" *ngIf="record.score?.resting_heart_rate">
+          HR: {{ record.score.resting_heart_rate }}
+        </span>
+        <span class="metric" *ngIf="record.score?.hrv_rmssd_milli">
+          HRV: {{ record.score.hrv_rmssd_milli | number:'1.0-0' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Placeholder for future integrations -->
+  <div class="integration-card coming-soon">
+    <div class="integration-header">
+      <div class="integration-info">
+        <h3>Apple Health</h3>
+        <p class="description">Import health data from Apple Health.</p>
+      </div>
+      <div class="status-badge coming">Coming Soon</div>
+    </div>
+  </div>
+
+  <div class="integration-card coming-soon">
+    <div class="integration-header">
+      <div class="integration-info">
+        <h3>Oura Ring</h3>
+        <p class="description">Sync sleep and readiness data from Oura.</p>
+      </div>
+      <div class="status-badge coming">Coming Soon</div>
+    </div>
+  </div>
+</div>
+
