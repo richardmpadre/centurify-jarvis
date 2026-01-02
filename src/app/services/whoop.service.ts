@@ -23,9 +23,8 @@ export class WhoopService {
     try {
       const outputs: any = await import('../../../amplify_outputs.json');
       const customOutputs = outputs.default?.custom || outputs.custom;
-      this.lambdaTokenUrl = customOutputs?.whoopAuthApiUrl 
-        ? `${customOutputs.whoopAuthApiUrl}token`
-        : null;
+      // Function URL - use directly without appending path
+      this.lambdaTokenUrl = customOutputs?.whoopAuthApiUrl || null;
       console.log('Lambda URL:', this.lambdaTokenUrl);
     } catch (e) {
       console.log('amplify_outputs.json not found - run npx ampx sandbox first');
@@ -162,40 +161,32 @@ export class WhoopService {
     return this.apiRequest('/user/profile/basic');
   }
 
-  // Get recovery data
-  async getRecovery(startDate?: string, endDate?: string): Promise<any> {
-    let url = '/recovery';
-    if (startDate && endDate) {
-      url += `?start=${startDate}&end=${endDate}`;
-    }
-    return this.apiRequest(url);
+  // Get recovery data for a date range
+  async getRecovery(startDate: string, endDate: string): Promise<any> {
+    const start = `${startDate}T00:00:00.000Z`;
+    const end = `${endDate}T23:59:59.999Z`;
+    return this.apiRequest(`/recovery?start=${start}&end=${end}&limit=25`);
   }
 
-  // Get sleep data
-  async getSleep(startDate?: string, endDate?: string): Promise<any> {
-    let url = '/activity/sleep';
-    if (startDate && endDate) {
-      url += `?start=${startDate}&end=${endDate}`;
-    }
-    return this.apiRequest(url);
+  // Get sleep data for a date range
+  async getSleep(startDate: string, endDate: string): Promise<any> {
+    const start = `${startDate}T00:00:00.000Z`;
+    const end = `${endDate}T23:59:59.999Z`;
+    return this.apiRequest(`/activity/sleep?start=${start}&end=${end}&limit=25`);
   }
 
-  // Get workout data
-  async getWorkouts(startDate?: string, endDate?: string): Promise<any> {
-    let url = '/activity/workout';
-    if (startDate && endDate) {
-      url += `?start=${startDate}&end=${endDate}`;
-    }
-    return this.apiRequest(url);
+  // Get workout data for a date range
+  async getWorkouts(startDate: string, endDate: string): Promise<any> {
+    const start = `${startDate}T00:00:00.000Z`;
+    const end = `${endDate}T23:59:59.999Z`;
+    return this.apiRequest(`/activity/workout?start=${start}&end=${end}&limit=25`);
   }
 
-  // Get cycle (strain) data
-  async getCycles(startDate?: string, endDate?: string): Promise<any> {
-    let url = '/cycle';
-    if (startDate && endDate) {
-      url += `?start=${startDate}&end=${endDate}`;
-    }
-    return this.apiRequest(url);
+  // Get cycle (strain) data for a date range
+  async getCycles(startDate: string, endDate: string): Promise<any> {
+    const start = `${startDate}T00:00:00.000Z`;
+    const end = `${endDate}T23:59:59.999Z`;
+    return this.apiRequest(`/cycle?start=${start}&end=${end}&limit=25`);
   }
 
   // Generic API request via Lambda proxy
