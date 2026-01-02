@@ -36,6 +36,11 @@ yarn-error.log
 testem.log
 /typings
 
+# AWS Amplify
+.amplify/
+amplify_outputs.json
+amplifyconfiguration.json
+
 # System files
 .DS_Store
 Thumbs.db
