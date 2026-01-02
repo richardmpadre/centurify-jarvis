@@ -1,0 +1,112 @@
+<div class="home-container">
+  <div class="header-row">
+    <h2>Health Tracker</h2>
+    <button (click)="toggleForm()" class="add-btn">
+      {{ showForm ? 'Cancel' : '+ Add Entry' }}
+    </button>
+  </div>
+
+  <!-- Entry Form -->
+  <form *ngIf="showForm" [formGroup]="healthForm" (ngSubmit)="onSubmit()" class="health-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="date">Date</label>
+        <input type="date" id="date" formControlName="date" required>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="bp">BP (Blood Pressure)</label>
+        <input type="text" id="bp" formControlName="bp" placeholder="e.g., 120/80">
+      </div>
+      <div class="form-group">
+        <label for="temp">Temp (Temperature)</label>
+        <input type="number" id="temp" formControlName="temp" placeholder="°F" step="0.1">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="strain">Strain</label>
+        <input type="number" id="strain" formControlName="strain" placeholder="0-21" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="rhr">RHR (Resting Heart Rate)</label>
+        <input type="number" id="rhr" formControlName="rhr" placeholder="bpm">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="sleep">Sleep</label>
+        <input type="number" id="sleep" formControlName="sleep" placeholder="hours" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="recovery">Recovery</label>
+        <input type="number" id="recovery" formControlName="recovery" placeholder="0-100" step="0.1">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="weight">Weight</label>
+        <input type="number" id="weight" formControlName="weight" placeholder="lbs" step="0.1">
+      </div>
+      <div class="form-group">
+        <label for="dailyScore">Daily Score (-2 to 2)</label>
+        <input type="number" id="dailyScore" formControlName="dailyScore" placeholder="-2 to 2" step="0.1" min="-2" max="2">
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="!healthForm.valid || isLoading" class="submit-btn">
+        {{ isLoading ? 'Saving...' : 'Save Entry' }}
+      </button>
+      <span *ngIf="saveMessage" class="save-message" [class.error]="saveMessage.includes('Error')">
+        {{ saveMessage }}
+      </span>
+    </div>
+  </form>
+
+  <!-- Entries List -->
+  <div class="entries-section">
+    <div *ngIf="isLoadingEntries" class="loading">Loading entries...</div>
+    
+    <div *ngIf="!isLoadingEntries && entries.length === 0" class="no-entries">
+      No entries yet. Click "+ Add Entry" to get started.
+    </div>
+
+    <table *ngIf="!isLoadingEntries && entries.length > 0" class="entries-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>BP</th>
+          <th>Strain</th>
+          <th>RHR</th>
+          <th>Sleep</th>
+          <th>Recovery</th>
+          <th>Weight</th>
+          <th>Score</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let entry of entries">
+          <td>{{ entry.date }}</td>
+          <td>{{ entry.bp || '-' }}</td>
+          <td>{{ entry.strain || '-' }}</td>
+          <td>{{ entry.rhr || '-' }}</td>
+          <td>{{ entry.sleep || '-' }}</td>
+          <td>{{ entry.recovery || '-' }}</td>
+          <td>{{ entry.weight || '-' }}</td>
+          <td>{{ entry.dailyScore || '-' }}</td>
+          <td>
+            <button (click)="deleteEntry(entry.id)" class="delete-btn" title="Delete">×</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
