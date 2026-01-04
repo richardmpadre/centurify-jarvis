@@ -11,6 +11,10 @@ const schema = a.schema({
     recovery: a.float(),
     weight: a.float(),
     dailyScore: a.float(),
+    workoutCount: a.integer(),
+    workoutCalories: a.float(),
+    workoutMinutes: a.float(),
+    trainingNotes: a.string(),
   }).authorization(allow => [allow.owner()]),
 });
 

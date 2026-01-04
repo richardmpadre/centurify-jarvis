@@ -1,125 +1,241 @@
-<div class="home-container">
-  <div class="header-row">
-    <h2>Health Tracker</h2>
-    <button (click)="toggleForm()" class="add-btn">
-      {{ showForm ? 'Cancel' : '+ Add Entry' }}
-    </button>
+<div class="dashboard-container">
+  <!-- Date Navigation -->
+  <div class="date-nav">
+    <button class="nav-btn" (click)="prevDay()">‹</button>
+    <div class="date-display">
+      <span class="date-label">{{ getFormattedDate() }}</span>
+      <span class="date-full">{{ selectedDate }}</span>
+    </div>
+    <button class="nav-btn" (click)="nextDay()" [disabled]="isToday()">›</button>
+    <button *ngIf="!isToday()" class="today-btn" (click)="goToToday()">Today</button>
   </div>
 
-  <!-- Entry Form -->
-  <form *ngIf="showForm" [formGroup]="healthForm" (ngSubmit)="onSubmit()" class="health-form">
-    <div class="form-row date-row">
-      <div class="form-group">
-        <label for="date">Date</label>
-        <input type="date" id="date" formControlName="date" required>
-      </div>
-      
-      <!-- Whoop Import Button -->
-      <div class="whoop-import" *ngIf="whoopConnected">
-        <button type="button" (click)="fetchFromWhoop()" class="whoop-btn" [disabled]="whoopLoading">
-          <span class="whoop-icon">W</span>
-          {{ whoopLoading ? 'Fetching...' : 'Import from Whoop' }}
-        </button>
-        <span *ngIf="whoopMessage" class="whoop-message">{{ whoopMessage }}</span>
-      </div>
-      
-      <div class="whoop-connect" *ngIf="!whoopConnected">
-        <a routerLink="/integrations" class="connect-link">Connect Whoop to auto-fill</a>
+  <!-- Dashboard Stats -->
+  <div class="stats-grid" *ngIf="!isLoadingDashboard">
+    <!-- Recovery Card -->
+    <div class="stat-card recovery-card" [class.has-data]="currentEntry?.recovery">
+      <div class="stat-icon">💚</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.recovery || '--' }}<span class="unit" *ngIf="currentEntry?.recovery">%</span></div>
+        <div class="stat-label">Recovery</div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="bp">BP (Blood Pressure)</label>
-        <input type="text" id="bp" formControlName="bp" placeholder="e.g., 120/80">
-      </div>
-      <div class="form-group">
-        <label for="temp">Temp (Temperature)</label>
-        <input type="number" id="temp" formControlName="temp" placeholder="°F" step="0.1">
+    <!-- Sleep Card -->
+    <div class="stat-card sleep-card" [class.has-data]="currentEntry?.sleep">
+      <div class="stat-icon">😴</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.sleep || '--' }}<span class="unit" *ngIf="currentEntry?.sleep">%</span></div>
+        <div class="stat-label">Sleep Score</div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="strain">Strain</label>
-        <input type="number" id="strain" formControlName="strain" placeholder="0-21" step="0.1">
-      </div>
-      <div class="form-group">
-        <label for="rhr">RHR (Resting Heart Rate)</label>
-        <input type="number" id="rhr" formControlName="rhr" placeholder="bpm">
+    <!-- Strain Card -->
+    <div class="stat-card strain-card" [class.has-data]="currentEntry?.strain">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.strain || '--' }}</div>
+        <div class="stat-label">Strain</div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="sleep">Sleep</label>
-        <input type="number" id="sleep" formControlName="sleep" placeholder="hours" step="0.1">
-      </div>
-      <div class="form-group">
-        <label for="recovery">Recovery</label>
-        <input type="number" id="recovery" formControlName="recovery" placeholder="0-100" step="0.1">
+    <!-- RHR Card -->
+    <div class="stat-card rhr-card" [class.has-data]="currentEntry?.rhr">
+      <div class="stat-icon">❤️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.rhr || '--' }}<span class="unit" *ngIf="currentEntry?.rhr">bpm</span></div>
+        <div class="stat-label">Resting HR</div>
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label for="weight">Weight</label>
-        <input type="number" id="weight" formControlName="weight" placeholder="lbs" step="0.1">
-      </div>
-      <div class="form-group">
-        <label for="dailyScore">Daily Score (-2 to 2)</label>
-        <input type="number" id="dailyScore" formControlName="dailyScore" placeholder="-2 to 2" step="0.1" min="-2" max="2">
+    <!-- Weight Card -->
+    <div class="stat-card weight-card" [class.has-data]="currentEntry?.weight">
+      <div class="stat-icon">⚖️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.weight || '--' }}<span class="unit" *ngIf="currentEntry?.weight">lbs</span></div>
+        <div class="stat-label">Weight</div>
       </div>
     </div>
 
-    <div class="form-actions">
-      <button type="submit" [disabled]="!healthForm.valid || isLoading" class="submit-btn">
-        {{ isLoading ? 'Saving...' : 'Save Entry' }}
-      </button>
-      <span *ngIf="saveMessage" class="save-message" [class.error]="saveMessage.includes('Error')">
-        {{ saveMessage }}
-      </span>
+    <!-- Daily Score Card -->
+    <div class="stat-card score-card" [class.has-data]="currentEntry?.dailyScore != null">
+      <div class="stat-icon">📊</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.dailyScore ?? '--' }}</div>
+        <div class="stat-label">Daily Score</div>
+      </div>
     </div>
-  </form>
+  </div>
 
-  <!-- Entries List -->
-  <div class="entries-section">
-    <div *ngIf="isLoadingEntries" class="loading">Loading entries...</div>
+  <div class="loading-dashboard" *ngIf="isLoadingDashboard">
+    Loading...
+  </div>
+
+  <!-- Training Section -->
+  <div class="training-section" *ngIf="!isLoadingDashboard">
+    <div class="section-header">
+      <h3>Training</h3>
+      <div class="workout-summary" *ngIf="$any(currentEntry)?.workoutCount">
+        {{ $any(currentEntry).workoutCount }} workout(s) • {{ $any(currentEntry).workoutMinutes }} min • {{ $any(currentEntry).workoutCalories }} kcal
+      </div>
+    </div>
+
+    <!-- Whoop Workouts -->
+    <div class="workout-cards" *ngIf="whoopWorkouts.length > 0">
+      <div class="workout-card" *ngFor="let w of whoopWorkouts">
+        <div class="workout-header">
+          <span class="workout-sport">{{ w.sport }}</span>
+          <span class="workout-time">{{ w.startTime }}</span>
+        </div>
+        <div class="workout-stats">
+          <div class="workout-stat">
+            <span class="workout-stat-value">{{ w.strain }}</span>
+            <span class="workout-stat-label">Strain</span>
+          </div>
+          <div class="workout-stat">
+            <span class="workout-stat-value">{{ w.duration }}m</span>
+            <span class="workout-stat-label">Duration</span>
+          </div>
+          <div class="workout-stat">
+            <span class="workout-stat-value">{{ w.calories }}</span>
+            <span class="workout-stat-label">kcal</span>
+          </div>
+          <div class="workout-stat">
+            <span class="workout-stat-value">{{ w.avgHR }}/{{ w.maxHR }}</span>
+            <span class="workout-stat-label">Avg/Max HR</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-workouts" *ngIf="whoopWorkouts.length === 0 && !$any(currentEntry)?.workoutCount">
+      No workouts recorded for this day
+    </div>
+
+    <!-- Training Notes -->
+    <div class="training-notes-display" *ngIf="$any(currentEntry)?.trainingNotes">
+      <h4>Training Notes</h4>
+      <pre class="notes-content">{{ $any(currentEntry).trainingNotes }}</pre>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="dashboard-actions">
+    <button *ngIf="!currentEntry" (click)="addEntryForDate()" class="action-btn primary">
+      + Add Entry for {{ getFormattedDate() }}
+    </button>
+    <button *ngIf="currentEntry" (click)="editEntry(currentEntry)" class="action-btn secondary">
+      ✎ Edit Entry
+    </button>
+    <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
+      {{ whoopLoading ? 'Importing...' : 'Import from Whoop' }}
+    </button>
+    <a *ngIf="!whoopConnected" routerLink="/integrations" class="action-btn connect">
+      Connect Whoop
+    </a>
+  </div>
+
+  <!-- Entry Form Modal -->
+  <div class="form-overlay" *ngIf="showForm" (click)="toggleForm()"></div>
+  <div class="form-modal" *ngIf="showForm">
+    <div class="form-modal-header">
+      <h3>{{ editingId ? 'Edit Entry' : 'New Entry' }}</h3>
+      <button class="close-btn" (click)="toggleForm()">×</button>
+    </div>
     
-    <div *ngIf="!isLoadingEntries && entries.length === 0" class="no-entries">
-      No entries yet. Click "+ Add Entry" to get started.
+    <form [formGroup]="healthForm" (ngSubmit)="onSubmit()" class="health-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="date">Date</label>
+          <input type="date" id="date" formControlName="date" required>
+        </div>
+        <div class="form-group">
+          <label for="recovery">Recovery %</label>
+          <input type="number" id="recovery" formControlName="recovery" placeholder="0-100">
+        </div>
+        <div class="form-group">
+          <label for="sleep">Sleep %</label>
+          <input type="number" id="sleep" formControlName="sleep" placeholder="0-100">
+        </div>
+        <div class="form-group">
+          <label for="strain">Strain</label>
+          <input type="number" id="strain" formControlName="strain" placeholder="0-21" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="rhr">RHR (bpm)</label>
+          <input type="number" id="rhr" formControlName="rhr" placeholder="bpm">
+        </div>
+        <div class="form-group">
+          <label for="weight">Weight (lbs)</label>
+          <input type="number" id="weight" formControlName="weight" placeholder="lbs" step="0.1">
+        </div>
+        <div class="form-group">
+          <label for="bp">Blood Pressure</label>
+          <input type="text" id="bp" formControlName="bp" placeholder="120/80">
+        </div>
+        <div class="form-group">
+          <label for="dailyScore">Daily Score</label>
+          <input type="number" id="dailyScore" formControlName="dailyScore" placeholder="-2 to 2" step="0.1">
+        </div>
+      </div>
+
+      <div class="form-group workout-group">
+        <label>Workouts</label>
+        <div class="workout-inputs">
+          <input type="number" formControlName="workoutCount" placeholder="Count">
+          <input type="number" formControlName="workoutMinutes" placeholder="Minutes">
+          <input type="number" formControlName="workoutCalories" placeholder="Calories">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="trainingNotes">Training Notes</label>
+        <textarea id="trainingNotes" formControlName="trainingNotes" 
+          placeholder="Bench Press: 3x8 @ 185lbs&#10;Squats: 4x6 @ 225lbs"
+          rows="4"></textarea>
+      </div>
+
+      <!-- Whoop Import in Form -->
+      <div class="whoop-import-section" *ngIf="whoopConnected">
+        <button type="button" (click)="fetchFromWhoop()" class="whoop-import-btn" [disabled]="whoopLoading">
+          {{ whoopLoading ? 'Fetching...' : '↓ Import from Whoop' }}
+        </button>
+        <span class="whoop-msg" *ngIf="whoopMessage">{{ whoopMessage }}</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" (click)="toggleForm()" class="cancel-btn">Cancel</button>
+        <button type="submit" [disabled]="!healthForm.valid || isLoading" class="submit-btn">
+          {{ isLoading ? 'Saving...' : (editingId ? 'Update' : 'Save') }}
+        </button>
+      </div>
+      
+      <div class="save-message" *ngIf="saveMessage" [class.error]="saveMessage.includes('Error')">
+        {{ saveMessage }}
+      </div>
+    </form>
+  </div>
+
+  <!-- History Section -->
+  <div class="history-section">
+    <h3>History</h3>
+    <div *ngIf="isLoadingEntries" class="loading">Loading...</div>
+    
+    <div class="history-list" *ngIf="!isLoadingEntries && entries.length > 0">
+      <div class="history-item" *ngFor="let entry of entries" 
+           [class.selected]="entry.date === selectedDate"
+           (click)="selectedDate = entry.date; loadDashboard()">
+        <span class="history-date">{{ entry.date }}</span>
+        <div class="history-stats">
+          <span *ngIf="entry.recovery" class="mini-stat recovery">{{ entry.recovery }}%</span>
+          <span *ngIf="entry.strain" class="mini-stat strain">{{ entry.strain }}</span>
+          <span *ngIf="$any(entry).workoutCount" class="mini-stat workout">{{ $any(entry).workoutCount }}🏋️</span>
+        </div>
+      </div>
     </div>
 
-    <table *ngIf="!isLoadingEntries && entries.length > 0" class="entries-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>BP</th>
-          <th>Strain</th>
-          <th>RHR</th>
-          <th>Sleep</th>
-          <th>Recovery</th>
-          <th>Weight</th>
-          <th>Score</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let entry of entries">
-          <td>{{ entry.date }}</td>
-          <td>{{ entry.bp || '-' }}</td>
-          <td>{{ entry.strain || '-' }}</td>
-          <td>{{ entry.rhr || '-' }}</td>
-          <td>{{ entry.sleep || '-' }}</td>
-          <td>{{ entry.recovery || '-' }}</td>
-          <td>{{ entry.weight || '-' }}</td>
-          <td>{{ entry.dailyScore || '-' }}</td>
-          <td>
-            <button (click)="deleteEntry(entry.id)" class="delete-btn" title="Delete">×</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div *ngIf="!isLoadingEntries && entries.length === 0" class="no-entries">
+      No entries yet
+    </div>
   </div>
 </div>
-

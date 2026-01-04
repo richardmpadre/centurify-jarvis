@@ -18,18 +18,37 @@ export class HealthDataService {
     recovery?: number;
     weight?: number;
     dailyScore?: number;
+    workoutCount?: number;
+    workoutCalories?: number;
+    workoutMinutes?: number;
+    trainingNotes?: string;
   }) {
-    const { data, errors } = await this.client.models.HealthEntry.create({
-      date: entry.date,
-      bp: entry.bp,
-      temp: entry.temp,
-      strain: entry.strain,
-      rhr: entry.rhr,
-      sleep: entry.sleep,
-      recovery: entry.recovery,
-      weight: entry.weight,
-      dailyScore: entry.dailyScore,
-    });
+    const { data, errors } = await this.client.models.HealthEntry.create(entry as any);
+
+    if (errors) {
+      throw new Error(errors.map(e => e.message).join(', '));
+    }
+
+    return data;
+  }
+
+  async updateEntry(entry: {
+    id: string;
+    date: string;
+    bp?: string;
+    temp?: number;
+    strain?: number;
+    rhr?: number;
+    sleep?: number;
+    recovery?: number;
+    weight?: number;
+    dailyScore?: number;
+    workoutCount?: number;
+    workoutCalories?: number;
+    workoutMinutes?: number;
+    trainingNotes?: string;
+  }) {
+    const { data, errors } = await this.client.models.HealthEntry.update(entry as any);
 
     if (errors) {
       throw new Error(errors.map(e => e.message).join(', '));

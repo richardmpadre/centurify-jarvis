@@ -11,21 +11,36 @@ export class WhoopService {
   
   // Lambda function URL - will be set from amplify_outputs.json
   private lambdaTokenUrl: string | null = null;
+  private lambdaUrlLoaded = false;
 
   private readonly TOKEN_KEY = 'whoop_token';
   private readonly TOKEN_EXPIRY_KEY = 'whoop_token_expiry';
+  private readonly REFRESH_TOKEN_KEY = 'whoop_refresh_token';
+  
+  // Refresh 5 minutes before expiry
+  private readonly EXPIRY_BUFFER_MS = 5 * 60 * 1000;
+  
+  // Track if we're currently refreshing to avoid duplicate calls
+  private refreshPromise: Promise<void> | null = null;
 
   constructor() {
-    this.loadLambdaUrl();
+    this.init();
+  }
+
+  private async init() {
+    await this.loadLambdaUrl();
+    // Proactively refresh token on startup if needed
+    await this.ensureValidToken();
   }
 
   private async loadLambdaUrl() {
+    if (this.lambdaUrlLoaded) return;
     try {
       const outputs: any = await import('../../../amplify_outputs.json');
       const customOutputs = outputs.default?.custom || outputs.custom;
-      // Function URL - use directly without appending path
       this.lambdaTokenUrl = customOutputs?.whoopAuthApiUrl || null;
-      console.log('Lambda URL:', this.lambdaTokenUrl);
+      this.lambdaUrlLoaded = true;
+      console.log('Whoop Lambda URL loaded:', this.lambdaTokenUrl ? 'Yes' : 'No');
     } catch (e) {
       console.log('amplify_outputs.json not found - run npx ampx sandbox first');
     }
@@ -119,56 +134,105 @@ export class WhoopService {
 
   // Save token to localStorage
   private saveToken(tokenData: any): void {
+    console.log('Saving Whoop token, expires_in:', tokenData.expires_in);
     localStorage.setItem(this.TOKEN_KEY, tokenData.access_token);
     
     const expiryTime = Date.now() + (tokenData.expires_in * 1000);
     localStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString());
     
+    // Whoop returns a new refresh token with each refresh - always save it
     if (tokenData.refresh_token) {
-      localStorage.setItem('whoop_refresh_token', tokenData.refresh_token);
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, tokenData.refresh_token);
+      console.log('Refresh token saved');
     }
   }
 
-  // Get stored access token (checks expiry but doesn't auto-refresh)
+  // Check if token is expired or about to expire
+  private isTokenExpiredOrExpiring(): boolean {
+    const expiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!expiry) return true;
+    
+    // Consider expired if within buffer time of expiry
+    return Date.now() > (parseInt(expiry) - this.EXPIRY_BUFFER_MS);
+  }
+
+  // Get stored access token (checks expiry)
   getAccessToken(): string | null {
     const token = localStorage.getItem(this.TOKEN_KEY);
-    const expiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
+    if (!token) return null;
     
-    if (!token || !expiry) return null;
-    
-    // Token expired - will need refresh
-    if (Date.now() > parseInt(expiry)) {
+    // Return null if expired or about to expire
+    if (this.isTokenExpiredOrExpiring()) {
+      console.log('Whoop access token expired or expiring soon');
       return null;
     }
     
     return token;
   }
 
-  // Get valid access token, refreshing if needed
-  private async getValidAccessToken(): Promise<string | null> {
-    let token = this.getAccessToken();
+  // Ensure we have a valid token, refreshing if needed
+  async ensureValidToken(): Promise<boolean> {
+    const token = this.getAccessToken();
+    if (token) return true;
     
-    if (!token) {
-      // Try to refresh using refresh token
-      const refreshToken = localStorage.getItem('whoop_refresh_token');
-      if (refreshToken) {
-        try {
-          console.log('Access token expired, refreshing...');
-          await this.refreshAccessToken(refreshToken);
-          token = this.getAccessToken();
-        } catch (error) {
-          console.error('Token refresh failed:', error);
-          this.clearToken();
-          return null;
-        }
-      }
+    const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      console.log('No refresh token available');
+      return false;
     }
     
-    return token;
+    try {
+      await this.refreshAccessToken(refreshToken);
+      return true;
+    } catch (error) {
+      console.error('Failed to refresh Whoop token:', error);
+      return false;
+    }
+  }
+
+  // Get valid access token, refreshing if needed
+  private async getValidAccessToken(): Promise<string | null> {
+    // First check if we have a valid token
+    let token = this.getAccessToken();
+    if (token) return token;
+    
+    // Try to refresh using refresh token
+    const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      console.log('No Whoop refresh token - need to reconnect');
+      return null;
+    }
+    
+    try {
+      console.log('Whoop access token expired, refreshing...');
+      await this.refreshAccessToken(refreshToken);
+      token = this.getAccessToken();
+      return token;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      this.clearToken();
+      return null;
+    }
   }
 
   // Refresh access token using refresh token
   private async refreshAccessToken(refreshToken: string): Promise<void> {
+    // Avoid duplicate refresh calls
+    if (this.refreshPromise) {
+      console.log('Token refresh already in progress, waiting...');
+      return this.refreshPromise;
+    }
+    
+    this.refreshPromise = this.doRefreshToken(refreshToken);
+    
+    try {
+      await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+  
+  private async doRefreshToken(refreshToken: string): Promise<void> {
     if (!this.lambdaTokenUrl) {
       await this.loadLambdaUrl();
     }
@@ -177,6 +241,8 @@ export class WhoopService {
       throw new Error('Lambda URL not configured');
     }
 
+    console.log('Calling Lambda to refresh Whoop token...');
+    
     const response = await fetch(this.lambdaTokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -186,27 +252,37 @@ export class WhoopService {
       })
     });
 
+    const responseData = await response.json();
+    
     if (!response.ok) {
-      throw new Error('Token refresh failed');
+      console.error('Whoop token refresh failed:', responseData);
+      // If refresh token is invalid, clear everything
+      if (response.status === 400 || response.status === 401) {
+        console.log('Refresh token invalid, clearing tokens');
+        this.clearToken();
+      }
+      throw new Error(`Token refresh failed: ${JSON.stringify(responseData)}`);
     }
 
-    const tokenData = await response.json();
-    this.saveToken(tokenData);
-    console.log('Token refreshed successfully');
+    this.saveToken(responseData);
+    console.log('Whoop token refreshed successfully');
   }
 
   // Check if connected (has valid token or refresh token)
   isConnected(): boolean {
-    const token = this.getAccessToken();
-    const refreshToken = localStorage.getItem('whoop_refresh_token');
-    return token !== null || refreshToken !== null;
+    const hasToken = this.getAccessToken() !== null;
+    const hasRefreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY) !== null;
+    const connected = hasToken || hasRefreshToken;
+    console.log(`Whoop connected check: token=${hasToken}, refreshToken=${hasRefreshToken}, connected=${connected}`);
+    return connected;
   }
 
   // Clear token (disconnect)
   clearToken(): void {
+    console.log('Clearing all Whoop tokens');
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.TOKEN_EXPIRY_KEY);
-    localStorage.removeItem('whoop_refresh_token');
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
   }
 
   // Get user profile
@@ -277,9 +353,10 @@ export class WhoopService {
       console.error('API error details:', data);
       if (response.status === 401) {
         // Try refresh one more time
-        const refreshToken = localStorage.getItem('whoop_refresh_token');
+        const refreshToken = localStorage.getItem(this.REFRESH_TOKEN_KEY);
         if (refreshToken) {
           try {
+            console.log('Got 401, attempting token refresh...');
             await this.refreshAccessToken(refreshToken);
             return this.apiRequest(endpoint); // Retry with new token
           } catch {
@@ -298,4 +375,5 @@ export class WhoopService {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 }
+
 
