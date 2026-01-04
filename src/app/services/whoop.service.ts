@@ -7,7 +7,7 @@ export class WhoopService {
   private clientId = 'db961e9c-bf37-41bf-b90c-6d6ea8090eec';
   private redirectUri = 'http://localhost:4200/whoop/callback';
   private authUrl = 'https://api.prod.whoop.com/oauth/oauth2/auth';
-  private apiBaseUrl = 'https://api.prod.whoop.com/developer/v1';
+  private apiBaseUrl = 'https://api.prod.whoop.com/developer/v2';
   
   // Lambda function URL - will be set from amplify_outputs.json
   private lambdaTokenUrl: string | null = null;
@@ -129,24 +129,77 @@ export class WhoopService {
     }
   }
 
-  // Get stored access token
+  // Get stored access token (checks expiry but doesn't auto-refresh)
   getAccessToken(): string | null {
     const token = localStorage.getItem(this.TOKEN_KEY);
     const expiry = localStorage.getItem(this.TOKEN_EXPIRY_KEY);
     
     if (!token || !expiry) return null;
     
+    // Token expired - will need refresh
     if (Date.now() > parseInt(expiry)) {
-      this.clearToken();
       return null;
     }
     
     return token;
   }
 
-  // Check if connected
+  // Get valid access token, refreshing if needed
+  private async getValidAccessToken(): Promise<string | null> {
+    let token = this.getAccessToken();
+    
+    if (!token) {
+      // Try to refresh using refresh token
+      const refreshToken = localStorage.getItem('whoop_refresh_token');
+      if (refreshToken) {
+        try {
+          console.log('Access token expired, refreshing...');
+          await this.refreshAccessToken(refreshToken);
+          token = this.getAccessToken();
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          this.clearToken();
+          return null;
+        }
+      }
+    }
+    
+    return token;
+  }
+
+  // Refresh access token using refresh token
+  private async refreshAccessToken(refreshToken: string): Promise<void> {
+    if (!this.lambdaTokenUrl) {
+      await this.loadLambdaUrl();
+    }
+
+    if (!this.lambdaTokenUrl) {
+      throw new Error('Lambda URL not configured');
+    }
+
+    const response = await fetch(this.lambdaTokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'refresh',
+        refresh_token: refreshToken
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Token refresh failed');
+    }
+
+    const tokenData = await response.json();
+    this.saveToken(tokenData);
+    console.log('Token refreshed successfully');
+  }
+
+  // Check if connected (has valid token or refresh token)
   isConnected(): boolean {
-    return this.getAccessToken() !== null;
+    const token = this.getAccessToken();
+    const refreshToken = localStorage.getItem('whoop_refresh_token');
+    return token !== null || refreshToken !== null;
   }
 
   // Clear token (disconnect)
@@ -191,10 +244,11 @@ export class WhoopService {
 
   // Generic API request via Lambda proxy
   private async apiRequest(endpoint: string): Promise<any> {
-    const token = this.getAccessToken();
+    // Get valid token (auto-refreshes if expired)
+    const token = await this.getValidAccessToken();
     
     if (!token) {
-      throw new Error('Not authenticated with Whoop');
+      throw new Error('Not authenticated with Whoop. Please reconnect.');
     }
 
     if (!this.lambdaTokenUrl) {
@@ -217,13 +271,24 @@ export class WhoopService {
     });
 
     const data = await response.json();
+    console.log('Lambda response:', response.status, JSON.stringify(data, null, 2));
 
     if (!response.ok) {
+      console.error('API error details:', data);
       if (response.status === 401) {
-        this.clearToken();
+        // Try refresh one more time
+        const refreshToken = localStorage.getItem('whoop_refresh_token');
+        if (refreshToken) {
+          try {
+            await this.refreshAccessToken(refreshToken);
+            return this.apiRequest(endpoint); // Retry with new token
+          } catch {
+            this.clearToken();
+          }
+        }
         throw new Error('Authentication expired. Please reconnect.');
       }
-      throw new Error(`API request failed: ${response.status}`);
+      throw new Error(`API request failed: ${response.status} - ${JSON.stringify(data)}`);
     }
 
     return data;

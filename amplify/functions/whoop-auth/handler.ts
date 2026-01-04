@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 
 const WHOOP_TOKEN_URL = 'https://api.prod.whoop.com/oauth/oauth2/token';
-const WHOOP_API_BASE = 'https://api.prod.whoop.com/developer/v1';
+const WHOOP_API_BASE = 'https://api.prod.whoop.com/developer/v2';
 const CLIENT_ID = 'db961e9c-bf37-41bf-b90c-6d6ea8090eec';
 const CLIENT_SECRET = '105f0a59dbbfaf7f5e8dfa58cc93c40ad8fd982a123c71c30a4b16f70d0896ce';
 
@@ -62,7 +62,45 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       };
     }
 
-    // Route: Token Exchange (default)
+    // Route: Refresh Token
+    if (action === 'refresh') {
+      const { refresh_token } = body;
+      
+      if (!refresh_token) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ error: 'Missing refresh_token' })
+        };
+      }
+
+      const refreshParams = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET
+      });
+
+      const refreshResponse = await fetch(WHOOP_TOKEN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: refreshParams.toString()
+      });
+
+      const refreshData = await refreshResponse.json();
+
+      if (!refreshResponse.ok) {
+        return {
+          statusCode: refreshResponse.status,
+          headers,
+          body: JSON.stringify({ error: 'Token refresh failed', details: refreshData })
+        };
+      }
+
+      return { statusCode: 200, headers, body: JSON.stringify(refreshData) };
+    }
+
+    // Route: Token Exchange (default - initial authorization)
     const { code, redirect_uri } = body;
 
     if (!code || !redirect_uri) {

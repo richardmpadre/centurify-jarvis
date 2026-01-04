@@ -113,15 +113,21 @@ export class HomeComponent implements OnInit {
         return;
       }
       
-      // Fetch data for the selected date (use a range of that day)
+      // Calculate previous day for strain (strain accumulates throughout day, so previous day is complete)
+      const prevDate = new Date(selectedDate);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const previousDay = prevDate.toISOString().split('T')[0];
+
+      // Fetch data for the selected date
       const recoveryData = await this.whoopService.getRecovery(selectedDate, selectedDate);
       const sleepData = await this.whoopService.getSleep(selectedDate, selectedDate);
-      const cycleData = await this.whoopService.getCycles(selectedDate, selectedDate);
+      // Fetch strain from previous day (completed day)
+      const cycleData = await this.whoopService.getCycles(previousDay, previousDay);
       
       // Log raw responses for debugging
       console.log('Recovery data:', JSON.stringify(recoveryData, null, 2));
       console.log('Sleep data:', JSON.stringify(sleepData, null, 2));
-      console.log('Cycle data:', JSON.stringify(cycleData, null, 2));
+      console.log('Cycle data (previous day):', JSON.stringify(cycleData, null, 2));
       
       // Get first record from each (already filtered by date in API)
       const recoveryRecord = recoveryData?.records?.[0];
@@ -142,10 +148,9 @@ export class HomeComponent implements OnInit {
         fieldsUpdated++;
       }
 
-      // Update Sleep (convert milliseconds to hours)
-      if (sleepRecord?.score?.stage_summary?.total_in_bed_time_milli != null) {
-        const sleepHours = sleepRecord.score.stage_summary.total_in_bed_time_milli / (1000 * 60 * 60);
-        this.healthForm.patchValue({ sleep: Math.round(sleepHours * 10) / 10 });
+      // Update Sleep (performance percentage)
+      if (sleepRecord?.score?.sleep_performance_percentage != null) {
+        this.healthForm.patchValue({ sleep: sleepRecord.score.sleep_performance_percentage });
         fieldsUpdated++;
       }
 
