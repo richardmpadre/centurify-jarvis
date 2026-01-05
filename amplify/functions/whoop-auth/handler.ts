@@ -126,6 +126,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
 
     const data = await response.json();
+    console.log('Whoop token exchange response:', JSON.stringify(data));
+    console.log('Has access_token:', !!data.access_token);
+    console.log('Has refresh_token:', !!data.refresh_token);
 
     if (!response.ok) {
       return {

@@ -49,6 +49,9 @@ export class HomeComponent implements OnInit {
   
   // Whoop integration
   whoopConnected = false;
+  whoopExpired = false;
+  whoopExpiryMinutes: number | null = null;
+  whoopHasRefreshToken = false;
   whoopLoading = false;
   whoopMessage = '';
   whoopWorkouts: any[] = [];
@@ -76,16 +79,20 @@ export class HomeComponent implements OnInit {
   }
 
   async ngOnInit() {
-    // Check if Whoop is connected and has valid/refreshable token
-    if (this.whoopService.isConnected()) {
-      // Try to ensure we have a valid token (will refresh if needed)
-      this.whoopConnected = await this.whoopService.ensureValidToken();
-    } else {
-      this.whoopConnected = false;
-    }
-    
+    this.checkWhoopStatus();
     await this.loadEntries();
     await this.loadDashboard();
+  }
+  
+  checkWhoopStatus() {
+    this.whoopConnected = this.whoopService.isConnected();
+    this.whoopExpired = this.whoopService.hasExpiredToken();
+    this.whoopExpiryMinutes = this.whoopService.getTokenExpiryMinutes();
+    this.whoopHasRefreshToken = this.whoopService.hasRefreshToken();
+  }
+  
+  reconnectWhoop() {
+    this.whoopService.initiateAuth();
   }
 
   // Dashboard Methods

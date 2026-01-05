@@ -130,9 +130,28 @@
     <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
       {{ whoopLoading ? 'Importing...' : 'Import from Whoop' }}
     </button>
-    <a *ngIf="!whoopConnected" routerLink="/integrations" class="action-btn connect">
+    <!-- Token expired - show reconnect -->
+    <button *ngIf="whoopExpired && !whoopConnected" (click)="reconnectWhoop()" class="action-btn whoop">
+      🔄 Reconnect Whoop
+    </button>
+    <!-- Not connected at all -->
+    <a *ngIf="!whoopConnected && !whoopExpired" routerLink="/integrations" class="action-btn connect">
       Connect Whoop
     </a>
+  </div>
+  
+  <!-- Whoop Status Message -->
+  <div class="whoop-status success" *ngIf="whoopConnected && whoopHasRefreshToken">
+    <span class="status-icon">✓</span>
+    <span class="status-text">Whoop connected (auto-renewing)</span>
+  </div>
+  <div class="whoop-status" *ngIf="whoopConnected && !whoopHasRefreshToken && whoopExpiryMinutes !== null">
+    <span class="status-icon">⏱️</span>
+    <span class="status-text">Whoop token expires in {{ whoopExpiryMinutes }} min (no auto-renew)</span>
+  </div>
+  <div class="whoop-status expired" *ngIf="whoopExpired && !whoopConnected">
+    <span class="status-icon">⚠️</span>
+    <span class="status-text">Whoop session expired - click Reconnect to continue importing data</span>
   </div>
 
   <!-- Entry Form Modal -->
