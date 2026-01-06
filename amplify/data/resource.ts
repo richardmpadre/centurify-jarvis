@@ -15,6 +15,10 @@ const schema = a.schema({
     workoutCalories: a.float(),
     workoutMinutes: a.float(),
     trainingNotes: a.string(),
+    // Planned workout - JSON string with structure: { type, exercises: [{name, sets, reps, weight, notes}], targetDuration }
+    plannedWorkout: a.string(),
+    // Track if planned workout was completed
+    workoutCompleted: a.boolean(),
   }).authorization(allow => [allow.owner()]),
 });
 

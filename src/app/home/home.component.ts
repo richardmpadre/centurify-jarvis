@@ -16,6 +16,22 @@ interface HealthEntry {
   recovery?: number | null;
   weight?: number | null;
   dailyScore?: number | null;
+  plannedWorkout?: string | null;
+  workoutCompleted?: boolean | null;
+}
+
+interface PlannedExercise {
+  name: string;
+  sets: number;
+  reps: string;
+  weight: string;
+  notes: string;
+}
+
+interface PlannedWorkout {
+  type: string;
+  targetDuration: number;
+  exercises: PlannedExercise[];
 }
 
 @Component({
@@ -55,6 +71,16 @@ export class HomeComponent implements OnInit {
   whoopLoading = false;
   whoopMessage = '';
   whoopWorkouts: any[] = [];
+  
+  // Workout planning
+  showWorkoutPlanner = false;
+  plannedWorkout: PlannedWorkout | null = null;
+  workoutForm: FormGroup;
+  exercises: PlannedExercise[] = [];
+  
+  // Whoop workout editing
+  editingWhoopWorkout: any = null;
+  whoopWorkoutExercises: { [key: string]: PlannedExercise[] } = {};
 
   constructor(
     private fb: FormBuilder,
@@ -76,6 +102,16 @@ export class HomeComponent implements OnInit {
       workoutMinutes: [''],
       trainingNotes: ['']
     });
+    
+    this.workoutForm = this.fb.group({
+      type: ['Strength Training'],
+      targetDuration: [60],
+      exerciseName: [''],
+      exerciseSets: [3],
+      exerciseReps: ['8-10'],
+      exerciseWeight: [''],
+      exerciseNotes: ['']
+    });
   }
 
   async ngOnInit() {
@@ -95,6 +131,194 @@ export class HomeComponent implements OnInit {
     this.whoopService.initiateAuth();
   }
 
+  // Workout Planning Methods
+  openWorkoutPlanner() {
+    this.showWorkoutPlanner = true;
+    this.exercises = [];
+    
+    // Load existing planned workout if any
+    if (this.currentEntry?.plannedWorkout) {
+      try {
+        const planned = JSON.parse(this.currentEntry.plannedWorkout) as PlannedWorkout;
+        this.workoutForm.patchValue({
+          type: planned.type,
+          targetDuration: planned.targetDuration
+        });
+        this.exercises = planned.exercises || [];
+      } catch (e) {
+        console.error('Error parsing planned workout:', e);
+      }
+    }
+  }
+  
+  closeWorkoutPlanner() {
+    this.showWorkoutPlanner = false;
+  }
+  
+  addExercise() {
+    const form = this.workoutForm.value;
+    if (!form.exerciseName?.trim()) return;
+    
+    this.exercises.push({
+      name: form.exerciseName.trim(),
+      sets: form.exerciseSets || 3,
+      reps: form.exerciseReps || '8-10',
+      weight: form.exerciseWeight || '',
+      notes: form.exerciseNotes || ''
+    });
+    
+    // Clear exercise fields
+    this.workoutForm.patchValue({
+      exerciseName: '',
+      exerciseWeight: '',
+      exerciseNotes: ''
+    });
+  }
+  
+  removeExercise(index: number) {
+    this.exercises.splice(index, 1);
+  }
+  
+  async saveWorkoutPlan() {
+    const form = this.workoutForm.value;
+    
+    const plannedWorkout: PlannedWorkout = {
+      type: form.type,
+      targetDuration: form.targetDuration,
+      exercises: this.exercises
+    };
+    
+    const plannedWorkoutJson = JSON.stringify(plannedWorkout);
+    
+    try {
+      if (this.currentEntry?.id) {
+        // Update existing entry
+        await this.healthDataService.updateEntry({
+          id: this.currentEntry.id,
+          date: this.selectedDate,
+          plannedWorkout: plannedWorkoutJson
+        });
+      } else {
+        // Create new entry with just the workout plan
+        await this.healthDataService.saveEntry({
+          date: this.selectedDate,
+          plannedWorkout: plannedWorkoutJson
+        });
+      }
+      
+      await this.loadEntries();
+      await this.loadDashboard();
+      this.showWorkoutPlanner = false;
+    } catch (error) {
+      console.error('Error saving workout plan:', error);
+    }
+  }
+  
+  async toggleWorkoutCompleted() {
+    if (!this.currentEntry?.id) return;
+    
+    try {
+      await this.healthDataService.updateEntry({
+        id: this.currentEntry.id,
+        date: this.selectedDate,
+        workoutCompleted: !this.currentEntry.workoutCompleted
+      });
+      
+      await this.loadEntries();
+      await this.loadDashboard();
+    } catch (error) {
+      console.error('Error updating workout status:', error);
+    }
+  }
+  
+  getPlannedWorkout(): PlannedWorkout | null {
+    if (!this.currentEntry?.plannedWorkout) return null;
+    try {
+      return JSON.parse(this.currentEntry.plannedWorkout);
+    } catch {
+      return null;
+    }
+  }
+  
+  // Whoop Workout Editing Methods
+  openWhoopWorkoutEditor(workout: any) {
+    this.editingWhoopWorkout = workout;
+    // Load existing exercises for this workout if any
+    const workoutKey = this.getWorkoutKey(workout);
+    this.exercises = this.whoopWorkoutExercises[workoutKey] ? 
+      [...this.whoopWorkoutExercises[workoutKey]] : [];
+    
+    this.workoutForm.patchValue({
+      type: workout.sport,
+      targetDuration: workout.duration
+    });
+  }
+  
+  closeWhoopWorkoutEditor() {
+    this.editingWhoopWorkout = null;
+    this.exercises = [];
+  }
+  
+  getWorkoutKey(workout: any): string {
+    // Use start time as unique key for the workout
+    return workout.startTime || workout.id || `workout-${workout.sport}`;
+  }
+  
+  async saveWhoopWorkoutExercises() {
+    if (!this.editingWhoopWorkout) return;
+    
+    const workoutKey = this.getWorkoutKey(this.editingWhoopWorkout);
+    this.whoopWorkoutExercises[workoutKey] = [...this.exercises];
+    
+    // Store in the health entry's trainingNotes as JSON with workout details
+    const workoutDetails = {
+      ...this.whoopWorkoutExercises
+    };
+    
+    try {
+      if (this.currentEntry?.id) {
+        await this.healthDataService.updateEntry({
+          id: this.currentEntry.id,
+          date: this.selectedDate,
+          trainingNotes: JSON.stringify(workoutDetails)
+        });
+      } else {
+        await this.healthDataService.saveEntry({
+          date: this.selectedDate,
+          trainingNotes: JSON.stringify(workoutDetails)
+        });
+      }
+      
+      await this.loadEntries();
+      await this.loadDashboard();
+      this.closeWhoopWorkoutEditor();
+    } catch (error) {
+      console.error('Error saving workout exercises:', error);
+    }
+  }
+  
+  getWhoopWorkoutExercises(workout: any): PlannedExercise[] {
+    const workoutKey = this.getWorkoutKey(workout);
+    return this.whoopWorkoutExercises[workoutKey] || [];
+  }
+  
+  loadWhoopWorkoutExercises() {
+    // Load exercises from trainingNotes if it's JSON
+    if (this.currentEntry?.trainingNotes) {
+      try {
+        const parsed = JSON.parse(this.currentEntry.trainingNotes);
+        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+          this.whoopWorkoutExercises = parsed;
+        }
+      } catch {
+        // Not JSON, it's plain text notes - leave whoopWorkoutExercises empty
+        this.whoopWorkoutExercises = {};
+      }
+    } else {
+      this.whoopWorkoutExercises = {};
+    }
+  }
+
   // Dashboard Methods
   async loadDashboard() {
     this.isLoadingDashboard = true;
@@ -103,6 +327,9 @@ export class HomeComponent implements OnInit {
     try {
       // Find entry for selected date
       this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
+      
+      // Load saved workout exercises
+      this.loadWhoopWorkoutExercises();
       
       // If Whoop connected, fetch today's workouts
       if (this.whoopConnected) {

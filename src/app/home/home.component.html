@@ -75,48 +75,217 @@
   <div class="training-section" *ngIf="!isLoadingDashboard">
     <div class="section-header">
       <h3>Training</h3>
-      <div class="workout-summary" *ngIf="$any(currentEntry)?.workoutCount">
-        {{ $any(currentEntry).workoutCount }} workout(s) • {{ $any(currentEntry).workoutMinutes }} min • {{ $any(currentEntry).workoutCalories }} kcal
+      <button class="plan-workout-btn" (click)="openWorkoutPlanner()">
+        {{ getPlannedWorkout() ? '✎ Edit Plan' : '+ Plan Workout' }}
+      </button>
+    </div>
+
+    <!-- Planned Workout Display -->
+    <div class="planned-workout" *ngIf="getPlannedWorkout() as planned">
+      <div class="planned-header">
+        <div class="planned-title">
+          <span class="planned-type">{{ planned.type }}</span>
+          <span class="planned-duration">{{ planned.targetDuration }} min target</span>
+        </div>
+        <button 
+          class="complete-btn" 
+          [class.completed]="currentEntry?.workoutCompleted"
+          (click)="toggleWorkoutCompleted()">
+          {{ currentEntry?.workoutCompleted ? '✓ Completed' : 'Mark Complete' }}
+        </button>
+      </div>
+      
+      <div class="exercise-list">
+        <div class="exercise-item" *ngFor="let ex of planned.exercises">
+          <span class="exercise-name">{{ ex.name }}</span>
+          <span class="exercise-details">
+            {{ ex.sets }} × {{ ex.reps }}
+            <span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span>
+          </span>
+          <span class="exercise-notes" *ngIf="ex.notes">{{ ex.notes }}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Whoop Workouts -->
-    <div class="workout-cards" *ngIf="whoopWorkouts.length > 0">
-      <div class="workout-card" *ngFor="let w of whoopWorkouts">
-        <div class="workout-header">
-          <span class="workout-sport">{{ w.sport }}</span>
-          <span class="workout-time">{{ w.startTime }}</span>
-        </div>
-        <div class="workout-stats">
-          <div class="workout-stat">
-            <span class="workout-stat-value">{{ w.strain }}</span>
-            <span class="workout-stat-label">Strain</span>
+    <!-- Whoop Actual Results (supplements planned workout) -->
+    <div class="whoop-results" *ngIf="whoopWorkouts.length > 0">
+      <h4 class="results-title">Whoop Activities</h4>
+      <div class="workout-cards">
+        <div class="workout-card clickable" 
+             *ngFor="let w of whoopWorkouts"
+             [class.has-exercises]="getWhoopWorkoutExercises(w).length > 0"
+             (click)="openWhoopWorkoutEditor(w)">
+          <div class="workout-header">
+            <span class="workout-sport">{{ w.sport }}</span>
+            <div class="workout-header-right">
+              <span class="workout-time">{{ w.startTime }}</span>
+              <span class="edit-hint">✎ Add details</span>
+            </div>
           </div>
-          <div class="workout-stat">
-            <span class="workout-stat-value">{{ w.duration }}m</span>
-            <span class="workout-stat-label">Duration</span>
+          <div class="workout-stats">
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.strain }}</span>
+              <span class="workout-stat-label">Strain</span>
+            </div>
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.duration }}m</span>
+              <span class="workout-stat-label">Duration</span>
+            </div>
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.calories }}</span>
+              <span class="workout-stat-label">kcal</span>
+            </div>
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.avgHR }}/{{ w.maxHR }}</span>
+              <span class="workout-stat-label">Avg/Max HR</span>
+            </div>
           </div>
-          <div class="workout-stat">
-            <span class="workout-stat-value">{{ w.calories }}</span>
-            <span class="workout-stat-label">kcal</span>
-          </div>
-          <div class="workout-stat">
-            <span class="workout-stat-value">{{ w.avgHR }}/{{ w.maxHR }}</span>
-            <span class="workout-stat-label">Avg/Max HR</span>
+          <!-- Show saved exercises for this workout -->
+          <div class="workout-exercises" *ngIf="getWhoopWorkoutExercises(w).length > 0">
+            <div class="workout-exercise" *ngFor="let ex of getWhoopWorkoutExercises(w)">
+              <span class="ex-name">{{ ex.name }}</span>
+              <span class="ex-details">{{ ex.sets }}×{{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="no-workouts" *ngIf="whoopWorkouts.length === 0 && !$any(currentEntry)?.workoutCount">
-      No workouts recorded for this day
+    <!-- No workout message -->
+    <div class="no-workouts" *ngIf="!getPlannedWorkout() && whoopWorkouts.length === 0">
+      No workout planned for this day
     </div>
-
-    <!-- Training Notes -->
-    <div class="training-notes-display" *ngIf="$any(currentEntry)?.trainingNotes">
-      <h4>Training Notes</h4>
-      <pre class="notes-content">{{ $any(currentEntry).trainingNotes }}</pre>
+  </div>
+  
+  <!-- Whoop Workout Editor Modal -->
+  <div class="form-overlay" *ngIf="editingWhoopWorkout" (click)="closeWhoopWorkoutEditor()"></div>
+  <div class="form-modal workout-planner-modal" *ngIf="editingWhoopWorkout">
+    <div class="form-modal-header">
+      <h3>{{ editingWhoopWorkout.sport }} - {{ editingWhoopWorkout.startTime }}</h3>
+      <button class="close-btn" (click)="closeWhoopWorkoutEditor()">×</button>
     </div>
+    
+    <!-- Whoop Stats Summary -->
+    <div class="whoop-stats-summary">
+      <div class="summary-stat">
+        <span class="summary-value">{{ editingWhoopWorkout.strain }}</span>
+        <span class="summary-label">Strain</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-value">{{ editingWhoopWorkout.duration }}m</span>
+        <span class="summary-label">Duration</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-value">{{ editingWhoopWorkout.calories }}</span>
+        <span class="summary-label">Calories</span>
+      </div>
+      <div class="summary-stat">
+        <span class="summary-value">{{ editingWhoopWorkout.avgHR }}/{{ editingWhoopWorkout.maxHR }}</span>
+        <span class="summary-label">Avg/Max HR</span>
+      </div>
+    </div>
+    
+    <form [formGroup]="workoutForm" class="workout-planner-form">
+      <div class="exercise-builder">
+        <h4>Exercises Performed</h4>
+        
+        <!-- Add Exercise Form -->
+        <div class="add-exercise-form">
+          <input type="text" formControlName="exerciseName" placeholder="Exercise name (e.g., Bench Press)">
+          <input type="number" formControlName="exerciseSets" placeholder="Sets" min="1" max="20" class="small-input">
+          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small-input">
+          <input type="text" formControlName="exerciseWeight" placeholder="Weight">
+          <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
+        </div>
+        
+        <!-- Exercise List -->
+        <div class="planned-exercises" *ngIf="exercises.length > 0">
+          <div class="planned-exercise" *ngFor="let ex of exercises; let i = index">
+            <div class="exercise-info">
+              <strong>{{ ex.name }}</strong>
+              <span>{{ ex.sets }} × {{ ex.reps }}</span>
+              <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span>
+            </div>
+            <button type="button" class="remove-exercise-btn" (click)="removeExercise(i)">×</button>
+          </div>
+        </div>
+        
+        <div class="no-exercises" *ngIf="exercises.length === 0">
+          No exercises added yet. Add what you did during this workout.
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="closeWhoopWorkoutEditor()">Cancel</button>
+        <button type="button" class="submit-btn" (click)="saveWhoopWorkoutExercises()">Save Exercises</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Workout Planner Modal -->
+  <div class="form-overlay" *ngIf="showWorkoutPlanner" (click)="closeWorkoutPlanner()"></div>
+  <div class="form-modal workout-planner-modal" *ngIf="showWorkoutPlanner">
+    <div class="form-modal-header">
+      <h3>Plan Workout for {{ getFormattedDate() }}</h3>
+      <button class="close-btn" (click)="closeWorkoutPlanner()">×</button>
+    </div>
+    
+    <form [formGroup]="workoutForm" class="workout-planner-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Workout Type</label>
+          <select formControlName="type">
+            <option>Strength Training</option>
+            <option>Cardio</option>
+            <option>HIIT</option>
+            <option>Yoga</option>
+            <option>Running</option>
+            <option>Cycling</option>
+            <option>Swimming</option>
+            <option>CrossFit</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target Duration (min)</label>
+          <input type="number" formControlName="targetDuration" min="5" max="300">
+        </div>
+      </div>
+      
+      <div class="exercise-builder">
+        <h4>Exercises</h4>
+        
+        <!-- Add Exercise Form -->
+        <div class="add-exercise-form">
+          <input type="text" formControlName="exerciseName" placeholder="Exercise name (e.g., Bench Press)">
+          <input type="number" formControlName="exerciseSets" placeholder="Sets" min="1" max="20" class="small-input">
+          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small-input">
+          <input type="text" formControlName="exerciseWeight" placeholder="Weight (optional)">
+          <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
+        </div>
+        
+        <!-- Exercise List -->
+        <div class="planned-exercises" *ngIf="exercises.length > 0">
+          <div class="planned-exercise" *ngFor="let ex of exercises; let i = index">
+            <div class="exercise-info">
+              <strong>{{ ex.name }}</strong>
+              <span>{{ ex.sets }} × {{ ex.reps }}</span>
+              <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span>
+            </div>
+            <button type="button" class="remove-exercise-btn" (click)="removeExercise(i)">×</button>
+          </div>
+        </div>
+        
+        <div class="no-exercises" *ngIf="exercises.length === 0">
+          No exercises added yet
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="closeWorkoutPlanner()">Cancel</button>
+        <button type="button" class="submit-btn" (click)="saveWorkoutPlan()">Save Workout Plan</button>
+      </div>
+    </form>
   </div>
 
   <!-- Actions -->
