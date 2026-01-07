@@ -19,6 +19,8 @@ const schema = a.schema({
     plannedWorkout: a.string(),
     // Track if planned workout was completed
     workoutCompleted: a.boolean(),
+    // Morning checklist status - JSON string
+    morningChecklist: a.string(),
   }).authorization(allow => [allow.owner()]),
 });
 

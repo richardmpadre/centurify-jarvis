@@ -10,6 +10,33 @@
     <button *ngIf="!isToday()" class="today-btn" (click)="goToToday()">Today</button>
   </div>
 
+  <!-- Morning Checklist -->
+  <div class="morning-checklist" *ngIf="isToday() && !isLoadingDashboard">
+    <div class="checklist-header">
+      <h3>☀️ Morning Routine</h3>
+      <div class="progress-badge">{{ getChecklistProgress() }}%</div>
+    </div>
+    <div class="checklist-items">
+      <div 
+        class="checklist-item" 
+        *ngFor="let item of morningChecklistItems"
+        [class.completed]="isChecklistItemComplete(item.id)"
+        (click)="handleChecklistItem(item.id)">
+        <div class="check-circle">
+          <span *ngIf="isChecklistItemComplete(item.id)">✓</span>
+        </div>
+        <div class="checklist-content">
+          <span class="checklist-icon">{{ item.icon }}</span>
+          <div class="checklist-text">
+            <span class="checklist-title">{{ item.title }}</span>
+            <span class="checklist-desc">{{ item.description }}</span>
+          </div>
+        </div>
+        <span class="checklist-arrow">→</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Dashboard Stats -->
   <div class="stats-grid" *ngIf="!isLoadingDashboard">
     <!-- Recovery Card -->
@@ -87,12 +114,21 @@
           <span class="planned-type">{{ planned.type }}</span>
           <span class="planned-duration">{{ planned.targetDuration }} min target</span>
         </div>
-        <button 
-          class="complete-btn" 
-          [class.completed]="currentEntry?.workoutCompleted"
-          (click)="toggleWorkoutCompleted()">
-          {{ currentEntry?.workoutCompleted ? '✓ Completed' : 'Mark Complete' }}
-        </button>
+        <div class="planned-actions">
+          <button 
+            class="copy-btn-small" 
+            *ngIf="planned.exercises && planned.exercises.length > 0"
+            (click)="copyPlannedWorkoutToClipboard()"
+            title="Copy for Calendar">
+            📋
+          </button>
+          <button 
+            class="complete-btn" 
+            [class.completed]="currentEntry?.workoutCompleted"
+            (click)="toggleWorkoutCompleted()">
+            {{ currentEntry?.workoutCompleted ? '✓ Completed' : 'Mark Complete' }}
+          </button>
+        </div>
       </div>
       
       <div class="exercise-list">
@@ -119,6 +155,13 @@
             <span class="workout-sport">{{ w.sport }}</span>
             <div class="workout-header-right">
               <span class="workout-time">{{ w.startTime }}</span>
+              <button 
+                class="copy-btn-small" 
+                *ngIf="getWhoopWorkoutExercises(w).length > 0"
+                (click)="copyWhoopWorkoutToClipboard(w, $event)"
+                title="Copy for Calendar">
+                📋
+              </button>
               <span class="edit-hint">✎ Add details</span>
             </div>
           </div>
@@ -217,6 +260,7 @@
       
       <div class="form-actions">
         <button type="button" class="cancel-btn" (click)="closeWhoopWorkoutEditor()">Cancel</button>
+        <button type="button" class="copy-calendar-btn" (click)="copyExercisesToClipboard()" *ngIf="exercises.length > 0">📋 Copy for Calendar</button>
         <button type="button" class="submit-btn" (click)="saveWhoopWorkoutExercises()">Save Exercises</button>
       </div>
     </form>
@@ -234,16 +278,17 @@
       <div class="form-grid">
         <div class="form-group">
           <label>Workout Type</label>
-          <select formControlName="type">
-            <option>Strength Training</option>
-            <option>Cardio</option>
-            <option>HIIT</option>
-            <option>Yoga</option>
-            <option>Running</option>
-            <option>Cycling</option>
-            <option>Swimming</option>
-            <option>CrossFit</option>
-            <option>Other</option>
+          <select formControlName="type" class="workout-type-select">
+            <option value="Strength Training">Strength Training</option>
+            <option value="Weightlifting">Weightlifting</option>
+            <option value="Cardio">Cardio</option>
+            <option value="HIIT">HIIT</option>
+            <option value="Yoga">Yoga</option>
+            <option value="Running">Running</option>
+            <option value="Cycling">Cycling</option>
+            <option value="Swimming">Swimming</option>
+            <option value="CrossFit">CrossFit</option>
+            <option value="Other">Other</option>
           </select>
         </div>
         <div class="form-group">
@@ -251,6 +296,15 @@
           <input type="number" formControlName="targetDuration" min="5" max="300">
         </div>
       </div>
+      
+      <button type="button" 
+              class="copy-last-btn" 
+              [class.disabled]="!hasLastWorkout()"
+              [disabled]="!hasLastWorkout()"
+              (click)="copyLastWorkout()">
+        📋 Copy Last Workout
+        <span class="copy-hint" *ngIf="!hasLastWorkout()">(no previous found)</span>
+      </button>
       
       <div class="exercise-builder">
         <h4>Exercises</h4>
@@ -283,6 +337,7 @@
       
       <div class="form-actions">
         <button type="button" class="cancel-btn" (click)="closeWorkoutPlanner()">Cancel</button>
+        <button type="button" class="copy-calendar-btn" (click)="copyExercisesToClipboard()" *ngIf="exercises.length > 0">📋 Copy for Calendar</button>
         <button type="button" class="submit-btn" (click)="saveWorkoutPlan()">Save Workout Plan</button>
       </div>
     </form>
@@ -365,22 +420,6 @@
           <label for="dailyScore">Daily Score</label>
           <input type="number" id="dailyScore" formControlName="dailyScore" placeholder="-2 to 2" step="0.1">
         </div>
-      </div>
-
-      <div class="form-group workout-group">
-        <label>Workouts</label>
-        <div class="workout-inputs">
-          <input type="number" formControlName="workoutCount" placeholder="Count">
-          <input type="number" formControlName="workoutMinutes" placeholder="Minutes">
-          <input type="number" formControlName="workoutCalories" placeholder="Calories">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="trainingNotes">Training Notes</label>
-        <textarea id="trainingNotes" formControlName="trainingNotes" 
-          placeholder="Bench Press: 3x8 @ 185lbs&#10;Squats: 4x6 @ 225lbs"
-          rows="4"></textarea>
       </div>
 
       <!-- Whoop Import in Form -->

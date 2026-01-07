@@ -24,6 +24,7 @@ export class HealthDataService {
     trainingNotes?: string;
     plannedWorkout?: string;
     workoutCompleted?: boolean;
+    morningChecklist?: string;
   }) {
     const { data, errors } = await this.client.models.HealthEntry.create(entry as any);
 
@@ -51,6 +52,7 @@ export class HealthDataService {
     trainingNotes?: string;
     plannedWorkout?: string;
     workoutCompleted?: boolean;
+    morningChecklist?: string;
   }) {
     const { data, errors } = await this.client.models.HealthEntry.update(entry as any);
 

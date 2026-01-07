@@ -76,6 +76,131 @@
   color: #000;
 }
 
+/* Morning Checklist */
+.morning-checklist {
+  background: linear-gradient(135deg, #1a1a2e 0%, #252545 100%);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+  border: 1px solid #3b82f6;
+}
+
+.checklist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.checklist-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.progress-badge {
+  background: #3b82f6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.checklist-item:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+}
+
+.checklist-item.completed {
+  background: rgba(0, 212, 170, 0.1);
+  border-color: #00d4aa;
+}
+
+.check-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  color: transparent;
+}
+
+.checklist-item.completed .check-circle {
+  background: #00d4aa;
+  border-color: #00d4aa;
+  color: #000;
+  font-weight: bold;
+}
+
+.checklist-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.checklist-icon {
+  font-size: 1.5rem;
+}
+
+.checklist-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.checklist-title {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.checklist-desc {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.checklist-item.completed .checklist-title {
+  color: #00d4aa;
+}
+
+.checklist-arrow {
+  color: #555;
+  font-size: 1.2rem;
+  transition: transform 0.2s;
+}
+
+.checklist-item:hover .checklist-arrow {
+  transform: translateX(3px);
+  color: #3b82f6;
+}
+
+.checklist-item.completed .checklist-arrow {
+  color: #00d4aa;
+}
+
 /* Stats Grid */
 .stats-grid {
   display: grid;
@@ -694,12 +819,31 @@
   max-width: 650px;
 }
 
-.workout-planner-form select {
+.workout-planner-form select,
+.workout-type-select {
   padding: 0.75rem;
   border: 1px solid #3a3a5a;
   border-radius: 8px;
   background: #12121f;
   color: #ffffff;
+  cursor: pointer;
+  appearance: menulist;
+  -webkit-appearance: menulist;
+  width: 100%;
+  position: relative;
+  z-index: 200;
+}
+
+.workout-planner-form select:focus,
+.workout-type-select:focus {
+  outline: none;
+  border-color: #00d4aa;
+}
+
+.workout-planner-form select option {
+  background: #1a1a2e;
+  color: #ffffff;
+  padding: 0.5rem;
   font-size: 1rem;
   width: 100%;
 }
@@ -826,6 +970,74 @@
 
 .cancel-btn:hover {
   background: #252540;
+}
+
+.copy-last-btn {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  background: #2a2a4a;
+  border: 1px dashed #5a5a8a;
+  border-radius: 8px;
+  color: #a0a0d0;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.copy-last-btn:hover:not(.disabled) {
+  background: #3a3a5a;
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
+
+.copy-last-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-style: dotted;
+}
+
+.copy-last-btn .copy-hint {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-left: 0.5rem;
+}
+
+.copy-calendar-btn {
+  padding: 0.75rem 1rem;
+  background: #2a4a5a;
+  border: 1px solid #4a7a8a;
+  border-radius: 8px;
+  color: #8ad4ff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.copy-calendar-btn:hover {
+  background: #3a5a6a;
+  border-color: #5a9aaa;
+}
+
+.copy-btn-small {
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px solid #4a5a6a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.copy-btn-small:hover {
+  background: #2a4a5a;
+  border-color: #6a8a9a;
+}
+
+.planned-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .submit-btn {
@@ -978,6 +1190,12 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: flex-start;
+  }
+  
+  .checklist-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
 }
 
