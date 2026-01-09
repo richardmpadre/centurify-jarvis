@@ -1040,6 +1040,144 @@
   align-items: center;
 }
 
+.merge-btn-small {
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px solid #6a5a4a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.merge-btn-small:hover {
+  background: #4a3a2a;
+  border-color: #9a8a6a;
+}
+
+/* Merge Modal */
+.merge-modal {
+  max-width: 500px;
+}
+
+.merge-content {
+  margin-bottom: 1.5rem;
+}
+
+.merge-description {
+  color: #c0c0c0;
+  margin-bottom: 1rem;
+}
+
+.merge-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #12121f;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.merge-from, .merge-to {
+  flex: 1;
+  text-align: center;
+}
+
+.merge-from h4, .merge-to h4 {
+  margin: 0 0 0.5rem;
+  color: #888;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.merge-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #00d4aa;
+  font-size: 0.9rem;
+}
+
+.merge-arrow {
+  color: #666;
+  font-size: 1.5rem;
+}
+
+.merge-to span {
+  display: block;
+  color: #fff;
+}
+
+.merge-exercises-count {
+  color: #888 !important;
+  font-size: 0.85rem;
+}
+
+.merge-note {
+  color: #888;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Actual Stats (from merged Whoop data) */
+.actual-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.1), rgba(0, 150, 120, 0.05));
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.actual-stat {
+  text-align: center;
+}
+
+.actual-value {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #00d4aa;
+}
+
+.actual-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+/* History Header */
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.history-header h3 {
+  margin: 0;
+}
+
+.cleanup-btn {
+  padding: 0.4rem 0.8rem;
+  background: #4a3030;
+  border: 1px solid #8a5050;
+  border-radius: 6px;
+  color: #ff9090;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cleanup-btn:hover {
+  background: #5a4040;
+  border-color: #aa6060;
+}
+
 .submit-btn {
   padding: 0.75rem 1.5rem;
   background: #00d4aa;

@@ -56,6 +56,10 @@ export class HomeComponent implements OnInit {
   whoopExpiryMinutes: number | null = null;
   whoopHasRefreshToken = false;
   
+  // Merge workflow
+  showMergePrompt = false;
+  whoopToMerge: WhoopWorkout | null = null;
+  
   // Morning checklist
   morningChecklistItems: MorningChecklistItem[] = [
     { id: 'biometrics', title: 'Load Biometrics', description: 'Import health data from Whoop', icon: '📊' },
@@ -514,6 +518,80 @@ export class HomeComponent implements OnInit {
     }
   }
   
+  // Merge Whoop activity with Planned Workout
+  promptMergeWithPlanned(workout: WhoopWorkout, event: Event) {
+    event.stopPropagation();
+    this.whoopToMerge = workout;
+    this.showMergePrompt = true;
+  }
+  
+  closeMergePrompt() {
+    this.showMergePrompt = false;
+    this.whoopToMerge = null;
+  }
+  
+  async mergeWhoopWithPlanned() {
+    if (!this.whoopToMerge || !this.currentEntry?.id) return;
+    
+    const planned = this.getPlannedWorkout();
+    if (!planned) return;
+    
+    // Get exercises from Whoop activity (if any were added)
+    const whoopExercises = this.getWhoopWorkoutExercises(this.whoopToMerge);
+    
+    // Merge exercises: keep planned exercises, add any from Whoop that aren't duplicates
+    const mergedExercises = [...(planned.exercises || [])];
+    whoopExercises.forEach(ex => {
+      if (!mergedExercises.some(e => e.name.toLowerCase() === ex.name.toLowerCase())) {
+        mergedExercises.push(ex);
+      }
+    });
+    
+    // Update planned workout with Whoop stats and merged exercises
+    const updatedWorkout: PlannedWorkout = {
+      type: planned.type,
+      targetDuration: planned.targetDuration,
+      exercises: mergedExercises,
+    };
+    
+    // Add Whoop actual stats to the workout
+    const workoutWithStats = {
+      ...updatedWorkout,
+      actualStrain: this.whoopToMerge.strain,
+      actualDuration: this.whoopToMerge.duration,
+      actualCalories: this.whoopToMerge.calories,
+      actualAvgHR: this.whoopToMerge.avgHR,
+      actualMaxHR: this.whoopToMerge.maxHR,
+      whoopStartTime: this.whoopToMerge.startTime
+    };
+    
+    try {
+      // Clear the separate Whoop exercise storage for this workout
+      const whoopKey = this.getWorkoutKey(this.whoopToMerge);
+      delete this.whoopWorkoutExercises[whoopKey];
+      
+      await this.healthDataService.updateEntry({
+        id: this.currentEntry.id,
+        date: this.selectedDate,
+        plannedWorkout: JSON.stringify(workoutWithStats),
+        trainingNotes: Object.keys(this.whoopWorkoutExercises).length > 0 
+          ? JSON.stringify(this.whoopWorkoutExercises) 
+          : undefined,
+        workoutCompleted: true
+      });
+      
+      await this.loadEntries();
+      await this.loadDashboard();
+      this.closeMergePrompt();
+    } catch (error) {
+      console.error('Error merging workout:', error);
+    }
+  }
+  
+  hasPlannedWorkoutToMerge(): boolean {
+    return this.getPlannedWorkout() !== null;
+  }
+  
   private loadWhoopWorkoutExercises() {
     if (this.currentEntry?.trainingNotes) {
       try {
@@ -549,7 +627,15 @@ export class HomeComponent implements OnInit {
   private async loadWhoopDashboard() {
     try {
       const workoutData = await this.whoopService.getWorkouts(this.selectedDate, this.selectedDate);
-      this.whoopWorkouts = (workoutData?.records || []).map((w: any) => this.mapWhoopWorkout(w));
+      const allWorkouts = (workoutData?.records || []).map((w: any) => this.mapWhoopWorkout(w));
+      
+      // Filter out workouts that have been merged with planned workout
+      const planned = this.getPlannedWorkout();
+      const mergedStartTime = (planned as any)?.whoopStartTime;
+      
+      this.whoopWorkouts = mergedStartTime 
+        ? allWorkouts.filter((w: WhoopWorkout) => w.startTime !== mergedStartTime)
+        : allWorkouts;
     } catch (error) {
       console.error('Error loading Whoop dashboard:', error);
     }
@@ -747,5 +833,67 @@ export class HomeComponent implements OnInit {
         console.error('Error deleting:', error);
       }
     }
+  }
+  
+  // Find duplicate entries for the same date
+  getDuplicateDates(): string[] {
+    const dateCounts: { [date: string]: number } = {};
+    this.entries.forEach(e => {
+      dateCounts[e.date] = (dateCounts[e.date] || 0) + 1;
+    });
+    return Object.keys(dateCounts).filter(date => dateCounts[date] > 1);
+  }
+  
+  hasDuplicates(): boolean {
+    return this.getDuplicateDates().length > 0;
+  }
+  
+  async cleanupDuplicates() {
+    const duplicateDates = this.getDuplicateDates();
+    if (duplicateDates.length === 0) return;
+    
+    if (!confirm(`Found duplicates for: ${duplicateDates.join(', ')}. Keep the most complete entry and delete others?`)) {
+      return;
+    }
+    
+    for (const date of duplicateDates) {
+      const entriesForDate = this.entries.filter(e => e.date === date);
+      
+      // Sort by "completeness" - entry with most data wins
+      entriesForDate.sort((a, b) => {
+        const scoreA = this.getEntryCompleteness(a);
+        const scoreB = this.getEntryCompleteness(b);
+        return scoreB - scoreA;
+      });
+      
+      // Keep first (most complete), delete rest
+      for (let i = 1; i < entriesForDate.length; i++) {
+        try {
+          await this.healthDataService.deleteEntry(entriesForDate[i].id);
+          console.log(`Deleted duplicate entry ${entriesForDate[i].id} for ${date}`);
+        } catch (error) {
+          console.error('Error deleting duplicate:', error);
+        }
+      }
+    }
+    
+    await this.loadEntries();
+    await this.loadDashboard();
+  }
+  
+  private getEntryCompleteness(entry: HealthEntry): number {
+    let score = 0;
+    if (entry.bp) score++;
+    if (entry.temp) score++;
+    if (entry.strain) score++;
+    if (entry.rhr) score++;
+    if (entry.sleep) score++;
+    if (entry.recovery) score++;
+    if (entry.weight) score++;
+    if (entry.dailyScore) score++;
+    if (entry.plannedWorkout) score += 5; // Planned workout is worth more
+    if (entry.workoutCompleted) score++;
+    if (entry.trainingNotes) score += 2;
+    return score;
   }
 }

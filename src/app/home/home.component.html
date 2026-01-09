@@ -131,6 +131,26 @@
         </div>
       </div>
       
+      <!-- Actual Stats from Whoop (if merged) -->
+      <div class="actual-stats" *ngIf="$any(planned).actualStrain">
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualStrain }}</span>
+          <span class="actual-label">Strain</span>
+        </div>
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualDuration }}m</span>
+          <span class="actual-label">Duration</span>
+        </div>
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualCalories }}</span>
+          <span class="actual-label">Calories</span>
+        </div>
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
+          <span class="actual-label">Avg/Max HR</span>
+        </div>
+      </div>
+      
       <div class="exercise-list">
         <div class="exercise-item" *ngFor="let ex of planned.exercises">
           <span class="exercise-name">{{ ex.name }}</span>
@@ -161,6 +181,13 @@
                 (click)="copyWhoopWorkoutToClipboard(w, $event)"
                 title="Copy for Calendar">
                 📋
+              </button>
+              <button 
+                class="merge-btn-small" 
+                *ngIf="hasPlannedWorkoutToMerge()"
+                (click)="promptMergeWithPlanned(w, $event)"
+                title="Link to Planned Workout">
+                🔗
               </button>
               <span class="edit-hint">✎ Add details</span>
             </div>
@@ -197,6 +224,50 @@
     <!-- No workout message -->
     <div class="no-workouts" *ngIf="!getPlannedWorkout() && whoopWorkouts.length === 0">
       No workout planned for this day
+    </div>
+  </div>
+  
+  <!-- Merge Confirmation Modal -->
+  <div class="form-overlay" *ngIf="showMergePrompt" (click)="closeMergePrompt()"></div>
+  <div class="form-modal merge-modal" *ngIf="showMergePrompt && whoopToMerge">
+    <div class="form-modal-header">
+      <h3>Link Whoop Activity to Plan</h3>
+      <button class="close-btn" (click)="closeMergePrompt()">×</button>
+    </div>
+    
+    <div class="merge-content">
+      <p class="merge-description">
+        Merge <strong>{{ whoopToMerge.sport }}</strong> ({{ whoopToMerge.startTime }}) 
+        with your planned <strong>{{ getPlannedWorkout()?.type }}</strong> workout?
+      </p>
+      
+      <div class="merge-preview">
+        <div class="merge-from">
+          <h4>Whoop Activity</h4>
+          <div class="merge-stats">
+            <span>{{ whoopToMerge.strain }} strain</span>
+            <span>{{ whoopToMerge.duration }}m</span>
+            <span>{{ whoopToMerge.calories }} cal</span>
+          </div>
+        </div>
+        <div class="merge-arrow">→</div>
+        <div class="merge-to">
+          <h4>Planned Workout</h4>
+          <span>{{ getPlannedWorkout()?.type }}</span>
+          <span class="merge-exercises-count" *ngIf="getPlannedWorkout()?.exercises?.length">
+            {{ getPlannedWorkout()?.exercises?.length }} exercises
+          </span>
+        </div>
+      </div>
+      
+      <p class="merge-note">
+        This will add Whoop stats to your planned workout and mark it complete.
+      </p>
+    </div>
+    
+    <div class="form-actions">
+      <button type="button" class="cancel-btn" (click)="closeMergePrompt()">Cancel</button>
+      <button type="button" class="submit-btn" (click)="mergeWhoopWithPlanned()">Merge &amp; Complete</button>
     </div>
   </div>
   
@@ -445,7 +516,16 @@
 
   <!-- History Section -->
   <div class="history-section">
-    <h3>History</h3>
+    <div class="history-header">
+      <h3>History</h3>
+      <button 
+        class="cleanup-btn" 
+        *ngIf="hasDuplicates()" 
+        (click)="cleanupDuplicates()"
+        title="Remove duplicate entries">
+        🧹 Clean duplicates
+      </button>
+    </div>
     <div *ngIf="isLoadingEntries" class="loading">Loading...</div>
     
     <div class="history-list" *ngIf="!isLoadingEntries && entries.length > 0">
