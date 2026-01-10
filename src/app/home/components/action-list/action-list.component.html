@@ -1,0 +1,70 @@
+<div class="action-list" [class.collapsed]="collapsed && isAllComplete" [class.edit-mode]="editMode">
+  <!-- Header -->
+  <div class="action-list-header" (click)="onHeaderClick()">
+    <div class="header-left">
+      <h3>📋 Today's Actions</h3>
+      <span class="action-count">{{ completedCount }}/{{ totalCount }}</span>
+    </div>
+    <div class="header-right">
+      <button class="edit-order-btn" (click)="onEditClick($event)" [class.active]="editMode">
+        {{ editMode ? '✓ Done' : '⇅' }}
+      </button>
+      <div class="progress-badge" [class.complete]="isAllComplete" *ngIf="!editMode">
+        {{ isAllComplete ? '✓ Done' : progressPercent + '%' }}
+      </div>
+      <span class="expand-icon" *ngIf="!editMode">{{ !collapsed || !isAllComplete ? '▼' : '▶' }}</span>
+    </div>
+  </div>
+
+  <!-- Edit Mode Notice -->
+  <div class="edit-notice" *ngIf="editMode">
+    Use arrows to reorder actions. Click Done when finished.
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-container" *ngIf="(!collapsed || !isAllComplete) && !editMode">
+    <div class="progress-bar" [style.width.%]="progressPercent"></div>
+  </div>
+
+  <!-- Action Items -->
+  <div class="action-items" *ngIf="!collapsed || !isAllComplete || editMode">
+    <div class="loading" *ngIf="isLoading">Loading actions...</div>
+    
+    <div 
+      class="action-item" 
+      *ngFor="let action of visibleActions; let i = index; let first = first; let last = last"
+      [class.completed]="action.status === 'completed'"
+      [class.in-progress]="action.status === 'in_progress'"
+      [class.edit-item]="editMode"
+      (click)="onActionClick(action)">
+      
+      <!-- Reorder Buttons (Edit Mode) -->
+      <div class="reorder-buttons" *ngIf="editMode">
+        <button class="reorder-btn" (click)="moveUp(i, $event)" [disabled]="first">▲</button>
+        <button class="reorder-btn" (click)="moveDown(i, $event)" [disabled]="last">▼</button>
+      </div>
+      
+      <div class="action-check" *ngIf="!editMode">
+        <span *ngIf="action.status === 'completed'">✓</span>
+        <span *ngIf="action.status === 'in_progress'" class="spinner">⏳</span>
+      </div>
+      
+      <div class="action-icon">{{ action.icon }}</div>
+      
+      <div class="action-content">
+        <span class="action-title">{{ action.title }}</span>
+        <span class="action-desc">{{ action.description }}</span>
+      </div>
+      
+      <div class="action-arrow" *ngIf="!editMode">
+        <span *ngIf="action.status === 'completed'" class="undo-hint" title="Click to undo">↩</span>
+        <span *ngIf="action.status !== 'completed' && action.externalLink">↗</span>
+        <span *ngIf="action.status !== 'completed' && !action.externalLink">→</span>
+      </div>
+    </div>
+
+    <div class="no-actions" *ngIf="!isLoading && visibleActions.length === 0">
+      No actions for today
+    </div>
+  </div>
+</div>

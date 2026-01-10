@@ -1,0 +1,176 @@
+<div class="dashboard">
+  <!-- Stats Grid -->
+  <div class="stats-grid" *ngIf="!isLoading">
+    <!-- Recovery Card -->
+    <div class="stat-card recovery-card" [class.has-data]="currentEntry?.recovery">
+      <div class="stat-icon">💚</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.recovery || '--' }}<span class="unit" *ngIf="currentEntry?.recovery">%</span></div>
+        <div class="stat-label">Recovery</div>
+      </div>
+    </div>
+
+    <!-- Sleep Card -->
+    <div class="stat-card sleep-card" [class.has-data]="currentEntry?.sleep">
+      <div class="stat-icon">😴</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.sleep || '--' }}<span class="unit" *ngIf="currentEntry?.sleep">%</span></div>
+        <div class="stat-label">Sleep Score</div>
+      </div>
+    </div>
+
+    <!-- Strain Card -->
+    <div class="stat-card strain-card" [class.has-data]="currentEntry?.strain">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.strain || '--' }}</div>
+        <div class="stat-label">Strain</div>
+      </div>
+    </div>
+
+    <!-- RHR Card -->
+    <div class="stat-card rhr-card" [class.has-data]="currentEntry?.rhr">
+      <div class="stat-icon">❤️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.rhr || '--' }}<span class="unit" *ngIf="currentEntry?.rhr">bpm</span></div>
+        <div class="stat-label">Resting HR</div>
+      </div>
+    </div>
+
+    <!-- Weight Card -->
+    <div class="stat-card weight-card" [class.has-data]="currentEntry?.weight">
+      <div class="stat-icon">⚖️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.weight || '--' }}<span class="unit" *ngIf="currentEntry?.weight">lbs</span></div>
+        <div class="stat-label">Weight</div>
+      </div>
+    </div>
+
+    <!-- Daily Score Card -->
+    <div class="stat-card score-card" [class.has-data]="currentEntry?.dailyScore != null">
+      <div class="stat-icon">📊</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ currentEntry?.dailyScore ?? '--' }}</div>
+        <div class="stat-label">Daily Score</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loading-dashboard" *ngIf="isLoading">
+    Loading dashboard...
+  </div>
+
+  <!-- Training Section -->
+  <div class="training-section" *ngIf="!isLoading">
+    <div class="section-header">
+      <h3>🏋️ Training</h3>
+      <button class="plan-workout-btn" (click)="onPlanWorkout()">
+        {{ getPlannedWorkout() ? '✎ Edit Plan' : '+ Plan Workout' }}
+      </button>
+    </div>
+
+    <!-- Planned Workout Display -->
+    <div class="planned-workout" *ngIf="getPlannedWorkout() as planned">
+      <div class="planned-header">
+        <div class="planned-title">
+          <span class="planned-type">{{ planned.type }}</span>
+          <span class="planned-duration">{{ planned.targetDuration }} min target</span>
+        </div>
+        <div class="planned-actions">
+          <button 
+            class="complete-btn" 
+            [class.completed]="currentEntry?.workoutCompleted"
+            (click)="onToggleComplete()">
+            {{ currentEntry?.workoutCompleted ? '✓ Completed' : 'Mark Complete' }}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Actual Stats from Whoop (if merged) -->
+      <div class="actual-stats" *ngIf="$any(planned).actualStrain">
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualStrain }}</span>
+          <span class="actual-label">Strain</span>
+        </div>
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualDuration }}m</span>
+          <span class="actual-label">Duration</span>
+        </div>
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualCalories }}</span>
+          <span class="actual-label">Calories</span>
+        </div>
+        <div class="actual-stat">
+          <span class="actual-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
+          <span class="actual-label">Avg/Max HR</span>
+        </div>
+      </div>
+      
+      <div class="exercise-list" *ngIf="planned.exercises?.length">
+        <div class="exercise-item" *ngFor="let ex of planned.exercises">
+          <span class="exercise-name">{{ ex.name }}</span>
+          <span class="exercise-details">
+            {{ ex.sets }} × {{ ex.reps }}
+            <span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Whoop Activities -->
+    <div class="whoop-results" *ngIf="whoopWorkouts.length > 0">
+      <h4 class="results-title">Whoop Activities</h4>
+      <div class="workout-cards">
+        <div class="workout-card clickable" 
+             *ngFor="let w of whoopWorkouts"
+             [class.has-exercises]="getWhoopWorkoutExercises(w).length > 0"
+             (click)="onOpenWhoopWorkout(w)">
+          <div class="workout-header">
+            <span class="workout-sport">{{ w.sport }}</span>
+            <div class="workout-header-right">
+              <span class="workout-time">{{ w.startTime }}</span>
+              <button 
+                class="merge-btn-small" 
+                *ngIf="hasPlannedWorkoutToMerge()"
+                (click)="onMergeWorkout(w, $event)"
+                title="Link to Planned Workout">
+                🔗
+              </button>
+              <span class="edit-hint">✎</span>
+            </div>
+          </div>
+          <div class="workout-stats">
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.strain }}</span>
+              <span class="workout-stat-label">Strain</span>
+            </div>
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.duration }}m</span>
+              <span class="workout-stat-label">Duration</span>
+            </div>
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.calories }}</span>
+              <span class="workout-stat-label">kcal</span>
+            </div>
+            <div class="workout-stat">
+              <span class="workout-stat-value">{{ w.avgHR }}/{{ w.maxHR }}</span>
+              <span class="workout-stat-label">HR</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No workout message -->
+    <div class="no-workouts" *ngIf="!getPlannedWorkout() && whoopWorkouts.length === 0">
+      No workout planned for this day
+    </div>
+  </div>
+
+  <!-- Edit Entry Button -->
+  <div class="dashboard-actions" *ngIf="currentEntry && !isLoading">
+    <button class="edit-entry-btn" (click)="onEditEntry()">
+      ✎ Edit Health Data
+    </button>
+  </div>
+</div>

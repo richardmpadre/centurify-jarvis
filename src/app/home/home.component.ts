@@ -1,15 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../services/health-data.service';
 import { WhoopService } from '../services/whoop.service';
+import { ChatService, ChatMessage } from '../services/chat.service';
+import { ActionListComponent, ActionItem } from './components/action-list/action-list.component';
+import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { 
   HealthEntry, 
   PlannedExercise, 
   PlannedWorkout, 
-  MorningChecklistItem, 
-  DailyChecklist,
   WhoopWorkout 
 } from '../models/health.models';
 import { 
@@ -23,7 +24,14 @@ import {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule, 
+    FormsModule, 
+    RouterLink,
+    ActionListComponent,
+    DashboardComponent
+  ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
 })
@@ -56,31 +64,34 @@ export class HomeComponent implements OnInit {
   whoopExpiryMinutes: number | null = null;
   whoopHasRefreshToken = false;
   
+  // Action List
+  actionsCollapsed = false;
+  actionsEditMode = false;
+  dailyActions: ActionItem[] = [];
+  
+  private readonly ACTION_ORDER_KEY = 'jarvis_action_order';
+  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'complete_workout', 'lifeEvents', 'jarvis'];
+  
   // Merge workflow
   showMergePrompt = false;
   whoopToMerge: WhoopWorkout | null = null;
   
-  // Morning checklist
-  morningChecklistItems: MorningChecklistItem[] = [
-    { id: 'biometrics', title: 'Load Biometrics', description: 'Import health data from Whoop', icon: '📊' },
-    { id: 'workout', title: 'Plan Workout', description: 'Schedule training for the day', icon: '🏋️' },
-    { id: 'nutrition', title: 'Plan Nutrition', description: 'Log meals in MyFitnessPal', icon: '🥗' },
-    { id: 'lifeEvents', title: 'Organize Life Events', description: 'Review and plan life tasks', icon: '📋' },
-    { id: 'jarvis', title: 'Iterate Jarvis', description: 'Work on Jarvis improvements', icon: '🤖' }
-  ];
+  // Nutrition panel
+  showNutritionPanel = false;
+  mfpConnected = false;
+  mfpLoading = false;
   
-  dailyChecklist: DailyChecklist = {
-    biometricsLoaded: false,
-    workoutPlanned: false,
-    nutritionPlanned: false,
-    lifeEventsOrganized: false,
-    jarvisIterated: false
-  };
+  // Chat
+  showChat = false;
+  chatMessages: ChatMessage[] = [];
+  chatInput = '';
+  chatLoading = false;
 
   constructor(
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
-    private whoopService: WhoopService
+    private whoopService: WhoopService,
+    private chatService: ChatService
   ) {
     this.healthForm = this.fb.group({
       date: [this.selectedDate, Validators.required],
@@ -109,6 +120,221 @@ export class HomeComponent implements OnInit {
     this.checkWhoopStatus();
     await this.loadEntries();
     await this.loadDashboard();
+    this.buildDailyActions();
+  }
+
+  // ==================== ACTION LIST ====================
+  
+  buildDailyActions() {
+    const hasRecovery = this.currentEntry?.recovery != null;
+    const hasWorkoutPlan = this.getPlannedWorkout() !== null;
+    const workoutCompleted = this.currentEntry?.workoutCompleted === true;
+    
+    // Define all actions
+    const allActions: { [id: string]: ActionItem } = {
+      'biometrics': {
+        id: 'biometrics',
+        title: 'Load Biometrics',
+        description: this.whoopConnected ? 'Import health data from Whoop' : 'Add health entry manually',
+        icon: '📊',
+        status: hasRecovery ? 'completed' : 'pending',
+        type: 'biometrics',
+        createsEntry: 'health'
+      },
+      'workout': {
+        id: 'workout',
+        title: 'Plan Workout',
+        description: 'Schedule training for the day',
+        icon: '🏋️',
+        status: hasWorkoutPlan ? 'completed' : 'pending',
+        type: 'workout',
+        dependsOn: ['biometrics'],
+        createsEntry: 'workout'
+      },
+      'nutrition': {
+        id: 'nutrition',
+        title: 'Plan Nutrition',
+        description: 'Log meals in MyFitnessPal',
+        icon: '🥗',
+        status: 'pending',
+        type: 'nutrition',
+        externalLink: 'https://www.myfitnesspal.com/food/diary'
+      },
+      'complete_workout': {
+        id: 'complete_workout',
+        title: 'Complete Workout',
+        description: 'Mark your workout as done',
+        icon: '✅',
+        status: workoutCompleted ? 'completed' : 'pending',
+        type: 'custom',
+        dependsOn: ['workout']
+      },
+      'lifeEvents': {
+        id: 'lifeEvents',
+        title: 'Organize Life Events',
+        description: 'Review and plan life tasks',
+        icon: '📋',
+        status: 'pending',
+        type: 'life_events',
+        externalLink: 'https://docs.google.com/document/d/1H0-yjnxuFXoHDBXiF5moIkYSLhXucWRB1FJWSsFi6vU/edit'
+      },
+      'jarvis': {
+        id: 'jarvis',
+        title: 'Iterate Jarvis',
+        description: 'Work on Jarvis improvements',
+        icon: '🤖',
+        status: 'pending',
+        type: 'jarvis',
+        externalLink: 'https://trello.com/b/piRDYqCn/jarvis'
+      }
+    };
+    
+    // Get saved order or use default
+    const savedOrder = this.getActionOrder();
+    
+    // Build actions in saved order
+    this.dailyActions = savedOrder
+      .filter(id => allActions[id]) // Only include valid IDs
+      .map(id => allActions[id]);
+    
+    // Load saved action states from entry
+    this.loadActionStates();
+  }
+  
+  getActionOrder(): string[] {
+    try {
+      const saved = localStorage.getItem(this.ACTION_ORDER_KEY);
+      if (saved) {
+        const order = JSON.parse(saved);
+        // Validate it has all required actions
+        if (Array.isArray(order) && order.length === this.defaultActionOrder.length) {
+          return order;
+        }
+      }
+    } catch { /* ignore */ }
+    return [...this.defaultActionOrder];
+  }
+  
+  saveActionOrder(order: string[]): void {
+    localStorage.setItem(this.ACTION_ORDER_KEY, JSON.stringify(order));
+  }
+  
+  onActionsReorder(newOrder: string[]): void {
+    this.saveActionOrder(newOrder);
+    this.buildDailyActions();
+  }
+  
+  onActionsToggleEditMode(): void {
+    this.actionsEditMode = !this.actionsEditMode;
+  }
+  
+  loadActionStates() {
+    if (!this.currentEntry?.morningChecklist) return;
+    
+    try {
+      const saved = JSON.parse(this.currentEntry.morningChecklist);
+      this.dailyActions.forEach(action => {
+        // Saved state takes priority - can be true (completed) or false (explicitly uncompleted)
+        if (saved[action.id] === true) {
+          action.status = 'completed';
+        } else if (saved[action.id] === false) {
+          // User explicitly marked as incomplete - override auto-detection
+          action.status = 'pending';
+        }
+      });
+    } catch { /* ignore */ }
+  }
+  
+  async onActionClick(action: ActionItem) {
+    switch (action.type) {
+      case 'biometrics':
+        if (this.whoopConnected) {
+          await this.importFromWhoop();
+        } else {
+          this.addEntryForDate();
+        }
+        break;
+        
+      case 'workout':
+        this.openWorkoutPlanner();
+        break;
+        
+      case 'custom':
+        if (action.id === 'complete_workout') {
+          await this.toggleWorkoutCompleted();
+        }
+        break;
+        
+      case 'nutrition':
+        this.openNutritionPanel();
+        break;
+        
+      case 'life_events':
+      case 'jarvis':
+        if (action.externalLink) {
+          window.open(action.externalLink, '_blank');
+          await this.markActionComplete(action.id);
+        }
+        break;
+    }
+  }
+  
+  async markActionComplete(actionId: string) {
+    const action = this.dailyActions.find(a => a.id === actionId);
+    if (!action) return;
+    
+    action.status = 'completed';
+    await this.saveActionStates();
+    this.buildDailyActions(); // Refresh to show dependent actions
+  }
+  
+  async onActionUncomplete(action: ActionItem) {
+    // Reset the action to pending
+    action.status = 'pending';
+    await this.saveActionStates();
+    this.buildDailyActions();
+  }
+  
+  async saveActionStates() {
+    // Load existing states first to preserve any we're not tracking
+    let states: { [key: string]: boolean | null } = {};
+    if (this.currentEntry?.morningChecklist) {
+      try {
+        states = JSON.parse(this.currentEntry.morningChecklist);
+      } catch { /* ignore */ }
+    }
+    
+    // Update with current action states
+    this.dailyActions.forEach(action => {
+      if (action.status === 'completed') {
+        states[action.id] = true;
+      } else {
+        // Explicitly save as false if it was previously completed (user uncompleted it)
+        // or if we have no prior state for it
+        states[action.id] = false;
+      }
+    });
+    
+    const payload = {
+      date: this.selectedDate,
+      morningChecklist: JSON.stringify(states)
+    };
+    
+    try {
+      if (this.currentEntry?.id) {
+        await this.healthDataService.updateEntry({ id: this.currentEntry.id, ...payload });
+      } else {
+        await this.healthDataService.saveEntry(payload);
+      }
+      await this.loadEntries();
+      this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
+    } catch (error) {
+      console.error('Error saving action states:', error);
+    }
+  }
+  
+  onActionsToggleCollapse() {
+    this.actionsCollapsed = !this.actionsCollapsed;
   }
 
   // ==================== WHOOP STATUS ====================
@@ -147,107 +373,6 @@ export class HomeComponent implements OnInit {
 
   getFormattedDate(): string {
     return getFormattedDisplayDate(this.selectedDate);
-  }
-
-  // ==================== MORNING CHECKLIST ====================
-  
-  loadDailyChecklist() {
-    if (this.currentEntry?.morningChecklist) {
-      try {
-        this.dailyChecklist = JSON.parse(this.currentEntry.morningChecklist);
-      } catch {
-        this.resetChecklist();
-      }
-    } else {
-      this.dailyChecklist = {
-        biometricsLoaded: this.currentEntry?.recovery != null || this.currentEntry?.strain != null,
-        workoutPlanned: this.getPlannedWorkout() !== null,
-        nutritionPlanned: false,
-        lifeEventsOrganized: false,
-        jarvisIterated: false
-      };
-    }
-  }
-  
-  private resetChecklist() {
-    this.dailyChecklist = { biometricsLoaded: false, workoutPlanned: false, nutritionPlanned: false, lifeEventsOrganized: false, jarvisIterated: false };
-  }
-  
-  async handleChecklistItem(itemId: string) {
-    switch (itemId) {
-      case 'biometrics': await this.loadBiometrics(); break;
-      case 'workout': this.openWorkoutPlanner(); break;
-      case 'nutrition': this.openNutritionPlanner(); break;
-      case 'lifeEvents': this.openLifeEvents(); break;
-      case 'jarvis': this.openJarvisTrello(); break;
-    }
-  }
-  
-  async loadBiometrics() {
-    if (!this.whoopConnected) {
-      this.addEntryForDate();
-    } else {
-      await this.importFromWhoop();
-    }
-    await this.updateChecklistItem('biometricsLoaded', true);
-  }
-  
-  openNutritionPlanner() {
-    window.open('https://www.myfitnesspal.com/food/diary', '_blank');
-    this.updateChecklistItem('nutritionPlanned', true);
-  }
-  
-  openLifeEvents() {
-    window.open('https://docs.google.com/document/d/1H0-yjnxuFXoHDBXiF5moIkYSLhXucWRB1FJWSsFi6vU/edit?tab=t.0', '_blank');
-    this.updateChecklistItem('lifeEventsOrganized', true);
-  }
-  
-  openJarvisTrello() {
-    window.open('https://trello.com/b/piRDYqCn/jarvis', '_blank');
-    this.updateChecklistItem('jarvisIterated', true);
-  }
-  
-  async updateChecklistItem(key: keyof DailyChecklist, value: boolean) {
-    this.dailyChecklist[key] = value;
-    const checklistJson = JSON.stringify(this.dailyChecklist);
-    
-    try {
-      if (this.currentEntry?.id) {
-        await this.healthDataService.updateEntry({
-          id: this.currentEntry.id,
-          date: this.selectedDate,
-          morningChecklist: checklistJson
-        });
-      } else {
-        await this.healthDataService.saveEntry({
-          date: this.selectedDate,
-          morningChecklist: checklistJson
-        });
-      }
-      await this.loadEntries();
-      this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
-    } catch (error) {
-      console.error('Error updating checklist:', error);
-    }
-  }
-  
-  isChecklistItemComplete(itemId: string): boolean {
-    switch (itemId) {
-      case 'biometrics': return this.dailyChecklist.biometricsLoaded;
-      case 'workout': return this.dailyChecklist.workoutPlanned || this.getPlannedWorkout() !== null;
-      case 'nutrition': return this.dailyChecklist.nutritionPlanned;
-      case 'lifeEvents': return this.dailyChecklist.lifeEventsOrganized;
-      case 'jarvis': return this.dailyChecklist.jarvisIterated;
-      default: return false;
-    }
-  }
-  
-  getChecklistProgress(): number {
-    let completed = 0;
-    this.morningChecklistItems.forEach(item => {
-      if (this.isChecklistItemComplete(item.id)) completed++;
-    });
-    return Math.round((completed / this.morningChecklistItems.length) * 100);
   }
 
   // ==================== WORKOUT PLANNING ====================
@@ -291,11 +416,9 @@ export class HomeComponent implements OnInit {
   }
   
   copyLastWorkout() {
-    // Find most recent entry with exercises (planned or from Whoop)
     for (const entry of this.entries) {
       if (entry.date === this.selectedDate) continue;
       
-      // Check planned workout first
       if (entry.plannedWorkout) {
         try {
           const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
@@ -309,77 +432,20 @@ export class HomeComponent implements OnInit {
           }
         } catch { /* skip */ }
       }
-      
-      // Check Whoop workout exercises (trainingNotes)
-      if (entry.trainingNotes) {
-        try {
-          const workoutExercises = JSON.parse(entry.trainingNotes);
-          if (typeof workoutExercises === 'object') {
-            const keys = Object.keys(workoutExercises);
-            for (const key of keys) {
-              if (workoutExercises[key]?.length > 0) {
-                this.exercises = workoutExercises[key].map((e: PlannedExercise) => ({ ...e }));
-                return;
-              }
-            }
-          }
-        } catch { /* skip */ }
-      }
     }
   }
   
   hasLastWorkout(): boolean {
     return this.entries.some(entry => {
       if (entry.date === this.selectedDate) return false;
-      
-      // Check planned workout
       if (entry.plannedWorkout) {
         try {
           const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
           if (planned.exercises?.length > 0) return true;
         } catch { /* skip */ }
       }
-      
-      // Check Whoop workout exercises
-      if (entry.trainingNotes) {
-        try {
-          const workoutExercises = JSON.parse(entry.trainingNotes);
-          if (typeof workoutExercises === 'object') {
-            return Object.values(workoutExercises).some((ex: any) => ex?.length > 0);
-          }
-        } catch { /* skip */ }
-      }
-      
       return false;
     });
-  }
-  
-  // Migration: rename workout types in database
-  async migrateWorkoutType(oldType: string, newType: string) {
-    let updated = 0;
-    for (const entry of this.entries) {
-      if (!entry.plannedWorkout) continue;
-      
-      try {
-        const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-        if (planned.type === oldType) {
-          planned.type = newType;
-          await this.healthDataService.updateEntry({
-            id: entry.id,
-            date: entry.date,
-            plannedWorkout: JSON.stringify(planned)
-          });
-          updated++;
-        }
-      } catch { /* skip */ }
-    }
-    
-    if (updated > 0) {
-      await this.loadEntries();
-      await this.loadDashboard();
-      console.log(`Migrated ${updated} entries from "${oldType}" to "${newType}"`);
-    }
-    return updated;
   }
   
   async saveWorkoutPlan() {
@@ -390,13 +456,10 @@ export class HomeComponent implements OnInit {
       exercises: this.exercises
     };
     
-    this.dailyChecklist.workoutPlanned = true;
-    
     try {
       const payload = {
         date: this.selectedDate,
-        plannedWorkout: JSON.stringify(plannedWorkout),
-        morningChecklist: JSON.stringify(this.dailyChecklist)
+        plannedWorkout: JSON.stringify(plannedWorkout)
       };
       
       if (this.currentEntry?.id) {
@@ -407,6 +470,7 @@ export class HomeComponent implements OnInit {
       
       await this.loadEntries();
       await this.loadDashboard();
+      this.buildDailyActions();
       this.showWorkoutPlanner = false;
     } catch (error) {
       console.error('Error saving workout plan:', error);
@@ -424,6 +488,7 @@ export class HomeComponent implements OnInit {
       });
       await this.loadEntries();
       await this.loadDashboard();
+      this.buildDailyActions();
     } catch (error) {
       console.error('Error updating workout status:', error);
     }
@@ -482,45 +547,8 @@ export class HomeComponent implements OnInit {
     }
   }
   
-  getWhoopWorkoutExercises(workout: WhoopWorkout): PlannedExercise[] {
-    return this.whoopWorkoutExercises[this.getWorkoutKey(workout)] || [];
-  }
-  
-  copyExercisesToClipboard(exerciseList?: PlannedExercise[]) {
-    const toCopy = exerciseList || this.exercises;
-    if (toCopy.length === 0) return;
-    
-    const formatted = toCopy.map(ex => {
-      let text = `${ex.name} ${ex.reps}×${ex.sets}`;
-      if (ex.weight) {
-        text += ` @ ${ex.weight}`;
-      }
-      return text;
-    }).join(', ');
-    
-    navigator.clipboard.writeText(formatted).then(() => {
-      console.log('Copied to clipboard:', formatted);
-    });
-  }
-  
-  copyPlannedWorkoutToClipboard() {
-    const planned = this.getPlannedWorkout();
-    if (planned?.exercises) {
-      this.copyExercisesToClipboard(planned.exercises);
-    }
-  }
-  
-  copyWhoopWorkoutToClipboard(workout: WhoopWorkout, event: Event) {
-    event.stopPropagation(); // Prevent opening the editor
-    const exercises = this.getWhoopWorkoutExercises(workout);
-    if (exercises.length > 0) {
-      this.copyExercisesToClipboard(exercises);
-    }
-  }
-  
   // Merge Whoop activity with Planned Workout
-  promptMergeWithPlanned(workout: WhoopWorkout, event: Event) {
-    event.stopPropagation();
+  promptMergeWithPlanned(workout: WhoopWorkout) {
     this.whoopToMerge = workout;
     this.showMergePrompt = true;
   }
@@ -536,27 +564,8 @@ export class HomeComponent implements OnInit {
     const planned = this.getPlannedWorkout();
     if (!planned) return;
     
-    // Get exercises from Whoop activity (if any were added)
-    const whoopExercises = this.getWhoopWorkoutExercises(this.whoopToMerge);
-    
-    // Merge exercises: keep planned exercises, add any from Whoop that aren't duplicates
-    const mergedExercises = [...(planned.exercises || [])];
-    whoopExercises.forEach(ex => {
-      if (!mergedExercises.some(e => e.name.toLowerCase() === ex.name.toLowerCase())) {
-        mergedExercises.push(ex);
-      }
-    });
-    
-    // Update planned workout with Whoop stats and merged exercises
-    const updatedWorkout: PlannedWorkout = {
-      type: planned.type,
-      targetDuration: planned.targetDuration,
-      exercises: mergedExercises,
-    };
-    
-    // Add Whoop actual stats to the workout
     const workoutWithStats = {
-      ...updatedWorkout,
+      ...planned,
       actualStrain: this.whoopToMerge.strain,
       actualDuration: this.whoopToMerge.duration,
       actualCalories: this.whoopToMerge.calories,
@@ -566,30 +575,20 @@ export class HomeComponent implements OnInit {
     };
     
     try {
-      // Clear the separate Whoop exercise storage for this workout
-      const whoopKey = this.getWorkoutKey(this.whoopToMerge);
-      delete this.whoopWorkoutExercises[whoopKey];
-      
       await this.healthDataService.updateEntry({
         id: this.currentEntry.id,
         date: this.selectedDate,
         plannedWorkout: JSON.stringify(workoutWithStats),
-        trainingNotes: Object.keys(this.whoopWorkoutExercises).length > 0 
-          ? JSON.stringify(this.whoopWorkoutExercises) 
-          : undefined,
         workoutCompleted: true
       });
       
       await this.loadEntries();
       await this.loadDashboard();
+      this.buildDailyActions();
       this.closeMergePrompt();
     } catch (error) {
       console.error('Error merging workout:', error);
     }
-  }
-  
-  hasPlannedWorkoutToMerge(): boolean {
-    return this.getPlannedWorkout() !== null;
   }
   
   private loadWhoopWorkoutExercises() {
@@ -614,7 +613,7 @@ export class HomeComponent implements OnInit {
     try {
       this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
       this.loadWhoopWorkoutExercises();
-      this.loadDailyChecklist();
+      this.buildDailyActions();
       
       if (this.whoopConnected) {
         await this.loadWhoopDashboard();
@@ -629,7 +628,6 @@ export class HomeComponent implements OnInit {
       const workoutData = await this.whoopService.getWorkouts(this.selectedDate, this.selectedDate);
       const allWorkouts = (workoutData?.records || []).map((w: any) => this.mapWhoopWorkout(w));
       
-      // Filter out workouts that have been merged with planned workout
       const planned = this.getPlannedWorkout();
       const mergedStartTime = (planned as any)?.whoopStartTime;
       
@@ -698,20 +696,23 @@ export class HomeComponent implements OnInit {
     this.editingId = null;
   }
 
-  editEntry(entry: HealthEntry) {
-    this.editingId = entry.id;
+  editEntry(entry?: HealthEntry) {
+    const e = entry || this.currentEntry;
+    if (!e) return;
+    
+    this.editingId = e.id;
     this.showForm = true;
     
     this.healthForm.patchValue({
-      date: entry.date,
-      bp: entry.bp || '',
-      temp: entry.temp || '',
-      strain: entry.strain || '',
-      rhr: entry.rhr || '',
-      sleep: entry.sleep || '',
-      recovery: entry.recovery || '',
-      weight: entry.weight || '',
-      dailyScore: entry.dailyScore || ''
+      date: e.date,
+      bp: e.bp || '',
+      temp: e.temp || '',
+      strain: e.strain || '',
+      rhr: e.rhr || '',
+      sleep: e.sleep || '',
+      recovery: e.recovery || '',
+      weight: e.weight || '',
+      dailyScore: e.dailyScore || ''
     });
   }
 
@@ -834,66 +835,119 @@ export class HomeComponent implements OnInit {
       }
     }
   }
+
+  // ==================== CHAT ====================
   
-  // Find duplicate entries for the same date
-  getDuplicateDates(): string[] {
-    const dateCounts: { [date: string]: number } = {};
-    this.entries.forEach(e => {
-      dateCounts[e.date] = (dateCounts[e.date] || 0) + 1;
-    });
-    return Object.keys(dateCounts).filter(date => dateCounts[date] > 1);
-  }
-  
-  hasDuplicates(): boolean {
-    return this.getDuplicateDates().length > 0;
-  }
-  
-  async cleanupDuplicates() {
-    const duplicateDates = this.getDuplicateDates();
-    if (duplicateDates.length === 0) return;
-    
-    if (!confirm(`Found duplicates for: ${duplicateDates.join(', ')}. Keep the most complete entry and delete others?`)) {
-      return;
+  toggleChat() {
+    this.showChat = !this.showChat;
+    if (this.showChat && this.chatMessages.length === 0) {
+      this.chatMessages = this.chatService.getHistory();
     }
+  }
+  
+  async sendChatMessage() {
+    if (!this.chatInput.trim() || this.chatLoading) return;
     
-    for (const date of duplicateDates) {
-      const entriesForDate = this.entries.filter(e => e.date === date);
-      
-      // Sort by "completeness" - entry with most data wins
-      entriesForDate.sort((a, b) => {
-        const scoreA = this.getEntryCompleteness(a);
-        const scoreB = this.getEntryCompleteness(b);
-        return scoreB - scoreA;
+    const message = this.chatInput.trim();
+    this.chatInput = '';
+    this.chatLoading = true;
+    
+    try {
+      await this.chatService.chat(message);
+      this.chatMessages = this.chatService.getHistory();
+    } catch (error: any) {
+      console.error('Chat error:', error);
+      this.chatMessages.push({
+        role: 'assistant',
+        content: `Error: ${error.message || 'Failed to get response'}`,
+        timestamp: new Date()
+      });
+    } finally {
+      this.chatLoading = false;
+    }
+  }
+  
+  async analyzeToday() {
+    this.chatLoading = true;
+    
+    try {
+      const completedActions = this.dailyActions
+        .filter(a => a.status === 'completed')
+        .map(a => a.title);
+        
+      const analysis = await this.chatService.analyzeDay({
+        date: this.selectedDate,
+        recovery: this.currentEntry?.recovery || undefined,
+        sleep: this.currentEntry?.sleep || undefined,
+        strain: this.currentEntry?.strain || undefined,
+        rhr: this.currentEntry?.rhr || undefined,
+        workouts: this.whoopWorkouts,
+        plannedWorkout: this.getPlannedWorkout() || undefined,
+        checklistCompleted: completedActions
       });
       
-      // Keep first (most complete), delete rest
-      for (let i = 1; i < entriesForDate.length; i++) {
-        try {
-          await this.healthDataService.deleteEntry(entriesForDate[i].id);
-          console.log(`Deleted duplicate entry ${entriesForDate[i].id} for ${date}`);
-        } catch (error) {
-          console.error('Error deleting duplicate:', error);
-        }
-      }
+      this.chatMessages.push({
+        role: 'assistant',
+        content: analysis.summary || JSON.stringify(analysis),
+        timestamp: new Date()
+      });
+    } catch (error: any) {
+      console.error('Analysis error:', error);
+      this.chatMessages.push({
+        role: 'assistant',
+        content: `Error analyzing day: ${error.message}`,
+        timestamp: new Date()
+      });
+    } finally {
+      this.chatLoading = false;
     }
-    
-    await this.loadEntries();
-    await this.loadDashboard();
   }
   
-  private getEntryCompleteness(entry: HealthEntry): number {
-    let score = 0;
-    if (entry.bp) score++;
-    if (entry.temp) score++;
-    if (entry.strain) score++;
-    if (entry.rhr) score++;
-    if (entry.sleep) score++;
-    if (entry.recovery) score++;
-    if (entry.weight) score++;
-    if (entry.dailyScore) score++;
-    if (entry.plannedWorkout) score += 5; // Planned workout is worth more
-    if (entry.workoutCompleted) score++;
-    if (entry.trainingNotes) score += 2;
-    return score;
+  clearChat() {
+    this.chatService.clearHistory();
+    this.chatMessages = [];
+  }
+
+  // ==================== NUTRITION ====================
+  
+  openNutritionPanel(): void {
+    this.showNutritionPanel = true;
+  }
+  
+  closeNutritionPanel(): void {
+    this.showNutritionPanel = false;
+  }
+  
+  async openMyFitnessPal(): Promise<void> {
+    window.open('https://www.myfitnesspal.com/food/diary', '_blank');
+    await this.markActionComplete('nutrition');
+    this.closeNutritionPanel();
+  }
+  
+  async importFromMyFitnessPal(): Promise<void> {
+    // TODO: Implement MyFitnessPal OAuth integration
+    // This would require:
+    // 1. Setting up MFP API credentials
+    // 2. Creating a Lambda function for MFP OAuth (similar to Whoop)
+    // 3. Fetching meal data from MFP API
+    // 4. Creating nutrition entries in the app
+    
+    this.mfpLoading = true;
+    
+    try {
+      // Placeholder - show not implemented message
+      alert('MyFitnessPal integration coming soon! For now, please log meals manually in MyFitnessPal.');
+      
+      // When implemented, this would:
+      // 1. Check if connected to MFP
+      // 2. Fetch today's meals
+      // 3. Create entries for breakfast, lunch, dinner, snacks
+      // 4. Mark the nutrition action as complete
+      
+    } catch (error) {
+      console.error('MFP import error:', error);
+    } finally {
+      this.mfpLoading = false;
+    }
   }
 }

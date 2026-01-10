@@ -1,4 +1,4 @@
-<div class="dashboard-container">
+<div class="home-container">
   <!-- Date Navigation -->
   <div class="date-nav">
     <button class="nav-btn" (click)="prevDay()">‹</button>
@@ -10,449 +10,95 @@
     <button *ngIf="!isToday()" class="today-btn" (click)="goToToday()">Today</button>
   </div>
 
-  <!-- Morning Checklist -->
-  <div class="morning-checklist" *ngIf="isToday() && !isLoadingDashboard">
-    <div class="checklist-header">
-      <h3>☀️ Morning Routine</h3>
-      <div class="progress-badge">{{ getChecklistProgress() }}%</div>
-    </div>
-    <div class="checklist-items">
-      <div 
-        class="checklist-item" 
-        *ngFor="let item of morningChecklistItems"
-        [class.completed]="isChecklistItemComplete(item.id)"
-        (click)="handleChecklistItem(item.id)">
-        <div class="check-circle">
-          <span *ngIf="isChecklistItemComplete(item.id)">✓</span>
-        </div>
-        <div class="checklist-content">
-          <span class="checklist-icon">{{ item.icon }}</span>
-          <div class="checklist-text">
-            <span class="checklist-title">{{ item.title }}</span>
-            <span class="checklist-desc">{{ item.description }}</span>
-          </div>
-        </div>
-        <span class="checklist-arrow">→</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Dashboard Stats -->
-  <div class="stats-grid" *ngIf="!isLoadingDashboard">
-    <!-- Recovery Card -->
-    <div class="stat-card recovery-card" [class.has-data]="currentEntry?.recovery">
-      <div class="stat-icon">💚</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.recovery || '--' }}<span class="unit" *ngIf="currentEntry?.recovery">%</span></div>
-        <div class="stat-label">Recovery</div>
-      </div>
-    </div>
-
-    <!-- Sleep Card -->
-    <div class="stat-card sleep-card" [class.has-data]="currentEntry?.sleep">
-      <div class="stat-icon">😴</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.sleep || '--' }}<span class="unit" *ngIf="currentEntry?.sleep">%</span></div>
-        <div class="stat-label">Sleep Score</div>
-      </div>
-    </div>
-
-    <!-- Strain Card -->
-    <div class="stat-card strain-card" [class.has-data]="currentEntry?.strain">
-      <div class="stat-icon">🔥</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.strain || '--' }}</div>
-        <div class="stat-label">Strain</div>
-      </div>
-    </div>
-
-    <!-- RHR Card -->
-    <div class="stat-card rhr-card" [class.has-data]="currentEntry?.rhr">
-      <div class="stat-icon">❤️</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.rhr || '--' }}<span class="unit" *ngIf="currentEntry?.rhr">bpm</span></div>
-        <div class="stat-label">Resting HR</div>
-      </div>
-    </div>
-
-    <!-- Weight Card -->
-    <div class="stat-card weight-card" [class.has-data]="currentEntry?.weight">
-      <div class="stat-icon">⚖️</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.weight || '--' }}<span class="unit" *ngIf="currentEntry?.weight">lbs</span></div>
-        <div class="stat-label">Weight</div>
-      </div>
-    </div>
-
-    <!-- Daily Score Card -->
-    <div class="stat-card score-card" [class.has-data]="currentEntry?.dailyScore != null">
-      <div class="stat-icon">📊</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.dailyScore ?? '--' }}</div>
-        <div class="stat-label">Daily Score</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="loading-dashboard" *ngIf="isLoadingDashboard">
-    Loading...
-  </div>
-
-  <!-- Training Section -->
-  <div class="training-section" *ngIf="!isLoadingDashboard">
-    <div class="section-header">
-      <h3>Training</h3>
-      <button class="plan-workout-btn" (click)="openWorkoutPlanner()">
-        {{ getPlannedWorkout() ? '✎ Edit Plan' : '+ Plan Workout' }}
-      </button>
-    </div>
-
-    <!-- Planned Workout Display -->
-    <div class="planned-workout" *ngIf="getPlannedWorkout() as planned">
-      <div class="planned-header">
-        <div class="planned-title">
-          <span class="planned-type">{{ planned.type }}</span>
-          <span class="planned-duration">{{ planned.targetDuration }} min target</span>
-        </div>
-        <div class="planned-actions">
-          <button 
-            class="copy-btn-small" 
-            *ngIf="planned.exercises && planned.exercises.length > 0"
-            (click)="copyPlannedWorkoutToClipboard()"
-            title="Copy for Calendar">
-            📋
-          </button>
-          <button 
-            class="complete-btn" 
-            [class.completed]="currentEntry?.workoutCompleted"
-            (click)="toggleWorkoutCompleted()">
-            {{ currentEntry?.workoutCompleted ? '✓ Completed' : 'Mark Complete' }}
-          </button>
-        </div>
+  <!-- Main Two-Column Layout -->
+  <div class="main-layout">
+    <!-- Left: Action List -->
+    <section class="actions-section">
+      <app-action-list
+        *ngIf="isToday()"
+        [actions]="dailyActions"
+        [isLoading]="isLoadingDashboard"
+        [collapsed]="actionsCollapsed"
+        [editMode]="actionsEditMode"
+        (actionClick)="onActionClick($event)"
+        (actionUncomplete)="onActionUncomplete($event)"
+        (toggleCollapse)="onActionsToggleCollapse()"
+        (reorder)="onActionsReorder($event)"
+        (toggleEditMode)="onActionsToggleEditMode()">
+      </app-action-list>
+      
+      <!-- Quick Actions for past dates -->
+      <div class="quick-actions" *ngIf="!isToday()">
+        <button *ngIf="!currentEntry" (click)="addEntryForDate()" class="action-btn primary">
+          + Add Entry
+        </button>
+        <button *ngIf="currentEntry" (click)="editEntry()" class="action-btn secondary">
+          ✎ Edit Entry
+        </button>
+        <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
+          {{ whoopLoading ? 'Importing...' : 'Import Whoop' }}
+        </button>
       </div>
       
-      <!-- Actual Stats from Whoop (if merged) -->
-      <div class="actual-stats" *ngIf="$any(planned).actualStrain">
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualStrain }}</span>
-          <span class="actual-label">Strain</span>
-        </div>
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualDuration }}m</span>
-          <span class="actual-label">Duration</span>
-        </div>
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualCalories }}</span>
-          <span class="actual-label">Calories</span>
-        </div>
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
-          <span class="actual-label">Avg/Max HR</span>
-        </div>
+      <!-- Whoop Status -->
+      <div class="whoop-status success" *ngIf="whoopConnected && whoopHasRefreshToken">
+        <span class="status-icon">✓</span>
+        <span class="status-text">Whoop connected</span>
       </div>
-      
-      <div class="exercise-list">
-        <div class="exercise-item" *ngFor="let ex of planned.exercises">
-          <span class="exercise-name">{{ ex.name }}</span>
-          <span class="exercise-details">
-            {{ ex.sets }} × {{ ex.reps }}
-            <span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span>
-          </span>
-          <span class="exercise-notes" *ngIf="ex.notes">{{ ex.notes }}</span>
-        </div>
+      <div class="whoop-status expired" *ngIf="whoopExpired && !whoopConnected">
+        <span class="status-icon">⚠️</span>
+        <span class="status-text">Whoop expired</span>
+        <button class="reconnect-btn" (click)="reconnectWhoop()">Reconnect</button>
       </div>
-    </div>
+      <a *ngIf="!whoopConnected && !whoopExpired" routerLink="/integrations" class="connect-link">
+        Connect Whoop →
+      </a>
 
-    <!-- Whoop Actual Results (supplements planned workout) -->
-    <div class="whoop-results" *ngIf="whoopWorkouts.length > 0">
-      <h4 class="results-title">Whoop Activities</h4>
-      <div class="workout-cards">
-        <div class="workout-card clickable" 
-             *ngFor="let w of whoopWorkouts"
-             [class.has-exercises]="getWhoopWorkoutExercises(w).length > 0"
-             (click)="openWhoopWorkoutEditor(w)">
-          <div class="workout-header">
-            <span class="workout-sport">{{ w.sport }}</span>
-            <div class="workout-header-right">
-              <span class="workout-time">{{ w.startTime }}</span>
-              <button 
-                class="copy-btn-small" 
-                *ngIf="getWhoopWorkoutExercises(w).length > 0"
-                (click)="copyWhoopWorkoutToClipboard(w, $event)"
-                title="Copy for Calendar">
-                📋
-              </button>
-              <button 
-                class="merge-btn-small" 
-                *ngIf="hasPlannedWorkoutToMerge()"
-                (click)="promptMergeWithPlanned(w, $event)"
-                title="Link to Planned Workout">
-                🔗
-              </button>
-              <span class="edit-hint">✎ Add details</span>
-            </div>
-          </div>
-          <div class="workout-stats">
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.strain }}</span>
-              <span class="workout-stat-label">Strain</span>
-            </div>
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.duration }}m</span>
-              <span class="workout-stat-label">Duration</span>
-            </div>
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.calories }}</span>
-              <span class="workout-stat-label">kcal</span>
-            </div>
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.avgHR }}/{{ w.maxHR }}</span>
-              <span class="workout-stat-label">Avg/Max HR</span>
-            </div>
-          </div>
-          <!-- Show saved exercises for this workout -->
-          <div class="workout-exercises" *ngIf="getWhoopWorkoutExercises(w).length > 0">
-            <div class="workout-exercise" *ngFor="let ex of getWhoopWorkoutExercises(w)">
-              <span class="ex-name">{{ ex.name }}</span>
-              <span class="ex-details">{{ ex.sets }}×{{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
+      <!-- History -->
+      <div class="history-section">
+        <h4>📅 History</h4>
+        <div *ngIf="isLoadingEntries" class="loading">Loading...</div>
+        
+        <div class="history-list" *ngIf="!isLoadingEntries && entries.length > 0">
+          <div class="history-item" *ngFor="let entry of entries" 
+               [class.selected]="entry.date === selectedDate"
+               (click)="selectedDate = entry.date; loadDashboard()">
+            <span class="history-date">{{ entry.date }}</span>
+            <div class="history-stats">
+              <span *ngIf="entry.recovery" class="mini-stat recovery">{{ entry.recovery }}%</span>
+              <span *ngIf="entry.strain" class="mini-stat strain">{{ entry.strain }}</span>
             </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- No workout message -->
-    <div class="no-workouts" *ngIf="!getPlannedWorkout() && whoopWorkouts.length === 0">
-      No workout planned for this day
-    </div>
+        <div *ngIf="!isLoadingEntries && entries.length === 0" class="no-entries">
+          No entries yet
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Dashboard -->
+    <section class="dashboard-section">
+      <app-dashboard
+        [currentEntry]="currentEntry"
+        [whoopWorkouts]="whoopWorkouts"
+        [isLoading]="isLoadingDashboard"
+        [selectedDate]="selectedDate"
+        (editEntry)="editEntry()"
+        (planWorkout)="openWorkoutPlanner()"
+        (toggleWorkoutComplete)="toggleWorkoutCompleted()"
+        (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
+        (mergeWorkout)="promptMergeWithPlanned($event)">
+      </app-dashboard>
+    </section>
   </div>
+
+  <!-- Modals -->
   
-  <!-- Merge Confirmation Modal -->
-  <div class="form-overlay" *ngIf="showMergePrompt" (click)="closeMergePrompt()"></div>
-  <div class="form-modal merge-modal" *ngIf="showMergePrompt && whoopToMerge">
-    <div class="form-modal-header">
-      <h3>Link Whoop Activity to Plan</h3>
-      <button class="close-btn" (click)="closeMergePrompt()">×</button>
-    </div>
-    
-    <div class="merge-content">
-      <p class="merge-description">
-        Merge <strong>{{ whoopToMerge.sport }}</strong> ({{ whoopToMerge.startTime }}) 
-        with your planned <strong>{{ getPlannedWorkout()?.type }}</strong> workout?
-      </p>
-      
-      <div class="merge-preview">
-        <div class="merge-from">
-          <h4>Whoop Activity</h4>
-          <div class="merge-stats">
-            <span>{{ whoopToMerge.strain }} strain</span>
-            <span>{{ whoopToMerge.duration }}m</span>
-            <span>{{ whoopToMerge.calories }} cal</span>
-          </div>
-        </div>
-        <div class="merge-arrow">→</div>
-        <div class="merge-to">
-          <h4>Planned Workout</h4>
-          <span>{{ getPlannedWorkout()?.type }}</span>
-          <span class="merge-exercises-count" *ngIf="getPlannedWorkout()?.exercises?.length">
-            {{ getPlannedWorkout()?.exercises?.length }} exercises
-          </span>
-        </div>
-      </div>
-      
-      <p class="merge-note">
-        This will add Whoop stats to your planned workout and mark it complete.
-      </p>
-    </div>
-    
-    <div class="form-actions">
-      <button type="button" class="cancel-btn" (click)="closeMergePrompt()">Cancel</button>
-      <button type="button" class="submit-btn" (click)="mergeWhoopWithPlanned()">Merge &amp; Complete</button>
-    </div>
-  </div>
-  
-  <!-- Whoop Workout Editor Modal -->
-  <div class="form-overlay" *ngIf="editingWhoopWorkout" (click)="closeWhoopWorkoutEditor()"></div>
-  <div class="form-modal workout-planner-modal" *ngIf="editingWhoopWorkout">
-    <div class="form-modal-header">
-      <h3>{{ editingWhoopWorkout.sport }} - {{ editingWhoopWorkout.startTime }}</h3>
-      <button class="close-btn" (click)="closeWhoopWorkoutEditor()">×</button>
-    </div>
-    
-    <!-- Whoop Stats Summary -->
-    <div class="whoop-stats-summary">
-      <div class="summary-stat">
-        <span class="summary-value">{{ editingWhoopWorkout.strain }}</span>
-        <span class="summary-label">Strain</span>
-      </div>
-      <div class="summary-stat">
-        <span class="summary-value">{{ editingWhoopWorkout.duration }}m</span>
-        <span class="summary-label">Duration</span>
-      </div>
-      <div class="summary-stat">
-        <span class="summary-value">{{ editingWhoopWorkout.calories }}</span>
-        <span class="summary-label">Calories</span>
-      </div>
-      <div class="summary-stat">
-        <span class="summary-value">{{ editingWhoopWorkout.avgHR }}/{{ editingWhoopWorkout.maxHR }}</span>
-        <span class="summary-label">Avg/Max HR</span>
-      </div>
-    </div>
-    
-    <form [formGroup]="workoutForm" class="workout-planner-form">
-      <div class="exercise-builder">
-        <h4>Exercises Performed</h4>
-        
-        <!-- Add Exercise Form -->
-        <div class="add-exercise-form">
-          <input type="text" formControlName="exerciseName" placeholder="Exercise name (e.g., Bench Press)">
-          <input type="number" formControlName="exerciseSets" placeholder="Sets" min="1" max="20" class="small-input">
-          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small-input">
-          <input type="text" formControlName="exerciseWeight" placeholder="Weight">
-          <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
-        </div>
-        
-        <!-- Exercise List -->
-        <div class="planned-exercises" *ngIf="exercises.length > 0">
-          <div class="planned-exercise" *ngFor="let ex of exercises; let i = index">
-            <div class="exercise-info">
-              <strong>{{ ex.name }}</strong>
-              <span>{{ ex.sets }} × {{ ex.reps }}</span>
-              <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span>
-            </div>
-            <button type="button" class="remove-exercise-btn" (click)="removeExercise(i)">×</button>
-          </div>
-        </div>
-        
-        <div class="no-exercises" *ngIf="exercises.length === 0">
-          No exercises added yet. Add what you did during this workout.
-        </div>
-      </div>
-      
-      <div class="form-actions">
-        <button type="button" class="cancel-btn" (click)="closeWhoopWorkoutEditor()">Cancel</button>
-        <button type="button" class="copy-calendar-btn" (click)="copyExercisesToClipboard()" *ngIf="exercises.length > 0">📋 Copy for Calendar</button>
-        <button type="button" class="submit-btn" (click)="saveWhoopWorkoutExercises()">Save Exercises</button>
-      </div>
-    </form>
-  </div>
-  
-  <!-- Workout Planner Modal -->
-  <div class="form-overlay" *ngIf="showWorkoutPlanner" (click)="closeWorkoutPlanner()"></div>
-  <div class="form-modal workout-planner-modal" *ngIf="showWorkoutPlanner">
-    <div class="form-modal-header">
-      <h3>Plan Workout for {{ getFormattedDate() }}</h3>
-      <button class="close-btn" (click)="closeWorkoutPlanner()">×</button>
-    </div>
-    
-    <form [formGroup]="workoutForm" class="workout-planner-form">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Workout Type</label>
-          <select formControlName="type" class="workout-type-select">
-            <option value="Strength Training">Strength Training</option>
-            <option value="Weightlifting">Weightlifting</option>
-            <option value="Cardio">Cardio</option>
-            <option value="HIIT">HIIT</option>
-            <option value="Yoga">Yoga</option>
-            <option value="Running">Running</option>
-            <option value="Cycling">Cycling</option>
-            <option value="Swimming">Swimming</option>
-            <option value="CrossFit">CrossFit</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Target Duration (min)</label>
-          <input type="number" formControlName="targetDuration" min="5" max="300">
-        </div>
-      </div>
-      
-      <button type="button" 
-              class="copy-last-btn" 
-              [class.disabled]="!hasLastWorkout()"
-              [disabled]="!hasLastWorkout()"
-              (click)="copyLastWorkout()">
-        📋 Copy Last Workout
-        <span class="copy-hint" *ngIf="!hasLastWorkout()">(no previous found)</span>
-      </button>
-      
-      <div class="exercise-builder">
-        <h4>Exercises</h4>
-        
-        <!-- Add Exercise Form -->
-        <div class="add-exercise-form">
-          <input type="text" formControlName="exerciseName" placeholder="Exercise name (e.g., Bench Press)">
-          <input type="number" formControlName="exerciseSets" placeholder="Sets" min="1" max="20" class="small-input">
-          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small-input">
-          <input type="text" formControlName="exerciseWeight" placeholder="Weight (optional)">
-          <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
-        </div>
-        
-        <!-- Exercise List -->
-        <div class="planned-exercises" *ngIf="exercises.length > 0">
-          <div class="planned-exercise" *ngFor="let ex of exercises; let i = index">
-            <div class="exercise-info">
-              <strong>{{ ex.name }}</strong>
-              <span>{{ ex.sets }} × {{ ex.reps }}</span>
-              <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span>
-            </div>
-            <button type="button" class="remove-exercise-btn" (click)="removeExercise(i)">×</button>
-          </div>
-        </div>
-        
-        <div class="no-exercises" *ngIf="exercises.length === 0">
-          No exercises added yet
-        </div>
-      </div>
-      
-      <div class="form-actions">
-        <button type="button" class="cancel-btn" (click)="closeWorkoutPlanner()">Cancel</button>
-        <button type="button" class="copy-calendar-btn" (click)="copyExercisesToClipboard()" *ngIf="exercises.length > 0">📋 Copy for Calendar</button>
-        <button type="button" class="submit-btn" (click)="saveWorkoutPlan()">Save Workout Plan</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Actions -->
-  <div class="dashboard-actions">
-    <button *ngIf="!currentEntry" (click)="addEntryForDate()" class="action-btn primary">
-      + Add Entry for {{ getFormattedDate() }}
-    </button>
-    <button *ngIf="currentEntry" (click)="editEntry(currentEntry)" class="action-btn secondary">
-      ✎ Edit Entry
-    </button>
-    <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
-      {{ whoopLoading ? 'Importing...' : 'Import from Whoop' }}
-    </button>
-    <!-- Token expired - show reconnect -->
-    <button *ngIf="whoopExpired && !whoopConnected" (click)="reconnectWhoop()" class="action-btn whoop">
-      🔄 Reconnect Whoop
-    </button>
-    <!-- Not connected at all -->
-    <a *ngIf="!whoopConnected && !whoopExpired" routerLink="/integrations" class="action-btn connect">
-      Connect Whoop
-    </a>
-  </div>
-  
-  <!-- Whoop Status Message -->
-  <div class="whoop-status success" *ngIf="whoopConnected && whoopHasRefreshToken">
-    <span class="status-icon">✓</span>
-    <span class="status-text">Whoop connected (auto-renewing)</span>
-  </div>
-  <div class="whoop-status" *ngIf="whoopConnected && !whoopHasRefreshToken && whoopExpiryMinutes !== null">
-    <span class="status-icon">⏱️</span>
-    <span class="status-text">Whoop token expires in {{ whoopExpiryMinutes }} min (no auto-renew)</span>
-  </div>
-  <div class="whoop-status expired" *ngIf="whoopExpired && !whoopConnected">
-    <span class="status-icon">⚠️</span>
-    <span class="status-text">Whoop session expired - click Reconnect to continue importing data</span>
-  </div>
-
   <!-- Entry Form Modal -->
-  <div class="form-overlay" *ngIf="showForm" (click)="toggleForm()"></div>
-  <div class="form-modal" *ngIf="showForm">
-    <div class="form-modal-header">
+  <div class="modal-overlay" *ngIf="showForm" (click)="toggleForm()"></div>
+  <div class="modal" *ngIf="showForm">
+    <div class="modal-header">
       <h3>{{ editingId ? 'Edit Entry' : 'New Entry' }}</h3>
       <button class="close-btn" (click)="toggleForm()">×</button>
     </div>
@@ -493,8 +139,7 @@
         </div>
       </div>
 
-      <!-- Whoop Import in Form -->
-      <div class="whoop-import-section" *ngIf="whoopConnected">
+      <div class="whoop-import" *ngIf="whoopConnected">
         <button type="button" (click)="fetchFromWhoop()" class="whoop-import-btn" [disabled]="whoopLoading">
           {{ whoopLoading ? 'Fetching...' : '↓ Import from Whoop' }}
         </button>
@@ -514,35 +159,203 @@
     </form>
   </div>
 
-  <!-- History Section -->
-  <div class="history-section">
-    <div class="history-header">
-      <h3>History</h3>
-      <button 
-        class="cleanup-btn" 
-        *ngIf="hasDuplicates()" 
-        (click)="cleanupDuplicates()"
-        title="Remove duplicate entries">
-        🧹 Clean duplicates
-      </button>
+  <!-- Workout Planner Modal -->
+  <div class="modal-overlay" *ngIf="showWorkoutPlanner" (click)="closeWorkoutPlanner()"></div>
+  <div class="modal workout-modal" *ngIf="showWorkoutPlanner">
+    <div class="modal-header">
+      <h3>Plan Workout for {{ getFormattedDate() }}</h3>
+      <button class="close-btn" (click)="closeWorkoutPlanner()">×</button>
     </div>
-    <div *ngIf="isLoadingEntries" class="loading">Loading...</div>
     
-    <div class="history-list" *ngIf="!isLoadingEntries && entries.length > 0">
-      <div class="history-item" *ngFor="let entry of entries" 
-           [class.selected]="entry.date === selectedDate"
-           (click)="selectedDate = entry.date; loadDashboard()">
-        <span class="history-date">{{ entry.date }}</span>
-        <div class="history-stats">
-          <span *ngIf="entry.recovery" class="mini-stat recovery">{{ entry.recovery }}%</span>
-          <span *ngIf="entry.strain" class="mini-stat strain">{{ entry.strain }}</span>
-          <span *ngIf="$any(entry).workoutCount" class="mini-stat workout">{{ $any(entry).workoutCount }}🏋️</span>
+    <form [formGroup]="workoutForm" class="workout-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Workout Type</label>
+          <select formControlName="type">
+            <option value="Strength Training">Strength Training</option>
+            <option value="Cardio">Cardio</option>
+            <option value="HIIT">HIIT</option>
+            <option value="Yoga">Yoga</option>
+            <option value="Running">Running</option>
+            <option value="Cycling">Cycling</option>
+            <option value="Swimming">Swimming</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Duration (min)</label>
+          <input type="number" formControlName="targetDuration" min="5" max="300">
         </div>
       </div>
-    </div>
+      
+      <button type="button" class="copy-last-btn" [disabled]="!hasLastWorkout()" (click)="copyLastWorkout()">
+        📋 Copy Last Workout
+      </button>
+      
+      <div class="exercise-builder">
+        <h4>Exercises</h4>
+        <div class="add-exercise">
+          <input type="text" formControlName="exerciseName" placeholder="Exercise name">
+          <input type="number" formControlName="exerciseSets" placeholder="Sets" class="small">
+          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small">
+          <input type="text" formControlName="exerciseWeight" placeholder="Weight">
+          <button type="button" (click)="addExercise()">+ Add</button>
+        </div>
+        
+        <div class="exercise-list" *ngIf="exercises.length > 0">
+          <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
+            <span class="ex-name">{{ ex.name }}</span>
+            <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
+            <button type="button" class="remove-btn" (click)="removeExercise(i)">×</button>
+          </div>
+        </div>
+        
+        <div class="no-exercises" *ngIf="exercises.length === 0">
+          No exercises added
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" (click)="closeWorkoutPlanner()" class="cancel-btn">Cancel</button>
+        <button type="button" (click)="saveWorkoutPlan()" class="submit-btn">Save Plan</button>
+      </div>
+    </form>
+  </div>
 
-    <div *ngIf="!isLoadingEntries && entries.length === 0" class="no-entries">
-      No entries yet
+  <!-- Whoop Workout Editor Modal -->
+  <div class="modal-overlay" *ngIf="editingWhoopWorkout" (click)="closeWhoopWorkoutEditor()"></div>
+  <div class="modal workout-modal" *ngIf="editingWhoopWorkout">
+    <div class="modal-header">
+      <h3>{{ editingWhoopWorkout.sport }} - {{ editingWhoopWorkout.startTime }}</h3>
+      <button class="close-btn" (click)="closeWhoopWorkoutEditor()">×</button>
+    </div>
+    
+    <div class="whoop-summary">
+      <div class="summary-stat"><span>{{ editingWhoopWorkout.strain }}</span> Strain</div>
+      <div class="summary-stat"><span>{{ editingWhoopWorkout.duration }}m</span> Duration</div>
+      <div class="summary-stat"><span>{{ editingWhoopWorkout.calories }}</span> Calories</div>
+      <div class="summary-stat"><span>{{ editingWhoopWorkout.avgHR }}/{{ editingWhoopWorkout.maxHR }}</span> HR</div>
+    </div>
+    
+    <form [formGroup]="workoutForm" class="workout-form">
+      <div class="exercise-builder">
+        <h4>Exercises Performed</h4>
+        <div class="add-exercise">
+          <input type="text" formControlName="exerciseName" placeholder="Exercise name">
+          <input type="number" formControlName="exerciseSets" placeholder="Sets" class="small">
+          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small">
+          <input type="text" formControlName="exerciseWeight" placeholder="Weight">
+          <button type="button" (click)="addExercise()">+ Add</button>
+        </div>
+        
+        <div class="exercise-list" *ngIf="exercises.length > 0">
+          <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
+            <span class="ex-name">{{ ex.name }}</span>
+            <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
+            <button type="button" class="remove-btn" (click)="removeExercise(i)">×</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" (click)="closeWhoopWorkoutEditor()" class="cancel-btn">Cancel</button>
+        <button type="button" (click)="saveWhoopWorkoutExercises()" class="submit-btn">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Nutrition Panel Modal -->
+  <div class="modal-overlay" *ngIf="showNutritionPanel" (click)="closeNutritionPanel()"></div>
+  <div class="modal nutrition-modal" *ngIf="showNutritionPanel">
+    <div class="modal-header">
+      <h3>🥗 Plan Nutrition</h3>
+      <button class="close-btn" (click)="closeNutritionPanel()">×</button>
+    </div>
+    
+    <div class="nutrition-options">
+      <div class="nutrition-option" (click)="openMyFitnessPal()">
+        <div class="option-icon">📱</div>
+        <div class="option-content">
+          <h4>Open MyFitnessPal</h4>
+          <p>Log meals manually in the MyFitnessPal app or website</p>
+        </div>
+        <span class="option-arrow">↗</span>
+      </div>
+      
+      <div class="nutrition-option" [class.disabled]="!mfpConnected" (click)="importFromMyFitnessPal()">
+        <div class="option-icon">
+          <span *ngIf="!mfpLoading">🔄</span>
+          <span *ngIf="mfpLoading" class="spinner">⏳</span>
+        </div>
+        <div class="option-content">
+          <h4>Import from MyFitnessPal</h4>
+          <p *ngIf="!mfpConnected">Connect to automatically sync your meal data</p>
+          <p *ngIf="mfpConnected">Download today's meals and create entries</p>
+        </div>
+        <span class="option-badge" *ngIf="!mfpConnected">Coming Soon</span>
+        <span class="option-arrow" *ngIf="mfpConnected">→</span>
+      </div>
+    </div>
+    
+    <div class="nutrition-footer" *ngIf="!mfpConnected">
+      <p class="coming-soon-note">
+        🚧 MyFitnessPal integration is coming soon. For now, use the manual option.
+      </p>
+    </div>
+  </div>
+
+  <!-- Merge Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showMergePrompt" (click)="closeMergePrompt()"></div>
+  <div class="modal small-modal" *ngIf="showMergePrompt && whoopToMerge">
+    <div class="modal-header">
+      <h3>Link to Planned Workout</h3>
+      <button class="close-btn" (click)="closeMergePrompt()">×</button>
+    </div>
+    
+    <div class="merge-content">
+      <p>Merge <strong>{{ whoopToMerge.sport }}</strong> with your planned <strong>{{ getPlannedWorkout()?.type }}</strong>?</p>
+      <p class="merge-note">This adds Whoop stats and marks workout complete.</p>
+    </div>
+    
+    <div class="form-actions">
+      <button type="button" (click)="closeMergePrompt()" class="cancel-btn">Cancel</button>
+      <button type="button" (click)="mergeWhoopWithPlanned()" class="submit-btn">Merge</button>
+    </div>
+  </div>
+
+  <!-- Chat FAB -->
+  <button class="chat-fab" (click)="toggleChat()" [class.active]="showChat">
+    <span *ngIf="!showChat">🤖</span>
+    <span *ngIf="showChat">✕</span>
+  </button>
+
+  <!-- Chat Panel -->
+  <div class="chat-panel" *ngIf="showChat">
+    <div class="chat-header">
+      <h4>Jarvis AI</h4>
+      <div class="chat-actions">
+        <button class="analyze-btn" (click)="analyzeToday()" [disabled]="chatLoading">📊 Analyze</button>
+        <button class="clear-btn" (click)="clearChat()">🗑️</button>
+      </div>
+    </div>
+    
+    <div class="chat-messages">
+      <div class="chat-welcome" *ngIf="chatMessages.length === 0">
+        <p>👋 Ask me about your health data</p>
+      </div>
+      
+      <div class="chat-message" *ngFor="let msg of chatMessages" 
+           [class.user]="msg.role === 'user'"
+           [class.assistant]="msg.role === 'assistant'">
+        <div class="message-content">{{ msg.content }}</div>
+      </div>
+      
+      <div class="chat-loading" *ngIf="chatLoading">Thinking...</div>
+    </div>
+    
+    <div class="chat-input-area">
+      <input type="text" [(ngModel)]="chatInput" placeholder="Ask something..." (keyup.enter)="sendChatMessage()" [disabled]="chatLoading">
+      <button (click)="sendChatMessage()" [disabled]="chatLoading || !chatInput.trim()">➤</button>
     </div>
   </div>
 </div>

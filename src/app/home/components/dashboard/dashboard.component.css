@@ -1,0 +1,360 @@
+.dashboard {
+  background: #0f0f1a;
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid #2a2a4a;
+  transition: all 0.3s ease;
+}
+
+.stat-card.has-data {
+  border-color: rgba(0, 212, 170, 0.3);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-icon {
+  font-size: 1.75rem;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.stat-value .unit {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #888;
+  margin-left: 2px;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.loading-dashboard {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+
+/* Training Section */
+.training-section {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #2a2a4a;
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.plan-workout-btn {
+  padding: 0.5rem 1rem;
+  background: #00d4aa;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.plan-workout-btn:hover {
+  background: #00e6bb;
+}
+
+/* Planned Workout */
+.planned-workout {
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.planned-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.planned-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.planned-type {
+  font-weight: 600;
+  color: #00d4aa;
+}
+
+.planned-duration {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.complete-btn {
+  padding: 0.4rem 0.75rem;
+  background: transparent;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.complete-btn:hover {
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
+
+.complete-btn.completed {
+  background: #00d4aa;
+  border-color: #00d4aa;
+  color: #000;
+}
+
+/* Actual Stats */
+.actual-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.actual-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.actual-value {
+  font-weight: 600;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.actual-label {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+/* Exercise List */
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exercise-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+.exercise-name {
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.exercise-details {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Whoop Results */
+.whoop-results {
+  margin-top: 1rem;
+}
+
+.results-title {
+  font-size: 0.9rem;
+  color: #888;
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+}
+
+.workout-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.workout-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a4a;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.workout-card:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.workout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.workout-sport {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.workout-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.workout-time {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.merge-btn-small {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+}
+
+.edit-hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.workout-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.workout-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.workout-stat-value {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.workout-stat-label {
+  font-size: 0.7rem;
+  color: #666;
+}
+
+.no-workouts {
+  text-align: center;
+  padding: 1.5rem;
+  color: #666;
+}
+
+/* Dashboard Actions */
+.dashboard-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.edit-entry-btn {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-entry-btn:hover {
+  border-color: #00d4aa;
+  color: #00d4aa;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .stat-icon {
+    font-size: 1.25rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .actual-stats {
+    flex-wrap: wrap;
+  }
+  
+  .workout-stats {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
