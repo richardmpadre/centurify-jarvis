@@ -14,6 +14,32 @@ export interface HealthEntry {
   workoutCompleted?: boolean | null;
   trainingNotes?: string | null;
   morningChecklist?: string | null;
+  // Aggregate nutrition totals (individual meals in MealEntry table)
+  totalCalories?: number | null;
+  totalProtein?: number | null;
+  totalCarbs?: number | null;
+  totalFats?: number | null;
+  // User preferences
+  actionOrder?: string | null; // JSON array of action IDs
+}
+
+// Legacy PlannedMeal interface (kept for backward compatibility)
+export interface PlannedMeal {
+  id: string;
+  name: string;
+  type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  calories: number;
+  protein: number;
+  fats: number;
+  carbs: number;
+}
+
+// Daily nutrition summary
+export interface DailyNutrition {
+  totalCalories: number;
+  totalProtein: number;
+  totalFats: number;
+  totalCarbs: number;
 }
 
 // Exercise within a workout plan

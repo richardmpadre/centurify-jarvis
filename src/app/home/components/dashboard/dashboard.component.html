@@ -54,118 +54,57 @@
         <div class="stat-label">Daily Score</div>
       </div>
     </div>
+
+    <!-- Nutrition Cards -->
+    <div class="stat-card calories-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('calories') >= 100">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-content">
+        <div class="stat-value" *ngIf="mealEntries.length > 0">
+          {{ getCompletedNutrition().calories }}<span class="planned">/{{ getPlannedNutrition().calories }}</span><span class="unit">cal</span>
+        </div>
+        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-label">Calories</div>
+      </div>
+    </div>
+
+    <div class="stat-card protein-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('protein') >= 100">
+      <div class="stat-icon">🥩</div>
+      <div class="stat-content">
+        <div class="stat-value" *ngIf="mealEntries.length > 0">
+          {{ getCompletedNutrition().protein }}<span class="planned">/{{ getPlannedNutrition().protein }}</span><span class="unit">g</span>
+        </div>
+        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-label">Protein</div>
+      </div>
+    </div>
+
+    <div class="stat-card carbs-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('carbs') >= 100">
+      <div class="stat-icon">🍞</div>
+      <div class="stat-content">
+        <div class="stat-value" *ngIf="mealEntries.length > 0">
+          {{ getCompletedNutrition().carbs }}<span class="planned">/{{ getPlannedNutrition().carbs }}</span><span class="unit">g</span>
+        </div>
+        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-label">Carbs</div>
+      </div>
+    </div>
+
+    <div class="stat-card fats-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('fats') >= 100">
+      <div class="stat-icon">🥑</div>
+      <div class="stat-content">
+        <div class="stat-value" *ngIf="mealEntries.length > 0">
+          {{ getCompletedNutrition().fats }}<span class="planned">/{{ getPlannedNutrition().fats }}</span><span class="unit">g</span>
+        </div>
+        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-label">Fats</div>
+      </div>
+    </div>
   </div>
 
   <div class="loading-dashboard" *ngIf="isLoading">
     Loading dashboard...
   </div>
 
-  <!-- Training Section -->
-  <div class="training-section" *ngIf="!isLoading">
-    <div class="section-header">
-      <h3>🏋️ Training</h3>
-      <button class="plan-workout-btn" (click)="onPlanWorkout()">
-        {{ getPlannedWorkout() ? '✎ Edit Plan' : '+ Plan Workout' }}
-      </button>
-    </div>
-
-    <!-- Planned Workout Display -->
-    <div class="planned-workout" *ngIf="getPlannedWorkout() as planned">
-      <div class="planned-header">
-        <div class="planned-title">
-          <span class="planned-type">{{ planned.type }}</span>
-          <span class="planned-duration">{{ planned.targetDuration }} min target</span>
-        </div>
-        <div class="planned-actions">
-          <button 
-            class="complete-btn" 
-            [class.completed]="currentEntry?.workoutCompleted"
-            (click)="onToggleComplete()">
-            {{ currentEntry?.workoutCompleted ? '✓ Completed' : 'Mark Complete' }}
-          </button>
-        </div>
-      </div>
-      
-      <!-- Actual Stats from Whoop (if merged) -->
-      <div class="actual-stats" *ngIf="$any(planned).actualStrain">
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualStrain }}</span>
-          <span class="actual-label">Strain</span>
-        </div>
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualDuration }}m</span>
-          <span class="actual-label">Duration</span>
-        </div>
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualCalories }}</span>
-          <span class="actual-label">Calories</span>
-        </div>
-        <div class="actual-stat">
-          <span class="actual-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
-          <span class="actual-label">Avg/Max HR</span>
-        </div>
-      </div>
-      
-      <div class="exercise-list" *ngIf="planned.exercises?.length">
-        <div class="exercise-item" *ngFor="let ex of planned.exercises">
-          <span class="exercise-name">{{ ex.name }}</span>
-          <span class="exercise-details">
-            {{ ex.sets }} × {{ ex.reps }}
-            <span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span>
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Whoop Activities -->
-    <div class="whoop-results" *ngIf="whoopWorkouts.length > 0">
-      <h4 class="results-title">Whoop Activities</h4>
-      <div class="workout-cards">
-        <div class="workout-card clickable" 
-             *ngFor="let w of whoopWorkouts"
-             [class.has-exercises]="getWhoopWorkoutExercises(w).length > 0"
-             (click)="onOpenWhoopWorkout(w)">
-          <div class="workout-header">
-            <span class="workout-sport">{{ w.sport }}</span>
-            <div class="workout-header-right">
-              <span class="workout-time">{{ w.startTime }}</span>
-              <button 
-                class="merge-btn-small" 
-                *ngIf="hasPlannedWorkoutToMerge()"
-                (click)="onMergeWorkout(w, $event)"
-                title="Link to Planned Workout">
-                🔗
-              </button>
-              <span class="edit-hint">✎</span>
-            </div>
-          </div>
-          <div class="workout-stats">
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.strain }}</span>
-              <span class="workout-stat-label">Strain</span>
-            </div>
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.duration }}m</span>
-              <span class="workout-stat-label">Duration</span>
-            </div>
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.calories }}</span>
-              <span class="workout-stat-label">kcal</span>
-            </div>
-            <div class="workout-stat">
-              <span class="workout-stat-value">{{ w.avgHR }}/{{ w.maxHR }}</span>
-              <span class="workout-stat-label">HR</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- No workout message -->
-    <div class="no-workouts" *ngIf="!getPlannedWorkout() && whoopWorkouts.length === 0">
-      No workout planned for this day
-    </div>
-  </div>
 
   <!-- Edit Entry Button -->
   <div class="dashboard-actions" *ngIf="currentEntry && !isLoading">

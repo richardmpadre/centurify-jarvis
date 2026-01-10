@@ -5,12 +5,15 @@ import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../services/health-data.service';
 import { WhoopService } from '../services/whoop.service';
 import { ChatService, ChatMessage } from '../services/chat.service';
+import { MealService, Meal } from '../services/meal.service';
+import { MealEntryService, MealEntry } from '../services/meal-entry.service';
 import { ActionListComponent, ActionItem } from './components/action-list/action-list.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { 
   HealthEntry, 
   PlannedExercise, 
   PlannedWorkout, 
+  PlannedMeal,
   WhoopWorkout 
 } from '../models/health.models';
 import { 
@@ -78,8 +81,19 @@ export class HomeComponent implements OnInit {
   
   // Nutrition panel
   showNutritionPanel = false;
-  mfpConnected = false;
-  mfpLoading = false;
+  
+  // Meal planning - now using MealEntry table
+  mealEntries: MealEntry[] = [];
+  savedMeals: Meal[] = [];
+  selectedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
+  isLoadingMeals = false;
+  
+  // Meal detail panel
+  showMealDetailPanel = false;
+  mealDetailType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
+  
+  // Training completion panel
+  showTrainingPanel = false;
   
   // Chat
   showChat = false;
@@ -91,7 +105,9 @@ export class HomeComponent implements OnInit {
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
     private whoopService: WhoopService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private mealService: MealService,
+    private mealEntryService: MealEntryService
   ) {
     this.healthForm = this.fb.group({
       date: [this.selectedDate, Validators.required],
@@ -129,6 +145,7 @@ export class HomeComponent implements OnInit {
     const hasRecovery = this.currentEntry?.recovery != null;
     const hasWorkoutPlan = this.getPlannedWorkout() !== null;
     const workoutCompleted = this.currentEntry?.workoutCompleted === true;
+    const hasMeals = this.mealEntries.length > 0;
     
     // Define all actions
     const allActions: { [id: string]: ActionItem } = {
@@ -154,11 +171,10 @@ export class HomeComponent implements OnInit {
       'nutrition': {
         id: 'nutrition',
         title: 'Plan Nutrition',
-        description: 'Log meals in MyFitnessPal',
+        description: hasMeals ? 'Meals planned for the day' : 'Plan your meals',
         icon: '🥗',
-        status: 'pending',
-        type: 'nutrition',
-        externalLink: 'https://www.myfitnesspal.com/food/diary'
+        status: hasMeals ? 'completed' : 'pending',
+        type: 'nutrition'
       },
       'complete_workout': {
         id: 'complete_workout',
@@ -197,8 +213,90 @@ export class HomeComponent implements OnInit {
       .filter(id => allActions[id]) // Only include valid IDs
       .map(id => allActions[id]);
     
+    // Add meal actions if nutrition is planned
+    if (hasMeals) {
+      const mealActions = this.buildMealActions();
+      // Insert meal actions after the nutrition action
+      const nutritionIndex = this.dailyActions.findIndex(a => a.id === 'nutrition');
+      if (nutritionIndex !== -1) {
+        this.dailyActions.splice(nutritionIndex + 1, 0, ...mealActions);
+      } else {
+        this.dailyActions.push(...mealActions);
+      }
+    }
+    
     // Load saved action states from entry
     this.loadActionStates();
+  }
+  
+  buildMealActions(): ActionItem[] {
+    const mealsByType: { [key: string]: MealEntry[] } = {
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+      snack: []
+    };
+    
+    // Group meals by type
+    this.mealEntries.forEach(meal => {
+      if (mealsByType[meal.mealType]) {
+        mealsByType[meal.mealType].push(meal);
+      }
+    });
+    
+    const actions: ActionItem[] = [];
+    const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const mealIcons: { [key: string]: string } = {
+      breakfast: '🌅',
+      lunch: '☀️',
+      dinner: '🌙',
+      snack: '🍎'
+    };
+    const mealLabels: { [key: string]: string } = {
+      breakfast: 'Breakfast',
+      lunch: 'Lunch',
+      dinner: 'Dinner',
+      snack: 'Snack'
+    };
+    
+    mealOrder.forEach(type => {
+      const typeMeals = mealsByType[type];
+      if (typeMeals.length > 0) {
+        const mealNames = typeMeals.map(m => m.name).join(', ');
+        const totalCals = typeMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
+        const allCompleted = typeMeals.every(m => m.completed);
+        
+        actions.push({
+          id: `meal_${type}`,
+          title: mealLabels[type],
+          description: `${mealNames} (${totalCals} cal)`,
+          icon: mealIcons[type],
+          status: allCompleted ? 'completed' : 'pending',
+          type: 'meal',
+          mealType: type as 'breakfast' | 'lunch' | 'dinner' | 'snack'
+        });
+      }
+    });
+    
+    return actions;
+  }
+  
+  async toggleMealTypeCompleted(mealType: string): Promise<void> {
+    const typeMeals = this.mealEntries.filter(m => m.mealType === mealType);
+    const allCompleted = typeMeals.every(m => m.completed);
+    
+    // Toggle all meals of this type
+    for (const meal of typeMeals) {
+      await this.mealEntryService.toggleMealCompleted(meal.id, !allCompleted);
+    }
+    
+    // Reload meal entries
+    await this.loadMealEntries();
+    
+    // Update HealthEntry with nutrition totals (only counts completed meals)
+    await this.updateNutritionTotals();
+    
+    this.buildDailyActions();
   }
   
   getActionOrder(): string[] {
@@ -231,14 +329,22 @@ export class HomeComponent implements OnInit {
   loadActionStates() {
     if (!this.currentEntry?.morningChecklist) return;
     
+    // Actions that derive status from database fields - don't override with morningChecklist
+    const autoStatusActions = ['biometrics', 'workout', 'nutrition', 'complete_workout'];
+    
     try {
       const saved = JSON.parse(this.currentEntry.morningChecklist);
       this.dailyActions.forEach(action => {
-        // Saved state takes priority - can be true (completed) or false (explicitly uncompleted)
+        // Skip meal actions - their status comes from MealEntry.completed
+        if (action.type === 'meal') return;
+        
+        // Skip actions that derive status from database fields
+        if (autoStatusActions.includes(action.id)) return;
+        
+        // Saved state takes priority for manual actions (lifeEvents, jarvis, etc.)
         if (saved[action.id] === true) {
           action.status = 'completed';
         } else if (saved[action.id] === false) {
-          // User explicitly marked as incomplete - override auto-detection
           action.status = 'pending';
         }
       });
@@ -261,12 +367,19 @@ export class HomeComponent implements OnInit {
         
       case 'custom':
         if (action.id === 'complete_workout') {
-          await this.toggleWorkoutCompleted();
+          this.openTrainingPanel();
         }
         break;
         
       case 'nutrition':
         this.openNutritionPanel();
+        break;
+        
+      case 'meal':
+        // Open meal detail panel
+        if (action.mealType) {
+          this.openMealDetailPanel(action.mealType);
+        }
         break;
         
       case 'life_events':
@@ -304,13 +417,20 @@ export class HomeComponent implements OnInit {
       } catch { /* ignore */ }
     }
     
-    // Update with current action states
+    // Actions that derive status from database fields - don't save to morningChecklist
+    const autoStatusActions = ['biometrics', 'workout', 'nutrition', 'complete_workout'];
+    
+    // Update with current action states for manual actions only
     this.dailyActions.forEach(action => {
+      // Skip meal actions - their completion is stored in MealEntry.completed
+      if (action.type === 'meal') return;
+      
+      // Skip actions that derive status from database fields
+      if (autoStatusActions.includes(action.id)) return;
+      
       if (action.status === 'completed') {
         states[action.id] = true;
       } else {
-        // Explicitly save as false if it was previously completed (user uncompleted it)
-        // or if we have no prior state for it
         states[action.id] = false;
       }
     });
@@ -494,6 +614,20 @@ export class HomeComponent implements OnInit {
     }
   }
   
+  // Training Panel
+  openTrainingPanel(): void {
+    this.showTrainingPanel = true;
+  }
+  
+  closeTrainingPanel(): void {
+    this.showTrainingPanel = false;
+  }
+  
+  async markWorkoutCompleteAndClose(): Promise<void> {
+    await this.toggleWorkoutCompleted();
+    this.closeTrainingPanel();
+  }
+  
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
     try {
@@ -613,6 +747,10 @@ export class HomeComponent implements OnInit {
     try {
       this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
       this.loadWhoopWorkoutExercises();
+      
+      // Load meal entries from database
+      await this.loadMealEntries();
+      
       this.buildDailyActions();
       
       if (this.whoopConnected) {
@@ -910,44 +1048,204 @@ export class HomeComponent implements OnInit {
 
   // ==================== NUTRITION ====================
   
-  openNutritionPanel(): void {
+  async openNutritionPanel(): Promise<void> {
     this.showNutritionPanel = true;
+    await this.loadMealEntries();
+    await this.loadSavedMeals();
   }
   
   closeNutritionPanel(): void {
     this.showNutritionPanel = false;
   }
   
-  async openMyFitnessPal(): Promise<void> {
-    window.open('https://www.myfitnesspal.com/food/diary', '_blank');
+  // Meal Detail Panel - for viewing/editing specific meal type
+  async openMealDetailPanel(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): Promise<void> {
+    this.mealDetailType = mealType;
+    this.showMealDetailPanel = true;
+    await this.loadSavedMeals();
+  }
+  
+  closeMealDetailPanel(): void {
+    this.showMealDetailPanel = false;
+  }
+  
+  getMealsForDetailType(): MealEntry[] {
+    return this.mealEntries.filter(m => m.mealType === this.mealDetailType);
+  }
+  
+  async addMealToType(mealId: string): Promise<void> {
+    const savedMeal = this.savedMeals.find(m => m.id === mealId);
+    if (!savedMeal) return;
+    
+    const created = await this.mealEntryService.createMealEntry({
+      date: this.selectedDate,
+      mealType: this.mealDetailType,
+      name: savedMeal.name,
+      calories: savedMeal.calories,
+      protein: savedMeal.protein,
+      carbs: savedMeal.carbs,
+      fats: savedMeal.fats,
+      completed: false,
+      mealId: savedMeal.id
+    });
+    
+    if (created) {
+      this.mealEntries.push(created);
+      await this.updateNutritionTotals();
+      this.buildDailyActions();
+    }
+  }
+  
+  async markMealTypeComplete(): Promise<void> {
+    await this.toggleMealTypeCompleted(this.mealDetailType);
+    this.closeMealDetailPanel();
+  }
+  
+  getMealDetailTotals(): { calories: number; protein: number; fats: number; carbs: number } {
+    const meals = this.getMealsForDetailType();
+    return meals.reduce((totals, meal) => ({
+      calories: totals.calories + (meal.calories || 0),
+      protein: totals.protein + (meal.protein || 0),
+      fats: totals.fats + (meal.fats || 0),
+      carbs: totals.carbs + (meal.carbs || 0)
+    }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+  }
+  
+  isMealTypeCompleted(): boolean {
+    const meals = this.getMealsForDetailType();
+    return meals.length > 0 && meals.every(m => m.completed);
+  }
+  
+  async loadMealEntries(): Promise<void> {
+    this.isLoadingMeals = true;
+    try {
+      this.mealEntries = await this.mealEntryService.getMealEntriesForDate(this.selectedDate);
+    } catch (error) {
+      console.error('Error loading meal entries:', error);
+      this.mealEntries = [];
+    } finally {
+      this.isLoadingMeals = false;
+    }
+  }
+  
+  async loadSavedMeals(): Promise<void> {
+    try {
+      this.savedMeals = await this.mealService.getAllMeals();
+    } catch (error) {
+      console.error('Error loading saved meals:', error);
+      this.savedMeals = [];
+    }
+  }
+  
+  // No longer filtering by type - all meals are shown in dropdown
+  getAllSavedMeals(): Meal[] {
+    return this.savedMeals;
+  }
+  
+  selectMealType(type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): void {
+    this.selectedMealType = type;
+  }
+  
+  async onMealDropdownChange(event: Event): Promise<void> {
+    const select = event.target as HTMLSelectElement;
+    const mealId = select.value;
+    
+    if (!mealId) return;
+    
+    const savedMeal = this.savedMeals.find(m => m.id === mealId);
+    if (!savedMeal) return;
+    
+    // Create a new MealEntry in the database
+    const created = await this.mealEntryService.createMealEntry({
+      date: this.selectedDate,
+      mealType: this.selectedMealType,
+      name: savedMeal.name,
+      calories: savedMeal.calories,
+      protein: savedMeal.protein,
+      carbs: savedMeal.carbs,
+      fats: savedMeal.fats,
+      completed: false,
+      mealId: savedMeal.id
+    });
+    
+    if (created) {
+      this.mealEntries.push(created);
+      await this.updateNutritionTotals();
+    }
+    
+    // Reset dropdown
+    select.value = '';
+  }
+  
+  async removeMeal(mealId: string): Promise<void> {
+    const success = await this.mealEntryService.deleteMealEntry(mealId);
+    if (success) {
+      this.mealEntries = this.mealEntries.filter(m => m.id !== mealId);
+      await this.updateNutritionTotals();
+      this.buildDailyActions();
+    }
+  }
+  
+  async updateNutritionTotals(): Promise<void> {
+    // Only count COMPLETED meals in the dashboard totals
+    const completedMeals = this.mealEntries.filter(m => m.completed);
+    const totals = this.mealEntryService.calculateDailyTotals(completedMeals);
+    
+    // Update HealthEntry with aggregate nutrition from completed meals
+    const payload = {
+      date: this.selectedDate,
+      totalCalories: totals.totalCalories,
+      totalProtein: totals.totalProtein,
+      totalCarbs: totals.totalCarbs,
+      totalFats: totals.totalFats
+    };
+    
+    try {
+      if (this.currentEntry?.id) {
+        await this.healthDataService.updateEntry({ id: this.currentEntry.id, ...payload });
+      } else {
+        await this.healthDataService.saveEntry(payload);
+      }
+      
+      await this.loadEntries();
+      this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
+    } catch (error) {
+      console.error('Error updating nutrition totals:', error);
+    }
+  }
+  
+  async saveNutritionPlan(): Promise<void> {
+    if (this.mealEntries.length === 0) return;
+    
+    await this.updateNutritionTotals();
     await this.markActionComplete('nutrition');
+    
+    // Rebuild actions to include meal entries
+    this.buildDailyActions();
+    
     this.closeNutritionPanel();
   }
   
-  async importFromMyFitnessPal(): Promise<void> {
-    // TODO: Implement MyFitnessPal OAuth integration
-    // This would require:
-    // 1. Setting up MFP API credentials
-    // 2. Creating a Lambda function for MFP OAuth (similar to Whoop)
-    // 3. Fetching meal data from MFP API
-    // 4. Creating nutrition entries in the app
-    
-    this.mfpLoading = true;
-    
-    try {
-      // Placeholder - show not implemented message
-      alert('MyFitnessPal integration coming soon! For now, please log meals manually in MyFitnessPal.');
-      
-      // When implemented, this would:
-      // 1. Check if connected to MFP
-      // 2. Fetch today's meals
-      // 3. Create entries for breakfast, lunch, dinner, snacks
-      // 4. Mark the nutrition action as complete
-      
-    } catch (error) {
-      console.error('MFP import error:', error);
-    } finally {
-      this.mfpLoading = false;
+  getNutritionTotals(): { calories: number; protein: number; fats: number; carbs: number } {
+    return this.mealEntries.reduce((totals, meal) => ({
+      calories: totals.calories + (meal.calories || 0),
+      protein: totals.protein + (meal.protein || 0),
+      fats: totals.fats + (meal.fats || 0),
+      carbs: totals.carbs + (meal.carbs || 0)
+    }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+  }
+  
+  getMealTypeIcon(type: string): string {
+    switch (type) {
+      case 'breakfast': return '🌅';
+      case 'lunch': return '☀️';
+      case 'dinner': return '🌙';
+      case 'snack': return '🍎';
+      default: return '🍽️';
     }
+  }
+  
+  getMealTypeLabel(type: string): string {
+    return type.charAt(0).toUpperCase() + type.slice(1);
   }
 }

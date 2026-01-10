@@ -1,0 +1,138 @@
+<div class="nutrition-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <a routerLink="/" class="back-link">← Back</a>
+      <h1>🥗 Nutrition</h1>
+    </div>
+    <button class="add-btn" (click)="openAddForm()">
+      + Add Meal
+    </button>
+  </header>
+
+  <!-- Stats Summary -->
+  <div class="stats-summary" *ngIf="meals.length > 0 && !isLoading">
+    <div class="stat-box">
+      <span class="stat-number">{{ meals.length }}</span>
+      <span class="stat-label">Meals Saved</span>
+    </div>
+    <div class="stat-box calories">
+      <span class="stat-number">{{ getAverageCalories() }}</span>
+      <span class="stat-label">Avg Cal/Meal</span>
+    </div>
+    <div class="stat-box protein">
+      <span class="stat-number">{{ getTotalProtein() }}g</span>
+      <span class="stat-label">Total Protein</span>
+    </div>
+    <div class="stat-box carbs">
+      <span class="stat-number">{{ getTotalCarbs() }}g</span>
+      <span class="stat-label">Total Carbs</span>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="controls">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        placeholder="Search meals..." 
+        [value]="searchQuery"
+        (input)="onSearchChange($event)">
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner">⏳</div>
+    <p>Loading meals...</p>
+  </div>
+
+  <!-- Meals Grid -->
+  <div class="meals-grid" *ngIf="filteredMeals.length > 0 && !isLoading">
+    <div class="meal-card" *ngFor="let meal of filteredMeals">
+      <div class="meal-card-header">
+        <h3 class="meal-name">{{ meal.name }}</h3>
+        <div class="meal-actions">
+          <button class="action-icon" title="Duplicate" (click)="duplicateMeal(meal)">📋</button>
+          <button class="action-icon" title="Edit" (click)="openEditForm(meal)">✏️</button>
+          <button class="action-icon delete" title="Delete" (click)="deleteMeal(meal)">🗑️</button>
+        </div>
+      </div>
+      
+      <div class="meal-macros">
+        <div class="macro calories">
+          <span class="macro-value">{{ meal.calories }}</span>
+          <span class="macro-label">cal</span>
+        </div>
+        <div class="macro protein">
+          <span class="macro-value">{{ meal.protein }}g</span>
+          <span class="macro-label">protein</span>
+        </div>
+        <div class="macro carbs">
+          <span class="macro-value">{{ meal.carbs }}g</span>
+          <span class="macro-label">carbs</span>
+        </div>
+        <div class="macro fats">
+          <span class="macro-value">{{ meal.fats }}g</span>
+          <span class="macro-label">fats</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="meals.length === 0 && !isLoading">
+    <div class="empty-icon">🍽️</div>
+    <h2>No meals yet</h2>
+    <p>Start building your meal library by adding your first meal.</p>
+    <button class="add-btn large" (click)="openAddForm()">+ Add Your First Meal</button>
+  </div>
+
+  <!-- No Results -->
+  <div class="no-results" *ngIf="meals.length > 0 && filteredMeals.length === 0 && !isLoading">
+    <p>No meals match your search or filter.</p>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+  <div class="modal" *ngIf="showForm">
+    <div class="modal-header">
+      <h3>{{ editingMealId ? 'Edit Meal' : 'Add New Meal' }}</h3>
+      <button class="close-btn" (click)="closeForm()">×</button>
+    </div>
+    
+    <form [formGroup]="mealForm" (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <label>Meal Name *</label>
+        <input type="text" formControlName="name" placeholder="e.g., Grilled Chicken Salad">
+      </div>
+      
+      <div class="macros-grid">
+        <div class="form-group">
+          <label>Calories *</label>
+          <input type="number" formControlName="calories" min="0">
+        </div>
+        <div class="form-group">
+          <label>Protein (g)</label>
+          <input type="number" formControlName="protein" min="0">
+        </div>
+        <div class="form-group">
+          <label>Carbs (g)</label>
+          <input type="number" formControlName="carbs" min="0">
+        </div>
+        <div class="form-group">
+          <label>Fats (g)</label>
+          <input type="number" formControlName="fats" min="0">
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="closeForm()" [disabled]="isSaving">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="!mealForm.valid || isSaving">
+          {{ isSaving ? 'Saving...' : (editingMealId ? 'Save Changes' : 'Add Meal') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

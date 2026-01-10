@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HealthEntry, PlannedWorkout, WhoopWorkout, PlannedExercise } from '../../../models/health.models';
+import { MealEntry } from '../../../services/meal-entry.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,6 +13,7 @@ import { HealthEntry, PlannedWorkout, WhoopWorkout, PlannedExercise } from '../.
 export class DashboardComponent {
   @Input() currentEntry: HealthEntry | null = null;
   @Input() whoopWorkouts: WhoopWorkout[] = [];
+  @Input() mealEntries: MealEntry[] = [];
   @Input() isLoading = false;
   @Input() selectedDate = '';
   
@@ -66,4 +68,38 @@ export class DashboardComponent {
       return [];
     }
   }
+
+  // Nutrition - calculate from meal entries directly for accuracy
+  getCompletedNutrition(): { calories: number; protein: number; fats: number; carbs: number } {
+    // Only count meals that are marked as completed
+    const completedMeals = this.mealEntries.filter(m => m.completed);
+    return completedMeals.reduce((totals, meal) => ({
+      calories: totals.calories + (meal.calories || 0),
+      protein: totals.protein + (meal.protein || 0),
+      carbs: totals.carbs + (meal.carbs || 0),
+      fats: totals.fats + (meal.fats || 0)
+    }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+  }
+
+  getPlannedNutrition(): { calories: number; protein: number; fats: number; carbs: number } {
+    // All planned meals (completed or not)
+    return this.mealEntries.reduce((totals, meal) => ({
+      calories: totals.calories + (meal.calories || 0),
+      protein: totals.protein + (meal.protein || 0),
+      carbs: totals.carbs + (meal.carbs || 0),
+      fats: totals.fats + (meal.fats || 0)
+    }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+  }
+
+  hasNutritionData(): boolean {
+    return this.mealEntries.length > 0 || (this.currentEntry?.totalCalories ?? 0) > 0;
+  }
+
+  getNutritionProgress(type: 'calories' | 'protein' | 'carbs' | 'fats'): number {
+    const completed = this.getCompletedNutrition()[type];
+    const planned = this.getPlannedNutrition()[type];
+    if (planned === 0) return 0;
+    return Math.round((completed / planned) * 100);
+  }
+
 }

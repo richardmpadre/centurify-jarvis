@@ -25,6 +25,27 @@
   border-color: rgba(0, 212, 170, 0.3);
 }
 
+/* Nutrition Card Colors */
+.calories-card.has-data {
+  border-color: rgba(255, 165, 0, 0.4);
+  background: linear-gradient(135deg, #1a1a2e 0%, #2a1a0e 100%);
+}
+
+.protein-card.has-data {
+  border-color: rgba(220, 53, 69, 0.4);
+  background: linear-gradient(135deg, #1a1a2e 0%, #2a0e14 100%);
+}
+
+.carbs-card.has-data {
+  border-color: rgba(255, 193, 7, 0.4);
+  background: linear-gradient(135deg, #1a1a2e 0%, #2a2a0e 100%);
+}
+
+.fats-card.has-data {
+  border-color: rgba(40, 167, 69, 0.4);
+  background: linear-gradient(135deg, #1a1a2e 0%, #0e2a14 100%);
+}
+
 .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -49,6 +70,21 @@
   font-weight: 400;
   color: #888;
   margin-left: 2px;
+}
+
+.stat-value .planned {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #666;
+}
+
+/* Complete state for nutrition cards */
+.stat-card.complete {
+  border-color: rgba(0, 212, 170, 0.5) !important;
+}
+
+.stat-card.complete .stat-value {
+  color: #00d4aa;
 }
 
 .stat-label {
@@ -296,6 +332,87 @@
 }
 
 .no-workouts {
+  text-align: center;
+  padding: 1.5rem;
+  color: #666;
+}
+
+/* Nutrition Section */
+.nutrition-section {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #2a2a4a;
+  margin-bottom: 1.5rem;
+}
+
+.nutrition-dashboard-totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(0, 212, 170, 0.1);
+  border-radius: 12px;
+}
+
+.nutrition-total {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.nutrition-total-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #00d4aa;
+}
+
+.nutrition-total-value .planned {
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #666;
+}
+
+.nutrition-total-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.dashboard-meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dashboard-meal-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.meal-type-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.dashboard-meal-name {
+  flex: 1;
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.dashboard-meal-cals {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.no-meals {
   text-align: center;
   padding: 1.5rem;
   color: #666;

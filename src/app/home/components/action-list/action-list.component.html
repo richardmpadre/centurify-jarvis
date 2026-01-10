@@ -26,45 +26,90 @@
     <div class="progress-bar" [style.width.%]="progressPercent"></div>
   </div>
 
-  <!-- Action Items -->
+  <!-- Pending Action Items -->
   <div class="action-items" *ngIf="!collapsed || !isAllComplete || editMode">
     <div class="loading" *ngIf="isLoading">Loading actions...</div>
     
-    <div 
-      class="action-item" 
-      *ngFor="let action of visibleActions; let i = index; let first = first; let last = last"
-      [class.completed]="action.status === 'completed'"
-      [class.in-progress]="action.status === 'in_progress'"
-      [class.edit-item]="editMode"
-      (click)="onActionClick(action)">
-      
-      <!-- Reorder Buttons (Edit Mode) -->
-      <div class="reorder-buttons" *ngIf="editMode">
-        <button class="reorder-btn" (click)="moveUp(i, $event)" [disabled]="first">▲</button>
-        <button class="reorder-btn" (click)="moveDown(i, $event)" [disabled]="last">▼</button>
+    <!-- Edit Mode: Show all actions -->
+    <ng-container *ngIf="editMode">
+      <div 
+        class="action-item edit-item" 
+        *ngFor="let action of visibleActions; let i = index; let first = first; let last = last"
+        [class.completed]="action.status === 'completed'">
+        
+        <div class="reorder-buttons">
+          <button class="reorder-btn" (click)="moveUp(i, $event)" [disabled]="first">▲</button>
+          <button class="reorder-btn" (click)="moveDown(i, $event)" [disabled]="last">▼</button>
+        </div>
+        
+        <div class="action-icon">{{ action.icon }}</div>
+        
+        <div class="action-content">
+          <span class="action-title">{{ action.title }}</span>
+          <span class="action-desc">{{ action.description }}</span>
+        </div>
       </div>
-      
-      <div class="action-check" *ngIf="!editMode">
-        <span *ngIf="action.status === 'completed'">✓</span>
-        <span *ngIf="action.status === 'in_progress'" class="spinner">⏳</span>
+    </ng-container>
+    
+    <!-- Normal Mode: Pending actions -->
+    <ng-container *ngIf="!editMode">
+      <div 
+        class="action-item" 
+        *ngFor="let action of pendingActions"
+        [class.in-progress]="action.status === 'in_progress'"
+        (click)="onActionClick(action)">
+        
+        <div class="action-check">
+          <span *ngIf="action.status === 'in_progress'" class="spinner">⏳</span>
+        </div>
+        
+        <div class="action-icon">{{ action.icon }}</div>
+        
+        <div class="action-content">
+          <span class="action-title">{{ action.title }}</span>
+          <span class="action-desc">{{ action.description }}</span>
+        </div>
+        
+        <div class="action-arrow">
+          <span *ngIf="action.externalLink">↗</span>
+          <span *ngIf="!action.externalLink">→</span>
+        </div>
       </div>
-      
-      <div class="action-icon">{{ action.icon }}</div>
-      
-      <div class="action-content">
-        <span class="action-title">{{ action.title }}</span>
-        <span class="action-desc">{{ action.description }}</span>
-      </div>
-      
-      <div class="action-arrow" *ngIf="!editMode">
-        <span *ngIf="action.status === 'completed'" class="undo-hint" title="Click to undo">↩</span>
-        <span *ngIf="action.status !== 'completed' && action.externalLink">↗</span>
-        <span *ngIf="action.status !== 'completed' && !action.externalLink">→</span>
-      </div>
-    </div>
 
-    <div class="no-actions" *ngIf="!isLoading && visibleActions.length === 0">
-      No actions for today
+      <div class="no-actions" *ngIf="!isLoading && pendingActions.length === 0 && completedActions.length === 0">
+        No actions for today
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Completed Section -->
+  <div class="completed-section" *ngIf="!editMode && completedActions.length > 0 && (!collapsed || !isAllComplete)">
+    <div class="completed-header" (click)="toggleCompletedSection()">
+      <span class="completed-label">✓ Completed ({{ completedActions.length }})</span>
+      <span class="completed-toggle">{{ completedCollapsed ? '▶' : '▼' }}</span>
+    </div>
+    
+    <div class="completed-items" *ngIf="!completedCollapsed">
+      <div 
+        class="action-item completed" 
+        *ngFor="let action of completedActions"
+        (click)="onActionClick(action)">
+        
+        <div class="action-check">
+          <span>✓</span>
+        </div>
+        
+        <div class="action-icon">{{ action.icon }}</div>
+        
+        <div class="action-content">
+          <span class="action-title">{{ action.title }}</span>
+          <span class="action-desc">{{ action.description }}</span>
+        </div>
+        
+        <div class="action-arrow">
+          <span class="undo-hint" title="Click to undo">↩</span>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -25,6 +25,11 @@ export class HealthDataService {
     plannedWorkout?: string;
     workoutCompleted?: boolean;
     morningChecklist?: string;
+    totalCalories?: number;
+    totalProtein?: number;
+    totalCarbs?: number;
+    totalFats?: number;
+    actionOrder?: string;
   }) {
     const { data, errors } = await this.client.models.HealthEntry.create(entry as any);
 
@@ -53,6 +58,11 @@ export class HealthDataService {
     plannedWorkout?: string;
     workoutCompleted?: boolean;
     morningChecklist?: string;
+    totalCalories?: number;
+    totalProtein?: number;
+    totalCarbs?: number;
+    totalFats?: number;
+    actionOrder?: string;
   }) {
     const { data, errors } = await this.client.models.HealthEntry.update(entry as any);
 

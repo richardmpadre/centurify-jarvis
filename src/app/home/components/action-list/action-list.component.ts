@@ -7,11 +7,12 @@ export interface ActionItem {
   description: string;
   icon: string;
   status: 'pending' | 'in_progress' | 'completed';
-  type: 'biometrics' | 'workout' | 'nutrition' | 'life_events' | 'jarvis' | 'custom';
+  type: 'biometrics' | 'workout' | 'nutrition' | 'life_events' | 'jarvis' | 'custom' | 'meal';
   priority?: number;
   dependsOn?: string[]; // IDs of actions that must complete first
   createsEntry?: string; // Type of entry this creates when completed
   externalLink?: string;
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'; // For meal actions
 }
 
 @Component({
@@ -33,6 +34,8 @@ export class ActionListComponent {
   @Output() reorder = new EventEmitter<string[]>(); // Emits new order of IDs
   @Output() toggleEditMode = new EventEmitter<void>();
 
+  completedCollapsed = true; // Completed section collapsed by default
+
   get completedCount(): number {
     return this.actions.filter(a => a.status === 'completed').length;
   }
@@ -50,6 +53,24 @@ export class ActionListComponent {
     return this.completedCount === this.totalCount && this.totalCount > 0;
   }
 
+  get pendingActions(): ActionItem[] {
+    const pending = this.actions.filter(a => a.status !== 'completed');
+    if (this.editMode) {
+      return pending;
+    }
+    // Filter out actions whose dependencies aren't met
+    return pending.filter(action => {
+      if (!action.dependsOn || action.dependsOn.length === 0) return true;
+      return action.dependsOn.every(depId => 
+        this.actions.find(a => a.id === depId)?.status === 'completed'
+      );
+    });
+  }
+
+  get completedActions(): ActionItem[] {
+    return this.actions.filter(a => a.status === 'completed');
+  }
+
   get visibleActions(): ActionItem[] {
     if (this.editMode) {
       // Show all actions in edit mode
@@ -62,6 +83,10 @@ export class ActionListComponent {
         this.actions.find(a => a.id === depId)?.status === 'completed'
       );
     });
+  }
+
+  toggleCompletedSection(): void {
+    this.completedCollapsed = !this.completedCollapsed;
   }
 
   onActionClick(action: ActionItem): void {

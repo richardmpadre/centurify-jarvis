@@ -82,6 +82,7 @@
       <app-dashboard
         [currentEntry]="currentEntry"
         [whoopWorkouts]="whoopWorkouts"
+        [mealEntries]="mealEntries"
         [isLoading]="isLoadingDashboard"
         [selectedDate]="selectedDate"
         (editEntry)="editEntry()"
@@ -272,35 +273,245 @@
       <button class="close-btn" (click)="closeNutritionPanel()">×</button>
     </div>
     
-    <div class="nutrition-options">
-      <div class="nutrition-option" (click)="openMyFitnessPal()">
-        <div class="option-icon">📱</div>
-        <div class="option-content">
-          <h4>Open MyFitnessPal</h4>
-          <p>Log meals manually in the MyFitnessPal app or website</p>
-        </div>
-        <span class="option-arrow">↗</span>
+    <!-- Daily Totals -->
+    <div class="nutrition-totals" *ngIf="mealEntries.length > 0">
+      <div class="total-item">
+        <span class="total-value">{{ getNutritionTotals().calories }}</span>
+        <span class="total-label">Calories</span>
       </div>
-      
-      <div class="nutrition-option" [class.disabled]="!mfpConnected" (click)="importFromMyFitnessPal()">
-        <div class="option-icon">
-          <span *ngIf="!mfpLoading">🔄</span>
-          <span *ngIf="mfpLoading" class="spinner">⏳</span>
-        </div>
-        <div class="option-content">
-          <h4>Import from MyFitnessPal</h4>
-          <p *ngIf="!mfpConnected">Connect to automatically sync your meal data</p>
-          <p *ngIf="mfpConnected">Download today's meals and create entries</p>
-        </div>
-        <span class="option-badge" *ngIf="!mfpConnected">Coming Soon</span>
-        <span class="option-arrow" *ngIf="mfpConnected">→</span>
+      <div class="total-item">
+        <span class="total-value">{{ getNutritionTotals().protein }}g</span>
+        <span class="total-label">Protein</span>
+      </div>
+      <div class="total-item">
+        <span class="total-value">{{ getNutritionTotals().carbs }}g</span>
+        <span class="total-label">Carbs</span>
+      </div>
+      <div class="total-item">
+        <span class="total-value">{{ getNutritionTotals().fats }}g</span>
+        <span class="total-label">Fats</span>
       </div>
     </div>
     
-    <div class="nutrition-footer" *ngIf="!mfpConnected">
-      <p class="coming-soon-note">
-        🚧 MyFitnessPal integration is coming soon. For now, use the manual option.
-      </p>
+    <!-- Today's Meals -->
+    <div class="meal-list" *ngIf="mealEntries.length > 0">
+      <h4 class="section-label">Today's Meals</h4>
+      <div class="meal-item" *ngFor="let meal of mealEntries">
+        <div class="meal-icon">{{ getMealTypeIcon(meal.mealType) }}</div>
+        <div class="meal-info">
+          <span class="meal-name">{{ meal.name }}</span>
+          <span class="meal-macros">{{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f</span>
+        </div>
+        <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+      </div>
+    </div>
+    
+    <!-- Quick Add Section -->
+    <div class="quick-add-section">
+      <label class="quick-add-label">Add a meal:</label>
+      
+      <div class="quick-add-row">
+        <!-- Meal Type Selector -->
+        <div class="meal-type-selector">
+          <button 
+            class="type-btn" 
+            [class.active]="selectedMealType === 'breakfast'"
+            (click)="selectMealType('breakfast')"
+            title="Breakfast">🌅</button>
+          <button 
+            class="type-btn" 
+            [class.active]="selectedMealType === 'lunch'"
+            (click)="selectMealType('lunch')"
+            title="Lunch">☀️</button>
+          <button 
+            class="type-btn" 
+            [class.active]="selectedMealType === 'dinner'"
+            (click)="selectMealType('dinner')"
+            title="Dinner">🌙</button>
+          <button 
+            class="type-btn" 
+            [class.active]="selectedMealType === 'snack'"
+            (click)="selectMealType('snack')"
+            title="Snack">🍎</button>
+        </div>
+        
+        <!-- Meal Dropdown -->
+        <select 
+          class="meal-dropdown" 
+          [value]="''" 
+          (change)="onMealDropdownChange($event)"
+          [disabled]="isLoadingMeals">
+          <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
+          <option *ngFor="let meal of getAllSavedMeals()" [value]="meal.id">
+            {{ meal.name }} ({{ meal.calories }} cal)
+          </option>
+        </select>
+      </div>
+      
+      <div class="no-saved-meals" *ngIf="!isLoadingMeals && savedMeals.length === 0">
+        No meals in your library yet.
+        <a routerLink="/nutrition" class="add-meals-link">Add some →</a>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="nutrition-footer">
+      <a routerLink="/nutrition" class="manage-meals-link">
+        📋 Manage Meals Library
+      </a>
+      <button 
+        class="save-plan-btn" 
+        (click)="saveNutritionPlan()"
+        [disabled]="mealEntries.length === 0">
+        ✓ Save Plan
+      </button>
+    </div>
+  </div>
+
+  <!-- Meal Detail Panel Modal -->
+  <div class="modal-overlay" *ngIf="showMealDetailPanel" (click)="closeMealDetailPanel()"></div>
+  <div class="modal meal-detail-modal" *ngIf="showMealDetailPanel">
+    <div class="modal-header">
+      <h3>{{ getMealTypeIcon(mealDetailType) }} {{ getMealTypeLabel(mealDetailType) }}</h3>
+      <button class="close-btn" (click)="closeMealDetailPanel()">×</button>
+    </div>
+    
+    <!-- Meals for this type -->
+    <div class="meal-detail-list" *ngIf="getMealsForDetailType().length > 0">
+      <div class="meal-detail-item" *ngFor="let meal of getMealsForDetailType()">
+        <div class="meal-detail-info">
+          <span class="meal-detail-name">{{ meal.name }}</span>
+          <span class="meal-detail-macros">
+            {{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f
+          </span>
+        </div>
+        <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+      </div>
+      
+      <!-- Totals for this meal type -->
+      <div class="meal-detail-totals">
+        <span class="detail-total">{{ getMealDetailTotals().calories }} cal</span>
+        <span class="detail-total">{{ getMealDetailTotals().protein }}g protein</span>
+        <span class="detail-total">{{ getMealDetailTotals().carbs }}g carbs</span>
+        <span class="detail-total">{{ getMealDetailTotals().fats }}g fats</span>
+      </div>
+    </div>
+    
+    <div class="no-meals-detail" *ngIf="getMealsForDetailType().length === 0">
+      No meals planned for {{ getMealTypeLabel(mealDetailType) }}
+    </div>
+    
+    <!-- Add more meals -->
+    <div class="add-meal-section">
+      <label>Add another meal:</label>
+      <select 
+        class="meal-dropdown" 
+        [value]="''" 
+        (change)="addMealToType($any($event.target).value); $any($event.target).value = ''"
+        [disabled]="isLoadingMeals">
+        <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
+        <option *ngFor="let meal of savedMeals" [value]="meal.id">
+          {{ meal.name }} ({{ meal.calories }} cal)
+        </option>
+      </select>
+      <a routerLink="/nutrition" class="add-new-link" (click)="closeMealDetailPanel()">+ Add new meal</a>
+    </div>
+    
+    <!-- Actions -->
+    <div class="meal-detail-actions">
+      <button 
+        class="complete-meal-btn" 
+        [class.completed]="isMealTypeCompleted()"
+        (click)="markMealTypeComplete()"
+        [disabled]="getMealsForDetailType().length === 0">
+        {{ isMealTypeCompleted() ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Training Panel Modal -->
+  <div class="modal-overlay" *ngIf="showTrainingPanel" (click)="closeTrainingPanel()"></div>
+  <div class="modal training-modal" *ngIf="showTrainingPanel">
+    <div class="modal-header">
+      <h3>🏋️ Complete Workout</h3>
+      <button class="close-btn" (click)="closeTrainingPanel()">×</button>
+    </div>
+    
+    <!-- Planned Workout -->
+    <div class="training-plan" *ngIf="getPlannedWorkout() as planned">
+      <div class="training-plan-header">
+        <span class="training-type">{{ planned.type }}</span>
+        <span class="training-duration">{{ planned.targetDuration }} min target</span>
+      </div>
+      
+      <!-- Actual Stats from Whoop (if merged) -->
+      <div class="training-actual-stats" *ngIf="$any(planned).actualStrain">
+        <div class="training-stat">
+          <span class="training-stat-value">{{ $any(planned).actualStrain }}</span>
+          <span class="training-stat-label">Strain</span>
+        </div>
+        <div class="training-stat">
+          <span class="training-stat-value">{{ $any(planned).actualDuration }}m</span>
+          <span class="training-stat-label">Duration</span>
+        </div>
+        <div class="training-stat">
+          <span class="training-stat-value">{{ $any(planned).actualCalories }}</span>
+          <span class="training-stat-label">Calories</span>
+        </div>
+        <div class="training-stat">
+          <span class="training-stat-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
+          <span class="training-stat-label">HR</span>
+        </div>
+      </div>
+      
+      <div class="training-exercises" *ngIf="planned.exercises?.length">
+        <div class="training-exercise" *ngFor="let ex of planned.exercises">
+          <span class="exercise-name">{{ ex.name }}</span>
+          <span class="exercise-details">{{ ex.sets }} × {{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="no-workout-plan" *ngIf="!getPlannedWorkout()">
+      No workout planned. <button class="link-btn" (click)="openWorkoutPlanner(); closeTrainingPanel()">Plan one now</button>
+    </div>
+    
+    <!-- Whoop Activities -->
+    <div class="training-whoop" *ngIf="whoopWorkouts.length > 0">
+      <h4>Whoop Activities</h4>
+      <div class="whoop-activity" *ngFor="let w of whoopWorkouts">
+        <div class="whoop-activity-header">
+          <span class="whoop-sport">{{ w.sport }}</span>
+          <span class="whoop-time">{{ w.startTime }}</span>
+          <button 
+            class="merge-btn" 
+            *ngIf="getPlannedWorkout() && !currentEntry?.workoutCompleted"
+            (click)="promptMergeWithPlanned(w)"
+            title="Link to Planned Workout">
+            🔗 Link
+          </button>
+        </div>
+        <div class="whoop-stats">
+          <span>{{ w.strain }} strain</span>
+          <span>{{ w.duration }}m</span>
+          <span>{{ w.calories }} cal</span>
+          <span>{{ w.avgHR }}/{{ w.maxHR }} HR</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="training-actions">
+      <button class="edit-plan-btn" (click)="openWorkoutPlanner(); closeTrainingPanel()" *ngIf="getPlannedWorkout()">
+        ✎ Edit Plan
+      </button>
+      <button 
+        class="complete-workout-btn" 
+        [class.completed]="currentEntry?.workoutCompleted"
+        (click)="markWorkoutCompleteAndClose()"
+        [disabled]="!getPlannedWorkout()">
+        {{ currentEntry?.workoutCompleted ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
+      </button>
     </div>
   </div>
 
