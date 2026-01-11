@@ -1,0 +1,101 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal nutrition-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>🥗 Plan Nutrition</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <!-- Daily Totals -->
+  <div class="nutrition-totals" *ngIf="mealEntries.length > 0">
+    <div class="total-item">
+      <span class="total-value">{{ getNutritionTotals().calories }}</span>
+      <span class="total-label">Calories</span>
+    </div>
+    <div class="total-item">
+      <span class="total-value">{{ getNutritionTotals().protein }}g</span>
+      <span class="total-label">Protein</span>
+    </div>
+    <div class="total-item">
+      <span class="total-value">{{ getNutritionTotals().carbs }}g</span>
+      <span class="total-label">Carbs</span>
+    </div>
+    <div class="total-item">
+      <span class="total-value">{{ getNutritionTotals().fats }}g</span>
+      <span class="total-label">Fats</span>
+    </div>
+  </div>
+  
+  <!-- Today's Meals -->
+  <div class="meal-list" *ngIf="mealEntries.length > 0">
+    <h4 class="section-label">Today's Meals</h4>
+    <div class="meal-item" *ngFor="let meal of mealEntries">
+      <div class="meal-icon">{{ getMealTypeIcon(meal.mealType) }}</div>
+      <div class="meal-info">
+        <span class="meal-name">{{ meal.name }}</span>
+        <span class="meal-macros">{{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f</span>
+      </div>
+      <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+    </div>
+  </div>
+  
+  <!-- Quick Add Section -->
+  <div class="quick-add-section">
+    <label class="quick-add-label">Add a meal:</label>
+    
+    <div class="quick-add-row">
+      <!-- Meal Type Selector -->
+      <div class="meal-type-selector">
+        <button 
+          class="type-btn" 
+          [class.active]="selectedMealType === 'breakfast'"
+          (click)="selectMealType('breakfast')"
+          title="Breakfast">🌅</button>
+        <button 
+          class="type-btn" 
+          [class.active]="selectedMealType === 'lunch'"
+          (click)="selectMealType('lunch')"
+          title="Lunch">☀️</button>
+        <button 
+          class="type-btn" 
+          [class.active]="selectedMealType === 'dinner'"
+          (click)="selectMealType('dinner')"
+          title="Dinner">🌙</button>
+        <button 
+          class="type-btn" 
+          [class.active]="selectedMealType === 'snack'"
+          (click)="selectMealType('snack')"
+          title="Snack">🍎</button>
+      </div>
+      
+      <!-- Meal Dropdown -->
+      <select 
+        class="meal-dropdown" 
+        [value]="''" 
+        (change)="onMealDropdownChange($event)"
+        [disabled]="isLoadingMeals">
+        <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
+        <option *ngFor="let meal of savedMeals" [value]="meal.id">
+          {{ meal.name }} ({{ meal.calories }} cal)
+        </option>
+      </select>
+    </div>
+    
+    <div class="no-saved-meals" *ngIf="!isLoadingMeals && savedMeals.length === 0">
+      No meals in your library yet.
+      <a href="/nutrition" class="add-meals-link">Add some →</a>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <div class="nutrition-footer">
+    <a href="/nutrition" class="manage-meals-link">
+      📋 Manage Meals Library
+    </a>
+    <button 
+      class="save-plan-btn" 
+      (click)="onSavePlan()"
+      [disabled]="mealEntries.length === 0">
+      ✓ Save Plan
+    </button>
+  </div>
+</div>

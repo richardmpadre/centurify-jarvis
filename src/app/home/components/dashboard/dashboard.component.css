@@ -51,6 +51,26 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Wellness Card */
+.wellness-card.has-data {
+  border-color: var(--wellness-color, rgba(139, 92, 246, 0.4));
+  background: linear-gradient(135deg, #1a1a2e 0%, #1a142e 100%);
+}
+
+.wellness-card.has-data .stat-value {
+  color: var(--wellness-color, #8b5cf6);
+}
+
+/* Clickable stat cards */
+.stat-card.clickable {
+  cursor: pointer;
+}
+
+.stat-card.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
 .stat-icon {
   font-size: 1.75rem;
 }

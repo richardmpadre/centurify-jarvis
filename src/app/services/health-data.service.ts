@@ -17,7 +17,6 @@ export class HealthDataService {
     sleep?: number;
     recovery?: number;
     weight?: number;
-    dailyScore?: number;
     workoutCount?: number;
     workoutCalories?: number;
     workoutMinutes?: number;
@@ -30,6 +29,8 @@ export class HealthDataService {
     totalCarbs?: number;
     totalFats?: number;
     actionOrder?: string;
+    dailyInsights?: string;
+    insightsGeneratedAt?: string;
   }) {
     const { data, errors } = await this.client.models.HealthEntry.create(entry as any);
 
@@ -50,7 +51,6 @@ export class HealthDataService {
     sleep?: number;
     recovery?: number;
     weight?: number;
-    dailyScore?: number;
     workoutCount?: number;
     workoutCalories?: number;
     workoutMinutes?: number;
@@ -63,6 +63,8 @@ export class HealthDataService {
     totalCarbs?: number;
     totalFats?: number;
     actionOrder?: string;
+    dailyInsights?: string;
+    insightsGeneratedAt?: string;
   }) {
     const { data, errors } = await this.client.models.HealthEntry.update(entry as any);
 

@@ -13,6 +13,15 @@ export interface DayAnalysis {
   score?: number;
 }
 
+export interface DailyInsights {
+  summary: string;
+  achievements: string[];
+  areas_for_improvement: string[];
+  recommendations: string[];
+  wellness_score: number;
+  raw_text: string; // Full text for storage
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -125,6 +134,60 @@ export class ChatService {
   // Clear conversation history
   clearHistory(): void {
     this.conversationHistory = [];
+  }
+
+  // Generate comprehensive daily insights for storage
+  async generateDailyInsights(data: {
+    date: string;
+    recovery?: number | null;
+    sleep?: number | null;
+    strain?: number | null;
+    rhr?: number | null;
+    workouts?: any[];
+    plannedWorkout?: any;
+    workoutCompleted?: boolean;
+    nutrition?: {
+      totalCalories?: number;
+      totalProtein?: number;
+      totalCarbs?: number;
+      totalFats?: number;
+      mealsCompleted?: number;
+      mealsPlanned?: number;
+    };
+    checklistStats?: {
+      completed: number;
+      total: number;
+    };
+  }): Promise<DailyInsights> {
+    const apiUrl = await this.ensureApiUrl();
+    console.log('Generating insights with API URL:', apiUrl);
+    console.log('Request data:', data);
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate_insights',
+        data
+      })
+    });
+
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.error || error.details || 'Failed to generate insights');
+      } catch {
+        throw new Error(errorText || 'Failed to generate insights');
+      }
+    }
+
+    const result = await response.json();
+    console.log('Insights response:', result);
+    return result;
   }
 
   // Check if service is configured

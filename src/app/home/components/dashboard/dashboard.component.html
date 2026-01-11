@@ -46,12 +46,15 @@
       </div>
     </div>
 
-    <!-- Daily Score Card -->
-    <div class="stat-card score-card" [class.has-data]="currentEntry?.dailyScore != null">
-      <div class="stat-icon">📊</div>
+    <!-- Wellness Score Card -->
+    <div class="stat-card wellness-card clickable" 
+         [class.has-data]="getWellnessScore() !== null" 
+         [style.--wellness-color]="getWellnessScoreColor()"
+         (click)="onOpenInsights()">
+      <div class="stat-icon">✨</div>
       <div class="stat-content">
-        <div class="stat-value">{{ currentEntry?.dailyScore ?? '--' }}</div>
-        <div class="stat-label">Daily Score</div>
+        <div class="stat-value">{{ getWellnessScore() ?? '--' }}<span class="unit" *ngIf="getWellnessScore() !== null">/100</span></div>
+        <div class="stat-label">Wellness</div>
       </div>
     </div>
 

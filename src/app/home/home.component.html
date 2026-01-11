@@ -89,7 +89,8 @@
         (planWorkout)="openWorkoutPlanner()"
         (toggleWorkoutComplete)="toggleWorkoutCompleted()"
         (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
-        (mergeWorkout)="promptMergeWithPlanned($event)">
+        (mergeWorkout)="promptMergeWithPlanned($event)"
+        (openInsights)="openInsightsPanel()">
       </app-dashboard>
     </section>
   </div>
@@ -134,10 +135,6 @@
           <label for="bp">Blood Pressure</label>
           <input type="text" id="bp" formControlName="bp" placeholder="120/80">
         </div>
-        <div class="form-group">
-          <label for="dailyScore">Daily Score</label>
-          <input type="number" id="dailyScore" formControlName="dailyScore" placeholder="-2 to 2" step="0.1">
-        </div>
       </div>
 
       <div class="whoop-import" *ngIf="whoopConnected">
@@ -160,68 +157,15 @@
     </form>
   </div>
 
-  <!-- Workout Planner Modal -->
-  <div class="modal-overlay" *ngIf="showWorkoutPlanner" (click)="closeWorkoutPlanner()"></div>
-  <div class="modal workout-modal" *ngIf="showWorkoutPlanner">
-    <div class="modal-header">
-      <h3>Plan Workout for {{ getFormattedDate() }}</h3>
-      <button class="close-btn" (click)="closeWorkoutPlanner()">×</button>
-    </div>
-    
-    <form [formGroup]="workoutForm" class="workout-form">
-      <div class="form-row">
-        <div class="form-group">
-          <label>Workout Type</label>
-          <select formControlName="type">
-            <option value="Strength Training">Strength Training</option>
-            <option value="Cardio">Cardio</option>
-            <option value="HIIT">HIIT</option>
-            <option value="Yoga">Yoga</option>
-            <option value="Running">Running</option>
-            <option value="Cycling">Cycling</option>
-            <option value="Swimming">Swimming</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Duration (min)</label>
-          <input type="number" formControlName="targetDuration" min="5" max="300">
-        </div>
-      </div>
-      
-      <button type="button" class="copy-last-btn" [disabled]="!hasLastWorkout()" (click)="copyLastWorkout()">
-        📋 Copy Last Workout
-      </button>
-      
-      <div class="exercise-builder">
-        <h4>Exercises</h4>
-        <div class="add-exercise">
-          <input type="text" formControlName="exerciseName" placeholder="Exercise name">
-          <input type="number" formControlName="exerciseSets" placeholder="Sets" class="small">
-          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small">
-          <input type="text" formControlName="exerciseWeight" placeholder="Weight">
-          <button type="button" (click)="addExercise()">+ Add</button>
-        </div>
-        
-        <div class="exercise-list" *ngIf="exercises.length > 0">
-          <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
-            <span class="ex-name">{{ ex.name }}</span>
-            <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
-            <button type="button" class="remove-btn" (click)="removeExercise(i)">×</button>
-          </div>
-        </div>
-        
-        <div class="no-exercises" *ngIf="exercises.length === 0">
-          No exercises added
-        </div>
-      </div>
-      
-      <div class="form-actions">
-        <button type="button" (click)="closeWorkoutPlanner()" class="cancel-btn">Cancel</button>
-        <button type="button" (click)="saveWorkoutPlan()" class="submit-btn">Save Plan</button>
-      </div>
-    </form>
-  </div>
+  <!-- Workout Planner -->
+  <app-workout-planner
+    [isOpen]="showWorkoutPlanner"
+    [currentEntry]="currentEntry"
+    [selectedDate]="selectedDate"
+    [allEntries]="entries"
+    (close)="closeWorkoutPlanner()"
+    (workoutSaved)="onWorkoutSaved()">
+  </app-workout-planner>
 
   <!-- Whoop Workout Editor Modal -->
   <div class="modal-overlay" *ngIf="editingWhoopWorkout" (click)="closeWhoopWorkoutEditor()"></div>
@@ -238,282 +182,63 @@
       <div class="summary-stat"><span>{{ editingWhoopWorkout.avgHR }}/{{ editingWhoopWorkout.maxHR }}</span> HR</div>
     </div>
     
-    <form [formGroup]="workoutForm" class="workout-form">
-      <div class="exercise-builder">
-        <h4>Exercises Performed</h4>
-        <div class="add-exercise">
-          <input type="text" formControlName="exerciseName" placeholder="Exercise name">
-          <input type="number" formControlName="exerciseSets" placeholder="Sets" class="small">
-          <input type="text" formControlName="exerciseReps" placeholder="Reps" class="small">
-          <input type="text" formControlName="exerciseWeight" placeholder="Weight">
-          <button type="button" (click)="addExercise()">+ Add</button>
-        </div>
-        
-        <div class="exercise-list" *ngIf="exercises.length > 0">
-          <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
-            <span class="ex-name">{{ ex.name }}</span>
-            <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
-            <button type="button" class="remove-btn" (click)="removeExercise(i)">×</button>
-          </div>
-        </div>
+    <div class="exercise-builder">
+      <h4>Exercises Performed</h4>
+      <div class="add-exercise">
+        <input type="text" [(ngModel)]="exerciseName" placeholder="Exercise name">
+        <input type="number" [(ngModel)]="exerciseSets" placeholder="Sets" class="small">
+        <input type="text" [(ngModel)]="exerciseReps" placeholder="Reps" class="small">
+        <input type="text" [(ngModel)]="exerciseWeight" placeholder="Weight">
+        <button type="button" (click)="addExerciseToWhoop()">+ Add</button>
       </div>
       
-      <div class="form-actions">
-        <button type="button" (click)="closeWhoopWorkoutEditor()" class="cancel-btn">Cancel</button>
-        <button type="button" (click)="saveWhoopWorkoutExercises()" class="submit-btn">Save</button>
-      </div>
-    </form>
-  </div>
-
-  <!-- Nutrition Panel Modal -->
-  <div class="modal-overlay" *ngIf="showNutritionPanel" (click)="closeNutritionPanel()"></div>
-  <div class="modal nutrition-modal" *ngIf="showNutritionPanel">
-    <div class="modal-header">
-      <h3>🥗 Plan Nutrition</h3>
-      <button class="close-btn" (click)="closeNutritionPanel()">×</button>
-    </div>
-    
-    <!-- Daily Totals -->
-    <div class="nutrition-totals" *ngIf="mealEntries.length > 0">
-      <div class="total-item">
-        <span class="total-value">{{ getNutritionTotals().calories }}</span>
-        <span class="total-label">Calories</span>
-      </div>
-      <div class="total-item">
-        <span class="total-value">{{ getNutritionTotals().protein }}g</span>
-        <span class="total-label">Protein</span>
-      </div>
-      <div class="total-item">
-        <span class="total-value">{{ getNutritionTotals().carbs }}g</span>
-        <span class="total-label">Carbs</span>
-      </div>
-      <div class="total-item">
-        <span class="total-value">{{ getNutritionTotals().fats }}g</span>
-        <span class="total-label">Fats</span>
-      </div>
-    </div>
-    
-    <!-- Today's Meals -->
-    <div class="meal-list" *ngIf="mealEntries.length > 0">
-      <h4 class="section-label">Today's Meals</h4>
-      <div class="meal-item" *ngFor="let meal of mealEntries">
-        <div class="meal-icon">{{ getMealTypeIcon(meal.mealType) }}</div>
-        <div class="meal-info">
-          <span class="meal-name">{{ meal.name }}</span>
-          <span class="meal-macros">{{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f</span>
+      <div class="exercise-list" *ngIf="exercises.length > 0">
+        <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
+          <span class="ex-name">{{ ex.name }}</span>
+          <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
+          <button type="button" class="remove-btn" (click)="removeExerciseFromWhoop(i)">×</button>
         </div>
-        <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
       </div>
     </div>
     
-    <!-- Quick Add Section -->
-    <div class="quick-add-section">
-      <label class="quick-add-label">Add a meal:</label>
-      
-      <div class="quick-add-row">
-        <!-- Meal Type Selector -->
-        <div class="meal-type-selector">
-          <button 
-            class="type-btn" 
-            [class.active]="selectedMealType === 'breakfast'"
-            (click)="selectMealType('breakfast')"
-            title="Breakfast">🌅</button>
-          <button 
-            class="type-btn" 
-            [class.active]="selectedMealType === 'lunch'"
-            (click)="selectMealType('lunch')"
-            title="Lunch">☀️</button>
-          <button 
-            class="type-btn" 
-            [class.active]="selectedMealType === 'dinner'"
-            (click)="selectMealType('dinner')"
-            title="Dinner">🌙</button>
-          <button 
-            class="type-btn" 
-            [class.active]="selectedMealType === 'snack'"
-            (click)="selectMealType('snack')"
-            title="Snack">🍎</button>
-        </div>
-        
-        <!-- Meal Dropdown -->
-        <select 
-          class="meal-dropdown" 
-          [value]="''" 
-          (change)="onMealDropdownChange($event)"
-          [disabled]="isLoadingMeals">
-          <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
-          <option *ngFor="let meal of getAllSavedMeals()" [value]="meal.id">
-            {{ meal.name }} ({{ meal.calories }} cal)
-          </option>
-        </select>
-      </div>
-      
-      <div class="no-saved-meals" *ngIf="!isLoadingMeals && savedMeals.length === 0">
-        No meals in your library yet.
-        <a routerLink="/nutrition" class="add-meals-link">Add some →</a>
-      </div>
-    </div>
-    
-    <!-- Footer -->
-    <div class="nutrition-footer">
-      <a routerLink="/nutrition" class="manage-meals-link">
-        📋 Manage Meals Library
-      </a>
-      <button 
-        class="save-plan-btn" 
-        (click)="saveNutritionPlan()"
-        [disabled]="mealEntries.length === 0">
-        ✓ Save Plan
-      </button>
+    <div class="form-actions">
+      <button type="button" (click)="closeWhoopWorkoutEditor()" class="cancel-btn">Cancel</button>
+      <button type="button" (click)="saveWhoopWorkoutExercises()" class="submit-btn">Save</button>
     </div>
   </div>
 
-  <!-- Meal Detail Panel Modal -->
-  <div class="modal-overlay" *ngIf="showMealDetailPanel" (click)="closeMealDetailPanel()"></div>
-  <div class="modal meal-detail-modal" *ngIf="showMealDetailPanel">
-    <div class="modal-header">
-      <h3>{{ getMealTypeIcon(mealDetailType) }} {{ getMealTypeLabel(mealDetailType) }}</h3>
-      <button class="close-btn" (click)="closeMealDetailPanel()">×</button>
-    </div>
-    
-    <!-- Meals for this type -->
-    <div class="meal-detail-list" *ngIf="getMealsForDetailType().length > 0">
-      <div class="meal-detail-item" *ngFor="let meal of getMealsForDetailType()">
-        <div class="meal-detail-info">
-          <span class="meal-detail-name">{{ meal.name }}</span>
-          <span class="meal-detail-macros">
-            {{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f
-          </span>
-        </div>
-        <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
-      </div>
-      
-      <!-- Totals for this meal type -->
-      <div class="meal-detail-totals">
-        <span class="detail-total">{{ getMealDetailTotals().calories }} cal</span>
-        <span class="detail-total">{{ getMealDetailTotals().protein }}g protein</span>
-        <span class="detail-total">{{ getMealDetailTotals().carbs }}g carbs</span>
-        <span class="detail-total">{{ getMealDetailTotals().fats }}g fats</span>
-      </div>
-    </div>
-    
-    <div class="no-meals-detail" *ngIf="getMealsForDetailType().length === 0">
-      No meals planned for {{ getMealTypeLabel(mealDetailType) }}
-    </div>
-    
-    <!-- Add more meals -->
-    <div class="add-meal-section">
-      <label>Add another meal:</label>
-      <select 
-        class="meal-dropdown" 
-        [value]="''" 
-        (change)="addMealToType($any($event.target).value); $any($event.target).value = ''"
-        [disabled]="isLoadingMeals">
-        <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
-        <option *ngFor="let meal of savedMeals" [value]="meal.id">
-          {{ meal.name }} ({{ meal.calories }} cal)
-        </option>
-      </select>
-      <a routerLink="/nutrition" class="add-new-link" (click)="closeMealDetailPanel()">+ Add new meal</a>
-    </div>
-    
-    <!-- Actions -->
-    <div class="meal-detail-actions">
-      <button 
-        class="complete-meal-btn" 
-        [class.completed]="isMealTypeCompleted()"
-        (click)="markMealTypeComplete()"
-        [disabled]="getMealsForDetailType().length === 0">
-        {{ isMealTypeCompleted() ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
-      </button>
-    </div>
-  </div>
+  <!-- Nutrition Panel -->
+  <app-nutrition-panel
+    [isOpen]="showNutritionPanel"
+    [selectedDate]="selectedDate"
+    [mealEntries]="mealEntries"
+    (close)="closeNutritionPanel()"
+    (mealEntriesChanged)="onMealEntriesChanged($event)"
+    (planSaved)="onNutritionPlanSaved()">
+  </app-nutrition-panel>
 
-  <!-- Training Panel Modal -->
-  <div class="modal-overlay" *ngIf="showTrainingPanel" (click)="closeTrainingPanel()"></div>
-  <div class="modal training-modal" *ngIf="showTrainingPanel">
-    <div class="modal-header">
-      <h3>🏋️ Complete Workout</h3>
-      <button class="close-btn" (click)="closeTrainingPanel()">×</button>
-    </div>
-    
-    <!-- Planned Workout -->
-    <div class="training-plan" *ngIf="getPlannedWorkout() as planned">
-      <div class="training-plan-header">
-        <span class="training-type">{{ planned.type }}</span>
-        <span class="training-duration">{{ planned.targetDuration }} min target</span>
-      </div>
-      
-      <!-- Actual Stats from Whoop (if merged) -->
-      <div class="training-actual-stats" *ngIf="$any(planned).actualStrain">
-        <div class="training-stat">
-          <span class="training-stat-value">{{ $any(planned).actualStrain }}</span>
-          <span class="training-stat-label">Strain</span>
-        </div>
-        <div class="training-stat">
-          <span class="training-stat-value">{{ $any(planned).actualDuration }}m</span>
-          <span class="training-stat-label">Duration</span>
-        </div>
-        <div class="training-stat">
-          <span class="training-stat-value">{{ $any(planned).actualCalories }}</span>
-          <span class="training-stat-label">Calories</span>
-        </div>
-        <div class="training-stat">
-          <span class="training-stat-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
-          <span class="training-stat-label">HR</span>
-        </div>
-      </div>
-      
-      <div class="training-exercises" *ngIf="planned.exercises?.length">
-        <div class="training-exercise" *ngFor="let ex of planned.exercises">
-          <span class="exercise-name">{{ ex.name }}</span>
-          <span class="exercise-details">{{ ex.sets }} × {{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="no-workout-plan" *ngIf="!getPlannedWorkout()">
-      No workout planned. <button class="link-btn" (click)="openWorkoutPlanner(); closeTrainingPanel()">Plan one now</button>
-    </div>
-    
-    <!-- Whoop Activities -->
-    <div class="training-whoop" *ngIf="whoopWorkouts.length > 0">
-      <h4>Whoop Activities</h4>
-      <div class="whoop-activity" *ngFor="let w of whoopWorkouts">
-        <div class="whoop-activity-header">
-          <span class="whoop-sport">{{ w.sport }}</span>
-          <span class="whoop-time">{{ w.startTime }}</span>
-          <button 
-            class="merge-btn" 
-            *ngIf="getPlannedWorkout() && !currentEntry?.workoutCompleted"
-            (click)="promptMergeWithPlanned(w)"
-            title="Link to Planned Workout">
-            🔗 Link
-          </button>
-        </div>
-        <div class="whoop-stats">
-          <span>{{ w.strain }} strain</span>
-          <span>{{ w.duration }}m</span>
-          <span>{{ w.calories }} cal</span>
-          <span>{{ w.avgHR }}/{{ w.maxHR }} HR</span>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Actions -->
-    <div class="training-actions">
-      <button class="edit-plan-btn" (click)="openWorkoutPlanner(); closeTrainingPanel()" *ngIf="getPlannedWorkout()">
-        ✎ Edit Plan
-      </button>
-      <button 
-        class="complete-workout-btn" 
-        [class.completed]="currentEntry?.workoutCompleted"
-        (click)="markWorkoutCompleteAndClose()"
-        [disabled]="!getPlannedWorkout()">
-        {{ currentEntry?.workoutCompleted ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
-      </button>
-    </div>
-  </div>
+  <!-- Meal Detail Panel -->
+  <app-meal-detail-panel
+    [isOpen]="showMealDetailPanel"
+    [mealType]="mealDetailType"
+    [selectedDate]="selectedDate"
+    [mealEntries]="mealEntries"
+    (close)="closeMealDetailPanel()"
+    (mealEntriesChanged)="onMealEntriesChanged($event)"
+    (mealTypeCompleted)="onMealTypeCompleted($event)">
+  </app-meal-detail-panel>
+
+  <!-- Training Panel -->
+  <app-training-panel
+    [isOpen]="showTrainingPanel"
+    [currentEntry]="currentEntry"
+    [whoopWorkouts]="whoopWorkouts"
+    (close)="closeTrainingPanel()"
+    (editPlan)="openWorkoutPlanner()"
+    (markComplete)="markWorkoutCompleteAndClose()"
+    (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
+    (mergeWorkout)="promptMergeWithPlanned($event)">
+  </app-training-panel>
 
   <!-- Merge Confirmation Modal -->
   <div class="modal-overlay" *ngIf="showMergePrompt" (click)="closeMergePrompt()"></div>
@@ -534,39 +259,23 @@
     </div>
   </div>
 
-  <!-- Chat FAB -->
-  <button class="chat-fab" (click)="toggleChat()" [class.active]="showChat">
-    <span *ngIf="!showChat">🤖</span>
-    <span *ngIf="showChat">✕</span>
-  </button>
+  <!-- Daily Insights Panel -->
+  <app-insights-panel
+    [isOpen]="showInsightsPanel"
+    [currentEntry]="currentEntry"
+    [selectedDate]="selectedDate"
+    [mealEntries]="mealEntries"
+    [whoopWorkouts]="whoopWorkouts"
+    [dailyActions]="dailyActions"
+    (close)="closeInsightsPanel()"
+    (insightsSaved)="onInsightsSaved()">
+  </app-insights-panel>
 
   <!-- Chat Panel -->
-  <div class="chat-panel" *ngIf="showChat">
-    <div class="chat-header">
-      <h4>Jarvis AI</h4>
-      <div class="chat-actions">
-        <button class="analyze-btn" (click)="analyzeToday()" [disabled]="chatLoading">📊 Analyze</button>
-        <button class="clear-btn" (click)="clearChat()">🗑️</button>
-      </div>
-    </div>
-    
-    <div class="chat-messages">
-      <div class="chat-welcome" *ngIf="chatMessages.length === 0">
-        <p>👋 Ask me about your health data</p>
-      </div>
-      
-      <div class="chat-message" *ngFor="let msg of chatMessages" 
-           [class.user]="msg.role === 'user'"
-           [class.assistant]="msg.role === 'assistant'">
-        <div class="message-content">{{ msg.content }}</div>
-      </div>
-      
-      <div class="chat-loading" *ngIf="chatLoading">Thinking...</div>
-    </div>
-    
-    <div class="chat-input-area">
-      <input type="text" [(ngModel)]="chatInput" placeholder="Ask something..." (keyup.enter)="sendChatMessage()" [disabled]="chatLoading">
-      <button (click)="sendChatMessage()" [disabled]="chatLoading || !chatInput.trim()">➤</button>
-    </div>
-  </div>
+  <app-chat-panel
+    [currentEntry]="currentEntry"
+    [selectedDate]="selectedDate"
+    [whoopWorkouts]="whoopWorkouts"
+    [dailyActions]="dailyActions">
+  </app-chat-panel>
 </div>

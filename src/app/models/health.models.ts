@@ -9,7 +9,6 @@ export interface HealthEntry {
   sleep?: number | null;
   recovery?: number | null;
   weight?: number | null;
-  dailyScore?: number | null;
   plannedWorkout?: string | null;
   workoutCompleted?: boolean | null;
   trainingNotes?: string | null;
@@ -21,6 +20,9 @@ export interface HealthEntry {
   totalFats?: number | null;
   // User preferences
   actionOrder?: string | null; // JSON array of action IDs
+  // AI-generated insights
+  dailyInsights?: string | null;
+  insightsGeneratedAt?: string | null;
 }
 
 // Legacy PlannedMeal interface (kept for backward compatibility)

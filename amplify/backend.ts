@@ -38,6 +38,16 @@ chatLambda.addToRolePolicy(new iam.PolicyStatement({
   resources: ['arn:aws:bedrock:*::foundation-model/*']
 }));
 
+// Grant AWS Marketplace permissions (required for some Bedrock models)
+chatLambda.addToRolePolicy(new iam.PolicyStatement({
+  effect: iam.Effect.ALLOW,
+  actions: [
+    'aws-marketplace:ViewSubscriptions',
+    'aws-marketplace:Subscribe'
+  ],
+  resources: ['*']
+}));
+
 const chatFnUrl = chatLambda.addFunctionUrl({
   authType: lambda.FunctionUrlAuthType.NONE,
   cors: {

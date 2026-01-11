@@ -22,6 +22,7 @@ export class DashboardComponent {
   @Output() toggleWorkoutComplete = new EventEmitter<void>();
   @Output() openWhoopWorkout = new EventEmitter<WhoopWorkout>();
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
+  @Output() openInsights = new EventEmitter<void>();
 
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
@@ -46,6 +47,10 @@ export class DashboardComponent {
 
   onEditEntry(): void {
     this.editEntry.emit();
+  }
+
+  onOpenInsights(): void {
+    this.openInsights.emit();
   }
 
   onOpenWhoopWorkout(workout: WhoopWorkout): void {
@@ -100,6 +105,26 @@ export class DashboardComponent {
     const planned = this.getPlannedNutrition()[type];
     if (planned === 0) return 0;
     return Math.round((completed / planned) * 100);
+  }
+
+  // Get wellness score from daily insights
+  getWellnessScore(): number | null {
+    if (!this.currentEntry?.dailyInsights) return null;
+    try {
+      const insights = JSON.parse(this.currentEntry.dailyInsights);
+      return insights.wellness_score ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  getWellnessScoreColor(): string {
+    const score = this.getWellnessScore();
+    if (score === null) return '#888';
+    if (score >= 80) return '#22c55e'; // Green
+    if (score >= 60) return '#eab308'; // Yellow
+    if (score >= 40) return '#f97316'; // Orange
+    return '#ef4444'; // Red
   }
 
 }

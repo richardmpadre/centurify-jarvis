@@ -1,0 +1,84 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal training-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>🏋️ Complete Workout</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <!-- Planned Workout -->
+  <div class="training-plan" *ngIf="getPlannedWorkout() as planned">
+    <div class="training-plan-header">
+      <span class="training-type">{{ planned.type }}</span>
+      <span class="training-duration">{{ planned.targetDuration }} min target</span>
+    </div>
+    
+    <!-- Actual Stats from Whoop (if merged) -->
+    <div class="training-actual-stats" *ngIf="$any(planned).actualStrain">
+      <div class="training-stat">
+        <span class="training-stat-value">{{ $any(planned).actualStrain }}</span>
+        <span class="training-stat-label">Strain</span>
+      </div>
+      <div class="training-stat">
+        <span class="training-stat-value">{{ $any(planned).actualDuration }}m</span>
+        <span class="training-stat-label">Duration</span>
+      </div>
+      <div class="training-stat">
+        <span class="training-stat-value">{{ $any(planned).actualCalories }}</span>
+        <span class="training-stat-label">Calories</span>
+      </div>
+      <div class="training-stat">
+        <span class="training-stat-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
+        <span class="training-stat-label">HR</span>
+      </div>
+    </div>
+    
+    <div class="training-exercises" *ngIf="planned.exercises?.length">
+      <div class="training-exercise" *ngFor="let ex of planned.exercises">
+        <span class="exercise-name">{{ ex.name }}</span>
+        <span class="exercise-details">{{ ex.sets }} × {{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="no-workout-plan" *ngIf="!getPlannedWorkout()">
+    No workout planned. <button class="link-btn" (click)="onEditPlan()">Plan one now</button>
+  </div>
+  
+  <!-- Whoop Activities -->
+  <div class="training-whoop" *ngIf="whoopWorkouts.length > 0">
+    <h4>Whoop Activities</h4>
+    <div class="whoop-activity" *ngFor="let w of whoopWorkouts" (click)="onOpenWhoopWorkout(w)">
+      <div class="whoop-activity-header">
+        <span class="whoop-sport">{{ w.sport }}</span>
+        <span class="whoop-time">{{ w.startTime }}</span>
+        <button 
+          class="merge-btn" 
+          *ngIf="hasPlannedWorkoutToMerge()"
+          (click)="onMergeWorkout(w, $event)"
+          title="Link to Planned Workout">
+          🔗 Link
+        </button>
+      </div>
+      <div class="whoop-stats">
+        <span>{{ w.strain }} strain</span>
+        <span>{{ w.duration }}m</span>
+        <span>{{ w.calories }} cal</span>
+        <span>{{ w.avgHR }}/{{ w.maxHR }} HR</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Actions -->
+  <div class="training-actions">
+    <button class="edit-plan-btn" (click)="onEditPlan()" *ngIf="getPlannedWorkout()">
+      ✎ Edit Plan
+    </button>
+    <button 
+      class="complete-workout-btn" 
+      [class.completed]="currentEntry?.workoutCompleted"
+      (click)="onMarkComplete()"
+      [disabled]="!getPlannedWorkout()">
+      {{ currentEntry?.workoutCompleted ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
+    </button>
+  </div>
+</div>

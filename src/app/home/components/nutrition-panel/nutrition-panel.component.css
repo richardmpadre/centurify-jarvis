@@ -1,0 +1,265 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a2e;
+  border-radius: 16px;
+  border: 1px solid #2a2a4a;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 101;
+}
+
+.nutrition-modal {
+  max-width: 480px;
+  padding: 0 1.25rem 1.25rem 1.25rem;
+}
+
+.nutrition-modal .modal-header {
+  margin: 0 -1.25rem;
+  padding: 1rem 1.25rem;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #2a2a4a;
+  position: sticky;
+  top: 0;
+  background: #1a1a2e;
+  z-index: 10;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #fff;
+}
+
+.nutrition-totals {
+  display: flex;
+  justify-content: space-around;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1rem;
+}
+
+.total-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.total-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #00d4aa;
+}
+
+.total-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.meal-list {
+  margin-bottom: 1rem;
+}
+
+.section-label {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.meal-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.meal-icon {
+  font-size: 1.25rem;
+}
+
+.meal-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meal-name {
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.meal-macros {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.remove-meal-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.remove-meal-btn:hover {
+  color: #ef4444;
+}
+
+.quick-add-section {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.quick-add-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: #a0a0b0;
+}
+
+.quick-add-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.meal-type-selector {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.type-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.type-btn.active {
+  border-color: #00d4aa;
+  background: rgba(0, 212, 170, 0.15);
+}
+
+.meal-dropdown {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.meal-dropdown:focus {
+  outline: none;
+  border-color: #00d4aa;
+}
+
+.meal-dropdown:disabled {
+  opacity: 0.6;
+}
+
+.no-saved-meals {
+  margin-top: 0.75rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.add-meals-link {
+  color: #00d4aa;
+  text-decoration: none;
+}
+
+.add-meals-link:hover {
+  text-decoration: underline;
+}
+
+.nutrition-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid #2a2a4a;
+}
+
+.manage-meals-link {
+  color: #888;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.manage-meals-link:hover {
+  color: #00d4aa;
+}
+
+.save-plan-btn {
+  padding: 0.75rem 1.5rem;
+  background: #00d4aa;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-plan-btn:hover:not(:disabled) {
+  background: #00e6bb;
+}
+
+.save-plan-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -4,11 +4,16 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } 
 import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../services/health-data.service';
 import { WhoopService } from '../services/whoop.service';
-import { ChatService, ChatMessage } from '../services/chat.service';
-import { MealService, Meal } from '../services/meal.service';
+import { MealService } from '../services/meal.service';
 import { MealEntryService, MealEntry } from '../services/meal-entry.service';
 import { ActionListComponent, ActionItem } from './components/action-list/action-list.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { InsightsPanelComponent } from './components/insights-panel/insights-panel.component';
+import { ChatPanelComponent } from './components/chat-panel/chat-panel.component';
+import { WorkoutPlannerComponent } from './components/workout-planner/workout-planner.component';
+import { TrainingPanelComponent } from './components/training-panel/training-panel.component';
+import { NutritionPanelComponent } from './components/nutrition-panel/nutrition-panel.component';
+import { MealDetailPanelComponent } from './components/meal-detail-panel/meal-detail-panel.component';
 import { 
   HealthEntry, 
   PlannedExercise, 
@@ -33,7 +38,13 @@ import {
     FormsModule, 
     RouterLink,
     ActionListComponent,
-    DashboardComponent
+    DashboardComponent,
+    InsightsPanelComponent,
+    ChatPanelComponent,
+    WorkoutPlannerComponent,
+    TrainingPanelComponent,
+    NutritionPanelComponent,
+    MealDetailPanelComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
@@ -41,7 +52,6 @@ import {
 export class HomeComponent implements OnInit {
   // Form state
   healthForm: FormGroup;
-  workoutForm: FormGroup;
   saveMessage = '';
   whoopMessage = '';
   isLoading = false;
@@ -53,11 +63,17 @@ export class HomeComponent implements OnInit {
   editingId: string | null = null;
   editingWhoopWorkout: WhoopWorkout | null = null;
   
+  // Whoop workout editor
+  exercises: PlannedExercise[] = [];
+  exerciseName = '';
+  exerciseSets = 3;
+  exerciseReps = '8-10';
+  exerciseWeight = '';
+  
   // Data
   entries: HealthEntry[] = [];
   currentEntry: HealthEntry | null = null;
   selectedDate = getLocalDateString(new Date());
-  exercises: PlannedExercise[] = [];
   whoopWorkouts: WhoopWorkout[] = [];
   whoopWorkoutExercises: { [key: string]: PlannedExercise[] } = {};
   
@@ -73,7 +89,7 @@ export class HomeComponent implements OnInit {
   dailyActions: ActionItem[] = [];
   
   private readonly ACTION_ORDER_KEY = 'jarvis_action_order';
-  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'complete_workout', 'lifeEvents', 'jarvis'];
+  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'complete_workout', 'lifeEvents', 'jarvis', 'daily_insights'];
   
   // Merge workflow
   showMergePrompt = false;
@@ -81,12 +97,7 @@ export class HomeComponent implements OnInit {
   
   // Nutrition panel
   showNutritionPanel = false;
-  
-  // Meal planning - now using MealEntry table
   mealEntries: MealEntry[] = [];
-  savedMeals: Meal[] = [];
-  selectedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
-  isLoadingMeals = false;
   
   // Meal detail panel
   showMealDetailPanel = false;
@@ -95,17 +106,13 @@ export class HomeComponent implements OnInit {
   // Training completion panel
   showTrainingPanel = false;
   
-  // Chat
-  showChat = false;
-  chatMessages: ChatMessage[] = [];
-  chatInput = '';
-  chatLoading = false;
+  // Daily Insights panel
+  showInsightsPanel = false;
 
   constructor(
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
     private whoopService: WhoopService,
-    private chatService: ChatService,
     private mealService: MealService,
     private mealEntryService: MealEntryService
   ) {
@@ -117,18 +124,7 @@ export class HomeComponent implements OnInit {
       rhr: [''],
       sleep: [''],
       recovery: [''],
-      weight: [''],
-      dailyScore: ['']
-    });
-    
-    this.workoutForm = this.fb.group({
-      type: ['Strength Training'],
-      targetDuration: [60],
-      exerciseName: [''],
-      exerciseSets: [3],
-      exerciseReps: ['8-10'],
-      exerciseWeight: [''],
-      exerciseNotes: ['']
+      weight: ['']
     });
   }
 
@@ -156,7 +152,8 @@ export class HomeComponent implements OnInit {
         icon: '📊',
         status: hasRecovery ? 'completed' : 'pending',
         type: 'biometrics',
-        createsEntry: 'health'
+        createsEntry: 'health',
+        reopenOnComplete: true // Status derived from data - reopen form when clicked
       },
       'workout': {
         id: 'workout',
@@ -166,7 +163,8 @@ export class HomeComponent implements OnInit {
         status: hasWorkoutPlan ? 'completed' : 'pending',
         type: 'workout',
         dependsOn: ['biometrics'],
-        createsEntry: 'workout'
+        createsEntry: 'workout',
+        reopenOnComplete: true // Status derived from data - reopen planner when clicked
       },
       'nutrition': {
         id: 'nutrition',
@@ -174,7 +172,8 @@ export class HomeComponent implements OnInit {
         description: hasMeals ? 'Meals planned for the day' : 'Plan your meals',
         icon: '🥗',
         status: hasMeals ? 'completed' : 'pending',
-        type: 'nutrition'
+        type: 'nutrition',
+        reopenOnComplete: true // Status derived from data - reopen panel when clicked
       },
       'complete_workout': {
         id: 'complete_workout',
@@ -183,7 +182,8 @@ export class HomeComponent implements OnInit {
         icon: '✅',
         status: workoutCompleted ? 'completed' : 'pending',
         type: 'custom',
-        dependsOn: ['workout']
+        dependsOn: ['workout'],
+        reopenOnComplete: true // Opens training panel when clicked
       },
       'lifeEvents': {
         id: 'lifeEvents',
@@ -202,6 +202,15 @@ export class HomeComponent implements OnInit {
         status: 'pending',
         type: 'jarvis',
         externalLink: 'https://trello.com/b/piRDYqCn/jarvis'
+      },
+      'daily_insights': {
+        id: 'daily_insights',
+        title: 'Wrap Up Day',
+        description: this.currentEntry?.dailyInsights ? 'View today\'s insights' : 'Generate AI insights for today',
+        icon: '✨',
+        status: this.currentEntry?.dailyInsights ? 'completed' : 'pending',
+        type: 'insights',
+        reopenOnComplete: true // Status derived from data - reopen panel when clicked
       }
     };
     
@@ -273,7 +282,8 @@ export class HomeComponent implements OnInit {
           icon: mealIcons[type],
           status: allCompleted ? 'completed' : 'pending',
           type: 'meal',
-          mealType: type as 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          mealType: type as 'breakfast' | 'lunch' | 'dinner' | 'snack',
+          reopenOnComplete: true // Opens meal detail panel when clicked
         });
       }
     });
@@ -284,14 +294,22 @@ export class HomeComponent implements OnInit {
   async toggleMealTypeCompleted(mealType: string): Promise<void> {
     const typeMeals = this.mealEntries.filter(m => m.mealType === mealType);
     const allCompleted = typeMeals.every(m => m.completed);
+    const newStatus = !allCompleted;
+    
+    console.log(`Toggle ${mealType}: ${typeMeals.length} meals, allCompleted=${allCompleted}, setting to ${newStatus}`);
     
     // Toggle all meals of this type
     for (const meal of typeMeals) {
-      await this.mealEntryService.toggleMealCompleted(meal.id, !allCompleted);
+      console.log(`  Updating meal ${meal.name} (${meal.id}) to completed: ${newStatus}`);
+      await this.mealEntryService.toggleMealCompleted(meal.id, newStatus);
     }
     
     // Reload meal entries
     await this.loadMealEntries();
+    
+    // Verify the update
+    const updatedTypeMeals = this.mealEntries.filter(m => m.mealType === mealType);
+    console.log(`After reload - ${mealType} meals:`, updatedTypeMeals.map(m => ({ name: m.name, completed: m.completed })));
     
     // Update HealthEntry with nutrition totals (only counts completed meals)
     await this.updateNutritionTotals();
@@ -330,7 +348,7 @@ export class HomeComponent implements OnInit {
     if (!this.currentEntry?.morningChecklist) return;
     
     // Actions that derive status from database fields - don't override with morningChecklist
-    const autoStatusActions = ['biometrics', 'workout', 'nutrition', 'complete_workout'];
+    const autoStatusActions = ['biometrics', 'workout', 'nutrition', 'complete_workout', 'daily_insights'];
     
     try {
       const saved = JSON.parse(this.currentEntry.morningChecklist);
@@ -389,6 +407,10 @@ export class HomeComponent implements OnInit {
           await this.markActionComplete(action.id);
         }
         break;
+        
+      case 'insights':
+        this.openInsightsPanel();
+        break;
     }
   }
   
@@ -402,7 +424,14 @@ export class HomeComponent implements OnInit {
   }
   
   async onActionUncomplete(action: ActionItem) {
-    // Reset the action to pending
+    // If action has reopenOnComplete, trigger the same action as clicking
+    // This opens the appropriate panel/form instead of trying to toggle status
+    if (action.reopenOnComplete) {
+      this.onActionClick(action);
+      return;
+    }
+    
+    // For other actions (without reopenOnComplete), reset to pending
     action.status = 'pending';
     await this.saveActionStates();
     this.buildDailyActions();
@@ -418,7 +447,7 @@ export class HomeComponent implements OnInit {
     }
     
     // Actions that derive status from database fields - don't save to morningChecklist
-    const autoStatusActions = ['biometrics', 'workout', 'nutrition', 'complete_workout'];
+    const autoStatusActions = ['biometrics', 'workout', 'nutrition', 'complete_workout', 'daily_insights'];
     
     // Update with current action states for manual actions only
     this.dailyActions.forEach(action => {
@@ -497,107 +526,21 @@ export class HomeComponent implements OnInit {
 
   // ==================== WORKOUT PLANNING ====================
   
-  openWorkoutPlanner() {
+  openWorkoutPlanner(): void {
     this.showWorkoutPlanner = true;
-    this.exercises = [];
-    
-    if (this.currentEntry?.plannedWorkout) {
-      try {
-        const planned = JSON.parse(this.currentEntry.plannedWorkout) as PlannedWorkout;
-        this.workoutForm.patchValue({ type: planned.type, targetDuration: planned.targetDuration });
-        this.exercises = planned.exercises || [];
-      } catch (e) {
-        console.error('Error parsing planned workout:', e);
-      }
-    }
   }
   
-  closeWorkoutPlanner() {
+  closeWorkoutPlanner(): void {
     this.showWorkoutPlanner = false;
   }
   
-  addExercise() {
-    const form = this.workoutForm.value;
-    if (!form.exerciseName?.trim()) return;
-    
-    this.exercises.push({
-      name: form.exerciseName.trim(),
-      sets: form.exerciseSets || 3,
-      reps: form.exerciseReps || '8-10',
-      weight: form.exerciseWeight || '',
-      notes: form.exerciseNotes || ''
-    });
-    
-    this.workoutForm.patchValue({ exerciseName: '', exerciseWeight: '', exerciseNotes: '' });
+  async onWorkoutSaved(): Promise<void> {
+    await this.loadEntries();
+    await this.loadDashboard();
+    this.buildDailyActions();
   }
   
-  removeExercise(index: number) {
-    this.exercises.splice(index, 1);
-  }
-  
-  copyLastWorkout() {
-    for (const entry of this.entries) {
-      if (entry.date === this.selectedDate) continue;
-      
-      if (entry.plannedWorkout) {
-        try {
-          const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-          if (planned.exercises?.length > 0) {
-            this.exercises = planned.exercises.map(e => ({ ...e }));
-            this.workoutForm.patchValue({ 
-              type: planned.type,
-              targetDuration: planned.targetDuration 
-            });
-            return;
-          }
-        } catch { /* skip */ }
-      }
-    }
-  }
-  
-  hasLastWorkout(): boolean {
-    return this.entries.some(entry => {
-      if (entry.date === this.selectedDate) return false;
-      if (entry.plannedWorkout) {
-        try {
-          const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-          if (planned.exercises?.length > 0) return true;
-        } catch { /* skip */ }
-      }
-      return false;
-    });
-  }
-  
-  async saveWorkoutPlan() {
-    const form = this.workoutForm.value;
-    const plannedWorkout: PlannedWorkout = {
-      type: form.type,
-      targetDuration: form.targetDuration,
-      exercises: this.exercises
-    };
-    
-    try {
-      const payload = {
-        date: this.selectedDate,
-        plannedWorkout: JSON.stringify(plannedWorkout)
-      };
-      
-      if (this.currentEntry?.id) {
-        await this.healthDataService.updateEntry({ id: this.currentEntry.id, ...payload });
-      } else {
-        await this.healthDataService.saveEntry(payload);
-      }
-      
-      await this.loadEntries();
-      await this.loadDashboard();
-      this.buildDailyActions();
-      this.showWorkoutPlanner = false;
-    } catch (error) {
-      console.error('Error saving workout plan:', error);
-    }
-  }
-  
-  async toggleWorkoutCompleted() {
+  async toggleWorkoutCompleted(): Promise<void> {
     if (!this.currentEntry?.id) return;
     
     try {
@@ -628,6 +571,23 @@ export class HomeComponent implements OnInit {
     this.closeTrainingPanel();
   }
   
+  // ==================== DAILY INSIGHTS PANEL ====================
+  
+  openInsightsPanel(): void {
+    this.showInsightsPanel = true;
+  }
+  
+  closeInsightsPanel(): void {
+    this.showInsightsPanel = false;
+  }
+  
+  async onInsightsSaved(): Promise<void> {
+    // Reload data after insights are saved by the panel
+    await this.loadEntries();
+    await this.loadDashboard();
+    this.buildDailyActions();
+  }
+  
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
     try {
@@ -643,12 +603,32 @@ export class HomeComponent implements OnInit {
     this.editingWhoopWorkout = workout;
     const workoutKey = this.getWorkoutKey(workout);
     this.exercises = this.whoopWorkoutExercises[workoutKey] ? [...this.whoopWorkoutExercises[workoutKey]] : [];
-    this.workoutForm.patchValue({ type: workout.sport, targetDuration: workout.duration });
   }
   
   closeWhoopWorkoutEditor() {
     this.editingWhoopWorkout = null;
     this.exercises = [];
+    this.exerciseName = '';
+    this.exerciseWeight = '';
+  }
+  
+  addExerciseToWhoop() {
+    if (!this.exerciseName?.trim()) return;
+    
+    this.exercises.push({
+      name: this.exerciseName.trim(),
+      sets: this.exerciseSets || 3,
+      reps: this.exerciseReps || '8-10',
+      weight: this.exerciseWeight || '',
+      notes: ''
+    });
+    
+    this.exerciseName = '';
+    this.exerciseWeight = '';
+  }
+  
+  removeExerciseFromWhoop(index: number) {
+    this.exercises.splice(index, 1);
   }
   
   getWorkoutKey(workout: WhoopWorkout): string {
@@ -827,7 +807,7 @@ export class HomeComponent implements OnInit {
     this.healthForm.reset({
       date: this.selectedDate,
       bp: '', temp: '', strain: '', rhr: '',
-      sleep: '', recovery: '', weight: '', dailyScore: ''
+      sleep: '', recovery: '', weight: ''
     });
     this.saveMessage = '';
     this.whoopMessage = '';
@@ -849,8 +829,7 @@ export class HomeComponent implements OnInit {
       rhr: e.rhr || '',
       sleep: e.sleep || '',
       recovery: e.recovery || '',
-      weight: e.weight || '',
-      dailyScore: e.dailyScore || ''
+      weight: e.weight || ''
     });
   }
 
@@ -879,16 +858,18 @@ export class HomeComponent implements OnInit {
       }
       
       const previousDay = getPreviousDay(selectedDate);
-
-      const [recoveryData, sleepData, cycleData] = await Promise.all([
+      
+      const [recoveryData, sleepData, cycleDataToday, cycleDataYesterday] = await Promise.all([
         this.whoopService.getRecovery(selectedDate, selectedDate),
         this.whoopService.getSleep(selectedDate, selectedDate),
+        this.whoopService.getCycles(selectedDate, selectedDate),
         this.whoopService.getCycles(previousDay, previousDay)
       ]);
       
       const recoveryRecord = recoveryData?.records?.[0];
       const sleepRecord = sleepData?.records?.[0];
-      const cycleRecord = cycleData?.records?.[0];
+      const cycleRecordToday = cycleDataToday?.records?.[0];
+      const cycleRecordYesterday = cycleDataYesterday?.records?.[0];
 
       let fieldsUpdated = 0;
 
@@ -904,9 +885,22 @@ export class HomeComponent implements OnInit {
         this.healthForm.patchValue({ sleep: sleepRecord.score.sleep_performance_percentage });
         fieldsUpdated++;
       }
-      if (cycleRecord?.score?.strain != null) {
-        this.healthForm.patchValue({ strain: Math.round(cycleRecord.score.strain * 10) / 10 });
+      if (cycleRecordToday?.score?.strain != null) {
+        this.healthForm.patchValue({ strain: Math.round(cycleRecordToday.score.strain * 10) / 10 });
         fieldsUpdated++;
+      }
+      
+      // Also update yesterday's strain if we have data
+      if (cycleRecordYesterday?.score?.strain != null) {
+        const yesterdayStrain = Math.round(cycleRecordYesterday.score.strain * 10) / 10;
+        const yesterdayEntry = this.entries.find(e => e.date === previousDay);
+        if (yesterdayEntry?.id) {
+          await this.healthDataService.updateEntry({
+            id: yesterdayEntry.id,
+            date: previousDay,
+            strain: yesterdayStrain
+          });
+        }
       }
 
       this.whoopMessage = fieldsUpdated > 0 
@@ -934,8 +928,7 @@ export class HomeComponent implements OnInit {
       rhr: f.rhr ? parseFloat(f.rhr) : undefined,
       sleep: f.sleep ? parseFloat(f.sleep) : undefined,
       recovery: f.recovery ? parseFloat(f.recovery) : undefined,
-      weight: f.weight ? parseFloat(f.weight) : undefined,
-      dailyScore: f.dailyScore ? parseFloat(f.dailyScore) : undefined
+      weight: f.weight ? parseFloat(f.weight) : undefined
     };
 
     try {
@@ -974,224 +967,55 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  // ==================== CHAT ====================
-  
-  toggleChat() {
-    this.showChat = !this.showChat;
-    if (this.showChat && this.chatMessages.length === 0) {
-      this.chatMessages = this.chatService.getHistory();
-    }
-  }
-  
-  async sendChatMessage() {
-    if (!this.chatInput.trim() || this.chatLoading) return;
-    
-    const message = this.chatInput.trim();
-    this.chatInput = '';
-    this.chatLoading = true;
-    
-    try {
-      await this.chatService.chat(message);
-      this.chatMessages = this.chatService.getHistory();
-    } catch (error: any) {
-      console.error('Chat error:', error);
-      this.chatMessages.push({
-        role: 'assistant',
-        content: `Error: ${error.message || 'Failed to get response'}`,
-        timestamp: new Date()
-      });
-    } finally {
-      this.chatLoading = false;
-    }
-  }
-  
-  async analyzeToday() {
-    this.chatLoading = true;
-    
-    try {
-      const completedActions = this.dailyActions
-        .filter(a => a.status === 'completed')
-        .map(a => a.title);
-        
-      const analysis = await this.chatService.analyzeDay({
-        date: this.selectedDate,
-        recovery: this.currentEntry?.recovery || undefined,
-        sleep: this.currentEntry?.sleep || undefined,
-        strain: this.currentEntry?.strain || undefined,
-        rhr: this.currentEntry?.rhr || undefined,
-        workouts: this.whoopWorkouts,
-        plannedWorkout: this.getPlannedWorkout() || undefined,
-        checklistCompleted: completedActions
-      });
-      
-      this.chatMessages.push({
-        role: 'assistant',
-        content: analysis.summary || JSON.stringify(analysis),
-        timestamp: new Date()
-      });
-    } catch (error: any) {
-      console.error('Analysis error:', error);
-      this.chatMessages.push({
-        role: 'assistant',
-        content: `Error analyzing day: ${error.message}`,
-        timestamp: new Date()
-      });
-    } finally {
-      this.chatLoading = false;
-    }
-  }
-  
-  clearChat() {
-    this.chatService.clearHistory();
-    this.chatMessages = [];
-  }
-
   // ==================== NUTRITION ====================
   
-  async openNutritionPanel(): Promise<void> {
+  openNutritionPanel(): void {
     this.showNutritionPanel = true;
-    await this.loadMealEntries();
-    await this.loadSavedMeals();
   }
   
   closeNutritionPanel(): void {
     this.showNutritionPanel = false;
   }
   
-  // Meal Detail Panel - for viewing/editing specific meal type
-  async openMealDetailPanel(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): Promise<void> {
+  openMealDetailPanel(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): void {
     this.mealDetailType = mealType;
     this.showMealDetailPanel = true;
-    await this.loadSavedMeals();
   }
   
   closeMealDetailPanel(): void {
     this.showMealDetailPanel = false;
   }
   
-  getMealsForDetailType(): MealEntry[] {
-    return this.mealEntries.filter(m => m.mealType === this.mealDetailType);
+  async onMealEntriesChanged(entries: MealEntry[]): Promise<void> {
+    this.mealEntries = entries;
+    await this.updateNutritionTotals();
+    this.buildDailyActions();
   }
   
-  async addMealToType(mealId: string): Promise<void> {
-    const savedMeal = this.savedMeals.find(m => m.id === mealId);
-    if (!savedMeal) return;
-    
-    const created = await this.mealEntryService.createMealEntry({
-      date: this.selectedDate,
-      mealType: this.mealDetailType,
-      name: savedMeal.name,
-      calories: savedMeal.calories,
-      protein: savedMeal.protein,
-      carbs: savedMeal.carbs,
-      fats: savedMeal.fats,
-      completed: false,
-      mealId: savedMeal.id
-    });
-    
-    if (created) {
-      this.mealEntries.push(created);
-      await this.updateNutritionTotals();
-      this.buildDailyActions();
-    }
+  async onMealTypeCompleted(mealType: string): Promise<void> {
+    await this.toggleMealTypeCompleted(mealType);
   }
   
-  async markMealTypeComplete(): Promise<void> {
-    await this.toggleMealTypeCompleted(this.mealDetailType);
-    this.closeMealDetailPanel();
-  }
-  
-  getMealDetailTotals(): { calories: number; protein: number; fats: number; carbs: number } {
-    const meals = this.getMealsForDetailType();
-    return meals.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0),
-      protein: totals.protein + (meal.protein || 0),
-      fats: totals.fats + (meal.fats || 0),
-      carbs: totals.carbs + (meal.carbs || 0)
-    }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
-  }
-  
-  isMealTypeCompleted(): boolean {
-    const meals = this.getMealsForDetailType();
-    return meals.length > 0 && meals.every(m => m.completed);
+  async onNutritionPlanSaved(): Promise<void> {
+    await this.updateNutritionTotals();
+    await this.markActionComplete('nutrition');
+    this.buildDailyActions();
+    this.closeNutritionPanel();
   }
   
   async loadMealEntries(): Promise<void> {
-    this.isLoadingMeals = true;
     try {
       this.mealEntries = await this.mealEntryService.getMealEntriesForDate(this.selectedDate);
     } catch (error) {
       console.error('Error loading meal entries:', error);
       this.mealEntries = [];
-    } finally {
-      this.isLoadingMeals = false;
     }
   }
   
-  async loadSavedMeals(): Promise<void> {
-    try {
-      this.savedMeals = await this.mealService.getAllMeals();
-    } catch (error) {
-      console.error('Error loading saved meals:', error);
-      this.savedMeals = [];
-    }
-  }
-  
-  // No longer filtering by type - all meals are shown in dropdown
-  getAllSavedMeals(): Meal[] {
-    return this.savedMeals;
-  }
-  
-  selectMealType(type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): void {
-    this.selectedMealType = type;
-  }
-  
-  async onMealDropdownChange(event: Event): Promise<void> {
-    const select = event.target as HTMLSelectElement;
-    const mealId = select.value;
-    
-    if (!mealId) return;
-    
-    const savedMeal = this.savedMeals.find(m => m.id === mealId);
-    if (!savedMeal) return;
-    
-    // Create a new MealEntry in the database
-    const created = await this.mealEntryService.createMealEntry({
-      date: this.selectedDate,
-      mealType: this.selectedMealType,
-      name: savedMeal.name,
-      calories: savedMeal.calories,
-      protein: savedMeal.protein,
-      carbs: savedMeal.carbs,
-      fats: savedMeal.fats,
-      completed: false,
-      mealId: savedMeal.id
-    });
-    
-    if (created) {
-      this.mealEntries.push(created);
-      await this.updateNutritionTotals();
-    }
-    
-    // Reset dropdown
-    select.value = '';
-  }
-  
-  async removeMeal(mealId: string): Promise<void> {
-    const success = await this.mealEntryService.deleteMealEntry(mealId);
-    if (success) {
-      this.mealEntries = this.mealEntries.filter(m => m.id !== mealId);
-      await this.updateNutritionTotals();
-      this.buildDailyActions();
-    }
-  }
-  
-  async updateNutritionTotals(): Promise<void> {
-    // Only count COMPLETED meals in the dashboard totals
+  private async updateNutritionTotals(): Promise<void> {
     const completedMeals = this.mealEntries.filter(m => m.completed);
     const totals = this.mealEntryService.calculateDailyTotals(completedMeals);
     
-    // Update HealthEntry with aggregate nutrition from completed meals
     const payload = {
       date: this.selectedDate,
       totalCalories: totals.totalCalories,
@@ -1212,40 +1036,5 @@ export class HomeComponent implements OnInit {
     } catch (error) {
       console.error('Error updating nutrition totals:', error);
     }
-  }
-  
-  async saveNutritionPlan(): Promise<void> {
-    if (this.mealEntries.length === 0) return;
-    
-    await this.updateNutritionTotals();
-    await this.markActionComplete('nutrition');
-    
-    // Rebuild actions to include meal entries
-    this.buildDailyActions();
-    
-    this.closeNutritionPanel();
-  }
-  
-  getNutritionTotals(): { calories: number; protein: number; fats: number; carbs: number } {
-    return this.mealEntries.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0),
-      protein: totals.protein + (meal.protein || 0),
-      fats: totals.fats + (meal.fats || 0),
-      carbs: totals.carbs + (meal.carbs || 0)
-    }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
-  }
-  
-  getMealTypeIcon(type: string): string {
-    switch (type) {
-      case 'breakfast': return '🌅';
-      case 'lunch': return '☀️';
-      case 'dinner': return '🌙';
-      case 'snack': return '🍎';
-      default: return '🍽️';
-    }
-  }
-  
-  getMealTypeLabel(type: string): string {
-    return type.charAt(0).toUpperCase() + type.slice(1);
   }
 }

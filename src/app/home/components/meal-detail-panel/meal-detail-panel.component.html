@@ -1,0 +1,60 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal meal-detail-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>{{ getMealTypeIcon() }} {{ getMealTypeLabel() }}</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <!-- Meals for this type -->
+  <div class="meal-detail-list" *ngIf="getMealsForType().length > 0">
+    <div class="meal-detail-item" *ngFor="let meal of getMealsForType()">
+      <div class="meal-detail-info">
+        <span class="meal-detail-name">{{ meal.name }}</span>
+        <span class="meal-detail-macros">
+          {{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f
+        </span>
+      </div>
+      <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+    </div>
+    
+    <!-- Totals for this meal type -->
+    <div class="meal-detail-totals">
+      <span class="detail-total">{{ getTotals().calories }} cal</span>
+      <span class="detail-total">{{ getTotals().protein }}g protein</span>
+      <span class="detail-total">{{ getTotals().carbs }}g carbs</span>
+      <span class="detail-total">{{ getTotals().fats }}g fats</span>
+    </div>
+  </div>
+  
+  <div class="no-meals-detail" *ngIf="getMealsForType().length === 0">
+    No meals planned for {{ getMealTypeLabel() }}
+  </div>
+  
+  <!-- Add more meals -->
+  <div class="add-meal-section">
+    <label>Add another meal:</label>
+    <select 
+      class="meal-dropdown" 
+      #mealSelect
+      [value]="''" 
+      (change)="addMealToType(mealSelect.value); mealSelect.value = ''"
+      [disabled]="isLoadingMeals">
+      <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
+      <option *ngFor="let meal of savedMeals" [value]="meal.id">
+        {{ meal.name }} ({{ meal.calories }} cal)
+      </option>
+    </select>
+    <a href="/nutrition" class="add-new-link">+ Add new meal</a>
+  </div>
+  
+  <!-- Actions -->
+  <div class="meal-detail-actions">
+    <button 
+      class="complete-meal-btn" 
+      [class.completed]="isMealTypeCompleted()"
+      (click)="onMarkComplete()"
+      [disabled]="getMealsForType().length === 0">
+      {{ isMealTypeCompleted() ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,75 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal insights-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>✨ Daily Insights</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <div class="modal-content">
+    <!-- Loading State -->
+    <div class="insights-loading" *ngIf="isGenerating">
+      <div class="loading-spinner"></div>
+      <p>Analyzing your day with AI...</p>
+    </div>
+    
+    <!-- No Insights Yet -->
+    <div class="insights-empty" *ngIf="!isGenerating && !insights">
+      <div class="insights-empty-icon">🔮</div>
+      <h4>Ready to wrap up your day?</h4>
+      <p>Generate AI-powered insights based on your biometrics, workouts, nutrition, and daily activities.</p>
+      <button class="generate-insights-btn" (click)="generateInsights()">
+        ✨ Generate Insights
+      </button>
+    </div>
+    
+    <!-- Insights Display -->
+    <div class="insights-content" *ngIf="!isGenerating && insights">
+      <!-- Wellness Score -->
+      <div class="wellness-score-card">
+        <div class="wellness-score-ring" [style.--score-color]="getWellnessScoreColor()">
+          <span class="score-value">{{ insights.wellness_score }}</span>
+        </div>
+        <span class="score-label">Wellness Score</span>
+      </div>
+      
+      <!-- Summary -->
+      <div class="insights-section">
+        <p class="insights-summary">{{ insights.summary }}</p>
+      </div>
+      
+      <!-- Achievements -->
+      <div class="insights-section" *ngIf="insights.achievements.length > 0">
+        <h4>🏆 Achievements</h4>
+        <ul class="insights-list achievements">
+          <li *ngFor="let item of insights.achievements">{{ item }}</li>
+        </ul>
+      </div>
+      
+      <!-- Areas for Improvement -->
+      <div class="insights-section" *ngIf="insights.areas_for_improvement.length > 0">
+        <h4>📈 Areas for Improvement</h4>
+        <ul class="insights-list improvements">
+          <li *ngFor="let item of insights.areas_for_improvement">{{ item }}</li>
+        </ul>
+      </div>
+      
+      <!-- Recommendations -->
+      <div class="insights-section" *ngIf="insights.recommendations.length > 0">
+        <h4>💡 Recommendations for Tomorrow</h4>
+        <ul class="insights-list recommendations">
+          <li *ngFor="let item of insights.recommendations">{{ item }}</li>
+        </ul>
+      </div>
+      
+      <!-- Regenerate Button -->
+      <div class="insights-actions">
+        <button class="regenerate-btn" (click)="generateInsights()">
+          🔄 Regenerate Insights
+        </button>
+        <span class="insights-timestamp" *ngIf="currentEntry?.insightsGeneratedAt">
+          Generated {{ currentEntry!.insightsGeneratedAt | date:'short' }}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>

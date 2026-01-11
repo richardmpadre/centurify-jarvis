@@ -11,7 +11,6 @@ const schema = a.schema({
     sleep: a.float(),
     recovery: a.float(),
     weight: a.float(),
-    dailyScore: a.float(),
     workoutCount: a.integer(),
     workoutCalories: a.float(),
     workoutMinutes: a.float(),
@@ -28,6 +27,9 @@ const schema = a.schema({
     totalFats: a.integer(),
     // Action order preference
     actionOrder: a.string(), // JSON array of action IDs
+    // AI-generated daily insights
+    dailyInsights: a.string(), // AI analysis of the day
+    insightsGeneratedAt: a.datetime(), // When insights were generated
   }).authorization(allow => [allow.owner()]),
   
   // Individual meals eaten (daily meal entries)

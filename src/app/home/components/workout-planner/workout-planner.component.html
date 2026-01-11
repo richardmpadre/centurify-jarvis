@@ -1,0 +1,68 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal workout-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>🏋️ Plan Workout</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <form [formGroup]="workoutForm" (ngSubmit)="saveWorkoutPlan()" class="modal-content">
+    <!-- Workout Type -->
+    <div class="form-row">
+      <div class="form-group">
+        <label>Workout Type</label>
+        <select formControlName="type">
+          <option>Strength Training</option>
+          <option>Cardio</option>
+          <option>HIIT</option>
+          <option>Yoga</option>
+          <option>Running</option>
+          <option>Cycling</option>
+          <option>Swimming</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Target Duration (min)</label>
+        <input type="number" formControlName="targetDuration" min="1">
+      </div>
+    </div>
+    
+    <!-- Exercise Input -->
+    <div class="exercise-input">
+      <h4>Add Exercises</h4>
+      <div class="form-row">
+        <input type="text" formControlName="exerciseName" placeholder="Exercise name">
+        <input type="number" formControlName="exerciseSets" placeholder="Sets" min="1" style="width: 70px">
+        <input type="text" formControlName="exerciseReps" placeholder="Reps" style="width: 80px">
+      </div>
+      <div class="form-row">
+        <input type="text" formControlName="exerciseWeight" placeholder="Weight (optional)">
+        <input type="text" formControlName="exerciseNotes" placeholder="Notes (optional)">
+        <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
+      </div>
+    </div>
+    
+    <!-- Exercise List -->
+    <div class="exercise-list" *ngIf="exercises.length > 0">
+      <h4>Planned Exercises</h4>
+      <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
+        <div class="ex-info">
+          <span class="ex-name">{{ ex.name }}</span>
+          <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
+          <span class="ex-notes" *ngIf="ex.notes">{{ ex.notes }}</span>
+        </div>
+        <button type="button" class="remove-ex-btn" (click)="removeExercise(i)">×</button>
+      </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="button" class="copy-btn" (click)="copyLastWorkout()" *ngIf="hasLastWorkout()">
+        📋 Copy Last Workout
+      </button>
+      <div class="spacer"></div>
+      <button type="button" (click)="onClose()" class="cancel-btn">Cancel</button>
+      <button type="submit" class="submit-btn">Save Plan</button>
+    </div>
+  </form>
+</div>

@@ -9,16 +9,33 @@ interface HealthData {
   sleep?: number;
   rhr?: number;
   weight?: number;
-  dailyScore?: number;
   plannedWorkout?: any;
   workoutCompleted?: boolean;
 }
 
+interface NutritionData {
+  totalCalories?: number;
+  totalProtein?: number;
+  totalCarbs?: number;
+  totalFats?: number;
+  mealsCompleted?: number;
+  mealsPlanned?: number;
+}
+
+interface InsightsData extends HealthData {
+  workouts?: any[];
+  nutrition?: NutritionData;
+  checklistStats?: {
+    completed: number;
+    total: number;
+  };
+}
+
 interface ChatRequest {
-  action: 'analyze_day' | 'analyze_week' | 'analyze_month' | 'chat';
+  action: 'analyze_day' | 'analyze_week' | 'analyze_month' | 'chat' | 'generate_insights';
   message?: string;
   prompt?: string; // Alternative to message
-  data?: HealthData; // Single day data
+  data?: HealthData | InsightsData; // Single day data
   healthData?: HealthData[]; // Multiple days data
   history?: { role: string; content: string }[];
   currentDate?: string;
@@ -52,6 +69,10 @@ export const handler = async (event: any) => {
         const chatMessage = userPrompt || message || '';
         prompt = buildChatPrompt(chatMessage, healthData || [], history);
         break;
+      case 'generate_insights':
+        const insightsData = data as InsightsData;
+        prompt = buildDailyInsightsPrompt(insightsData);
+        break;
       default:
         return {
           statusCode: 400,
@@ -59,7 +80,20 @@ export const handler = async (event: any) => {
         };
     }
 
-    const response = await callClaude(prompt);
+    const response = await callLLM(prompt);
+    
+    // For generate_insights, parse the structured response
+    if (action === 'generate_insights') {
+      const parsed = parseInsightsResponse(response);
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          ...parsed,
+          raw_text: response,
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
     
     return {
       statusCode: 200,
@@ -81,22 +115,28 @@ export const handler = async (event: any) => {
   }
 };
 
-async function callClaude(prompt: string): Promise<string> {
-  const modelId = 'anthropic.claude-3-haiku-20240307-v1:0'; // Fast & cost-effective
+async function callLLM(prompt: string): Promise<string> {
+  // Using Amazon Nova Micro - fast, cheap, no approval required
+  const modelId = 'amazon.nova-micro-v1:0';
   
+  const systemPrompt = `You are a helpful health and fitness coach assistant named Jarvis. 
+You analyze health metrics from Whoop (recovery, strain, sleep, HRV, resting heart rate) and workout data.
+Keep responses concise, actionable, and encouraging. Use bullet points for clarity.
+Focus on patterns, improvements, and areas needing attention.`;
+
   const requestBody = {
-    anthropic_version: 'bedrock-2023-05-31',
-    max_tokens: 1024,
     messages: [
       {
         role: 'user',
-        content: prompt
+        content: [{ text: prompt }]
       }
     ],
-    system: `You are a helpful health and fitness coach assistant named Jarvis. 
-You analyze health metrics from Whoop (recovery, strain, sleep, HRV, resting heart rate) and workout data.
-Keep responses concise, actionable, and encouraging. Use bullet points for clarity.
-Focus on patterns, improvements, and areas needing attention.`
+    system: [{ text: systemPrompt }],
+    inferenceConfig: {
+      maxTokens: 1024,
+      temperature: 0.7,
+      topP: 0.9
+    }
   };
 
   const command = new InvokeModelCommand({
@@ -109,7 +149,7 @@ Focus on patterns, improvements, and areas needing attention.`
   const response = await bedrockClient.send(command);
   const responseBody = JSON.parse(new TextDecoder().decode(response.body));
   
-  return responseBody.content[0].text;
+  return responseBody.output.message.content[0].text;
 }
 
 function buildDailyAnalysisPrompt(data: HealthData | undefined, date?: string): string {
@@ -125,7 +165,6 @@ function buildDailyAnalysisPrompt(data: HealthData | undefined, date?: string): 
 - Sleep Performance: ${data.sleep ?? 'Not recorded'}%
 - Resting Heart Rate: ${data.rhr ?? 'Not recorded'} bpm
 - Weight: ${data.weight ?? 'Not recorded'} lbs
-- Daily Score: ${data.dailyScore ?? 'Not recorded'}
 
 **Workout:**
 - Planned: ${data.plannedWorkout ? 'Yes' : 'No'}
@@ -253,3 +292,92 @@ function groupByWeek(data: HealthData[]): { [week: string]: HealthData[] } {
   return weeks;
 }
 
+function buildDailyInsightsPrompt(data: InsightsData | undefined): string {
+  if (!data) {
+    return `Generate generic end-of-day wellness tips for someone who hasn't tracked their health data yet.`;
+  }
+
+  const workoutDetails = data.workouts && data.workouts.length > 0 
+    ? data.workouts.map(w => `  - ${w.sport || w.type}: ${w.duration || '-'} min, ${w.calories || '-'} cal, Strain: ${w.strain || '-'}`).join('\n')
+    : '  - No workouts recorded';
+
+  const nutritionDetails = data.nutrition 
+    ? `  - Calories: ${data.nutrition.totalCalories ?? 0} (${data.nutrition.mealsCompleted ?? 0}/${data.nutrition.mealsPlanned ?? 0} meals completed)
+  - Protein: ${data.nutrition.totalProtein ?? 0}g
+  - Carbs: ${data.nutrition.totalCarbs ?? 0}g
+  - Fats: ${data.nutrition.totalFats ?? 0}g`
+    : '  - Nutrition not tracked';
+
+  const checklistInfo = data.checklistStats
+    ? `  - Tasks completed: ${data.checklistStats.completed}/${data.checklistStats.total}`
+    : '  - Checklist not available';
+
+  return `You are Jarvis, a personal health and wellness AI coach. Generate comprehensive daily insights for ${data.date}.
+
+**Biometrics (from Whoop):**
+- Recovery Score: ${data.recovery ?? 'Not recorded'}%
+- Sleep Performance: ${data.sleep ?? 'Not recorded'}%
+- Strain: ${data.strain ?? 'Not recorded'}
+- Resting Heart Rate: ${data.rhr ?? 'Not recorded'} bpm
+
+**Workouts:**
+${workoutDetails}
+- Planned workout completed: ${data.workoutCompleted ? 'Yes ✓' : 'No ✗'}
+
+**Nutrition:**
+${nutritionDetails}
+
+**Daily Progress:**
+${checklistInfo}
+
+Generate a comprehensive end-of-day analysis in the following EXACT JSON format (respond ONLY with valid JSON, no markdown):
+{
+  "summary": "2-3 sentence overall summary of the day",
+  "achievements": ["achievement 1", "achievement 2", "achievement 3"],
+  "areas_for_improvement": ["area 1", "area 2"],
+  "recommendations": ["recommendation 1 for tomorrow", "recommendation 2 for tomorrow"],
+  "wellness_score": 75
+}
+
+Rules for the response:
+- wellness_score should be 0-100 based on overall day performance
+- achievements should highlight what went well (3-5 items)
+- areas_for_improvement should be constructive (2-3 items)
+- recommendations should be actionable for tomorrow (2-3 items)
+- Be encouraging but honest
+- Keep each item concise (under 100 characters)`;
+}
+
+function parseInsightsResponse(response: string): {
+  summary: string;
+  achievements: string[];
+  areas_for_improvement: string[];
+  recommendations: string[];
+  wellness_score: number;
+} {
+  try {
+    // Try to extract JSON from the response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        summary: parsed.summary || 'Day analysis complete.',
+        achievements: parsed.achievements || [],
+        areas_for_improvement: parsed.areas_for_improvement || [],
+        recommendations: parsed.recommendations || [],
+        wellness_score: parsed.wellness_score ?? 50
+      };
+    }
+  } catch (e) {
+    console.error('Failed to parse insights JSON:', e);
+  }
+
+  // Fallback: return the raw text as summary
+  return {
+    summary: response.substring(0, 500),
+    achievements: [],
+    areas_for_improvement: [],
+    recommendations: [],
+    wellness_score: 50
+  };
+}
