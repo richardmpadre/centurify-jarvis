@@ -199,4 +199,90 @@ export class ChatService {
       return false;
     }
   }
+
+  // Generate AI-powered workout plan
+  async generateWorkoutPlan(data: {
+    currentDay: {
+      date: string;
+      recovery?: number | null;
+      sleep?: number | null;
+      rhr?: number | null;
+      strain?: number | null;
+      weight?: number | null;
+      nutritionPlan?: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fats: number;
+      };
+      nutritionCompleted?: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fats: number;
+      };
+    };
+    userProfile?: {
+      trainingGoal?: string;
+      experienceLevel?: string;
+      preferredDuration?: number;
+      availableEquipment?: string[];
+    };
+    recentHistory: Array<{
+      date: string;
+      type: string;
+      duration?: number;
+      strain?: number | null;
+      completed?: boolean;
+      exercises?: Array<{
+        name: string;
+        sets: number;
+        reps: string;
+        weight: string;
+      }>;
+    }>;
+    currentPlan?: any;
+  }): Promise<{
+    recommendation: string;
+    workoutType: string;
+    targetDuration: number;
+    estimatedIntensity: string;
+    exercises: Array<{
+      name: string;
+      sets: number;
+      reps: string;
+      suggestedWeight: string;
+      progression?: string;
+      previousPerformance?: string;
+      notes?: string;
+    }>;
+    warmup?: string;
+    cooldown?: string;
+    nutritionTip?: string;
+  }> {
+    const apiUrl = await this.ensureApiUrl();
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate_workout_plan',
+        data
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.error || error.details || 'Failed to generate workout plan');
+      } catch {
+        throw new Error(errorText || 'Failed to generate workout plan');
+      }
+    }
+
+    const result = await response.json();
+    return result;
+  }
 }

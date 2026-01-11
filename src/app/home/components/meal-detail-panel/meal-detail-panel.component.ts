@@ -66,26 +66,45 @@ export class MealDetailPanelComponent implements OnChanges {
   }
 
   async addMealToType(mealId: string): Promise<void> {
-    if (!mealId) return;
+    console.log('Meal detail panel: addMealToType called with:', { mealId, mealType: this.mealType, date: this.selectedDate });
+    
+    if (!mealId) {
+      console.log('No meal ID provided');
+      return;
+    }
     
     const savedMeal = this.savedMeals.find(m => m.id === mealId);
-    if (!savedMeal) return;
+    if (!savedMeal) {
+      console.error('Saved meal not found:', mealId);
+      return;
+    }
     
-    const created = await this.mealEntryService.createMealEntry({
-      date: this.selectedDate,
-      mealType: this.mealType,
-      name: savedMeal.name,
-      calories: savedMeal.calories,
-      protein: savedMeal.protein,
-      carbs: savedMeal.carbs,
-      fats: savedMeal.fats,
-      completed: false,
-      mealId: savedMeal.id
-    });
+    console.log('Creating meal entry for:', savedMeal.name);
     
-    if (created) {
-      const newEntries = [...this.mealEntries, created];
-      this.mealEntriesChanged.emit(newEntries);
+    try {
+      const created = await this.mealEntryService.createMealEntry({
+        date: this.selectedDate,
+        mealType: this.mealType,
+        name: savedMeal.name,
+        calories: savedMeal.calories,
+        protein: savedMeal.protein,
+        carbs: savedMeal.carbs,
+        fats: savedMeal.fats,
+        completed: false,
+        mealId: savedMeal.id
+      });
+      
+      console.log('Meal entry created:', created);
+      
+      if (created) {
+        const newEntries = [...this.mealEntries, created];
+        console.log('Emitting meal entries changed with', newEntries.length, 'entries');
+        this.mealEntriesChanged.emit(newEntries);
+      } else {
+        console.error('Failed to create meal entry - no data returned');
+      }
+    } catch (error) {
+      console.error('Error in addMealToType:', error);
     }
   }
 

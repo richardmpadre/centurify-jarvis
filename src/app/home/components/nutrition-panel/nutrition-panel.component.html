@@ -46,21 +46,25 @@
       <!-- Meal Type Selector -->
       <div class="meal-type-selector">
         <button 
+          type="button"
           class="type-btn" 
           [class.active]="selectedMealType === 'breakfast'"
           (click)="selectMealType('breakfast')"
           title="Breakfast">🌅</button>
         <button 
+          type="button"
           class="type-btn" 
           [class.active]="selectedMealType === 'lunch'"
           (click)="selectMealType('lunch')"
           title="Lunch">☀️</button>
         <button 
+          type="button"
           class="type-btn" 
           [class.active]="selectedMealType === 'dinner'"
           (click)="selectMealType('dinner')"
           title="Dinner">🌙</button>
         <button 
+          type="button"
           class="type-btn" 
           [class.active]="selectedMealType === 'snack'"
           (click)="selectMealType('snack')"

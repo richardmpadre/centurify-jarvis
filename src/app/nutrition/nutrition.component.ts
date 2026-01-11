@@ -84,13 +84,23 @@ export class NutritionComponent implements OnInit {
   }
 
   async submitForm(): Promise<void> {
-    if (!this.mealForm.valid || this.isSaving) return;
+    console.log('submitForm called');
+    console.log('Form valid:', this.mealForm.valid);
+    console.log('Form value:', this.mealForm.value);
+    console.log('Is saving:', this.isSaving);
+    
+    if (!this.mealForm.valid || this.isSaving) {
+      console.log('Form validation failed or already saving');
+      return;
+    }
 
     this.isSaving = true;
     const formValue = this.mealForm.value;
+    console.log('Starting save with values:', formValue);
 
     try {
       if (this.editingMealId) {
+        console.log('Updating existing meal:', this.editingMealId);
         // Update existing
         const updated = await this.mealService.updateMeal(this.editingMealId, {
           name: formValue.name,
@@ -100,6 +110,8 @@ export class NutritionComponent implements OnInit {
           carbs: formValue.carbs || 0
         });
         
+        console.log('Update result:', updated);
+        
         if (updated) {
           const index = this.meals.findIndex(m => m.id === this.editingMealId);
           if (index !== -1) {
@@ -107,6 +119,7 @@ export class NutritionComponent implements OnInit {
           }
         }
       } else {
+        console.log('Creating new meal');
         // Create new
         const created = await this.mealService.createMeal({
           name: formValue.name,
@@ -116,11 +129,15 @@ export class NutritionComponent implements OnInit {
           carbs: formValue.carbs || 0
         });
         
+        console.log('Create result:', created);
+        
         if (created) {
           this.meals.unshift(created);
+          console.log('Meal added to list. Total meals:', this.meals.length);
         }
       }
       
+      console.log('Closing form');
       this.closeForm();
     } catch (error) {
       console.error('Error saving meal:', error);

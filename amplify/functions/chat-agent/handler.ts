@@ -32,13 +32,56 @@ interface InsightsData extends HealthData {
 }
 
 interface ChatRequest {
-  action: 'analyze_day' | 'analyze_week' | 'analyze_month' | 'chat' | 'generate_insights';
+  action: 'analyze_day' | 'analyze_week' | 'analyze_month' | 'chat' | 'generate_insights' | 'generate_workout_plan';
   message?: string;
   prompt?: string; // Alternative to message
-  data?: HealthData | InsightsData; // Single day data
+  data?: HealthData | InsightsData | WorkoutPlanData; // Single day data
   healthData?: HealthData[]; // Multiple days data
   history?: { role: string; content: string }[];
   currentDate?: string;
+}
+
+interface WorkoutPlanData {
+  currentDay: {
+    date: string;
+    recovery?: number | null;
+    sleep?: number | null;
+    rhr?: number | null;
+    strain?: number | null;
+    weight?: number | null;
+    nutritionPlan?: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fats: number;
+    };
+    nutritionCompleted?: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fats: number;
+    };
+  };
+  userProfile?: {
+    trainingGoal?: string;
+    experienceLevel?: string;
+    preferredDuration?: number;
+    availableEquipment?: string[];
+  };
+  recentHistory: Array<{
+    date: string;
+    type: string;
+    duration?: number;
+    strain?: number | null;
+    completed?: boolean;
+    exercises?: Array<{
+      name: string;
+      sets: number;
+      reps: string;
+      weight: string;
+    }>;
+  }>;
+  currentPlan?: any;
 }
 
 export const handler = async (event: any) => {
@@ -73,6 +116,10 @@ export const handler = async (event: any) => {
         const insightsData = data as InsightsData;
         prompt = buildDailyInsightsPrompt(insightsData);
         break;
+      case 'generate_workout_plan':
+        const workoutPlanData = data as WorkoutPlanData;
+        prompt = buildWorkoutPlanPrompt(workoutPlanData);
+        break;
       default:
         return {
           statusCode: 400,
@@ -90,6 +137,18 @@ export const handler = async (event: any) => {
         body: JSON.stringify({
           ...parsed,
           raw_text: response,
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    // For generate_workout_plan, parse the structured response
+    if (action === 'generate_workout_plan') {
+      const parsed = parseWorkoutPlanResponse(response);
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          ...parsed,
           timestamp: new Date().toISOString()
         })
       };
@@ -379,5 +438,127 @@ function parseInsightsResponse(response: string): {
     areas_for_improvement: [],
     recommendations: [],
     wellness_score: 50
+  };
+}
+
+function buildWorkoutPlanPrompt(data: WorkoutPlanData | undefined): string {
+  if (!data) {
+    return 'Generate a basic strength training workout plan.';
+  }
+
+  const { currentDay, userProfile, recentHistory, currentPlan } = data;
+
+  // Format recent history
+  const historyStr = recentHistory.slice(0, 7).map(h => {
+    if (h.exercises && h.exercises.length > 0) {
+      const exercisesStr = h.exercises.map(e => 
+        `    - ${e.name}: ${e.sets}x${e.reps} @ ${e.weight}`
+      ).join('\n');
+      return `${h.date} - ${h.type} (${h.duration || '-'} min, Strain: ${h.strain || '-'})\n${exercisesStr}`;
+    }
+    return `${h.date} - ${h.type} (Strain: ${h.strain || '-'})`;
+  }).join('\n\n');
+
+  return `You are an expert strength and conditioning coach AI. Generate a personalized workout plan for TODAY: ${currentDay.date}.
+
+**CURRENT RECOVERY STATUS:**
+- Recovery Score: ${currentDay.recovery ?? 'Not recorded'}%
+- Sleep Performance: ${currentDay.sleep ?? 'Not recorded'}%
+- Resting Heart Rate: ${currentDay.rhr ?? 'Not recorded'} bpm
+- Yesterday's Strain: ${currentDay.strain ?? 'Not recorded'}
+
+**USER PROFILE:**
+- Training Goal: ${userProfile?.trainingGoal || 'general fitness'}
+- Experience Level: ${userProfile?.experienceLevel || 'intermediate'}
+- Preferred Duration: ${userProfile?.preferredDuration || 60} minutes
+- Available Equipment: ${userProfile?.availableEquipment?.join(', ') || 'full gym'}
+
+**RECENT TRAINING HISTORY (Last 7 Days):**
+${historyStr || 'No recent training data'}
+
+**INSTRUCTIONS:**
+1. **Maintain Exercise Consistency**: Use the EXACT same exercises from the most recent workout of this type
+2. **Progressive Overload**: Suggest incremental increases in weight (2.5-5 lbs upper, 5-10 lbs lower), reps (+1-2), or sets (+1)
+3. **Respect Recovery**: If recovery <60% or sleep <70%, reduce intensity or suggest active recovery
+4. **Balance Training Split**: Don't train same muscle groups on consecutive days
+5. **Reference Previous Performance**: Always mention what user did last time for each exercise
+6. **Exercise Count**: Include 4-6 exercises for strength workouts (same as previous workout of this type), 3-4 for recovery days
+
+Generate the workout plan in the following EXACT JSON format (respond ONLY with valid JSON, no markdown):
+
+{
+  "recommendation": "Brief rationale for today's plan and progression strategy",
+  "workoutType": "Workout type that matches recent history (e.g., 'Upper Body - Push', 'Lower Body')",
+  "targetDuration": 60,
+  "estimatedIntensity": "easy|moderate|hard",
+  "exercises": [
+    {
+      "name": "Exercise name (MUST match history)",
+      "sets": 4,
+      "reps": "8",
+      "suggestedWeight": "225 lbs",
+      "progression": "Explain progression (e.g., '+5 lbs from last session')",
+      "previousPerformance": "What user did last time (e.g., '4x8 @ 220 lbs')",
+      "notes": "Form cues or tips"
+    }
+  ],
+  "warmup": "Suggested warmup routine",
+  "cooldown": "Suggested cooldown/stretching",
+  "nutritionTip": "Brief nutrition recommendation"
+}
+
+**CRITICAL RULES:**
+- Exercise names MUST match exactly from training history
+- Include ALL exercises from the most recent workout of this type (typically 4-6 exercises)
+- Always include "progression" and "previousPerformance" fields
+- If recovery < 60%, suggest active recovery or very light workout
+- Progress systematically: same weight more reps → increase weight`;
+}
+
+function parseWorkoutPlanResponse(response: string): {
+  recommendation: string;
+  workoutType: string;
+  targetDuration: number;
+  estimatedIntensity: string;
+  exercises: Array<{
+    name: string;
+    sets: number;
+    reps: string;
+    suggestedWeight: string;
+    progression?: string;
+    previousPerformance?: string;
+    notes?: string;
+  }>;
+  warmup?: string;
+  cooldown?: string;
+  nutritionTip?: string;
+} {
+  try {
+    // Try to extract JSON from the response
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        recommendation: parsed.recommendation || 'AI-generated workout plan',
+        workoutType: parsed.workoutType || 'Strength Training',
+        targetDuration: parsed.targetDuration || 60,
+        estimatedIntensity: parsed.estimatedIntensity || 'moderate',
+        exercises: parsed.exercises || [],
+        warmup: parsed.warmup,
+        cooldown: parsed.cooldown,
+        nutritionTip: parsed.nutritionTip
+      };
+    }
+  } catch (e) {
+    console.error('Failed to parse workout plan JSON:', e);
+  }
+
+  // Fallback: return a basic workout structure
+  return {
+    recommendation: 'Failed to parse AI response. Please try again.',
+    workoutType: 'Strength Training',
+    targetDuration: 60,
+    estimatedIntensity: 'moderate',
+    exercises: []
   };
 }

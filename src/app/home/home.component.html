@@ -12,7 +12,7 @@
 
   <!-- Main Two-Column Layout -->
   <div class="main-layout">
-    <!-- Left: Action List -->
+    <!-- Left: Action List (Primary) -->
     <section class="actions-section">
       <app-action-list
         *ngIf="isToday()"
@@ -39,19 +39,36 @@
           {{ whoopLoading ? 'Importing...' : 'Import Whoop' }}
         </button>
       </div>
-      
+    </section>
+
+    <!-- Right: Dashboard (Secondary) -->
+    <section class="dashboard-section">
+      <app-dashboard
+        [currentEntry]="currentEntry"
+        [whoopWorkouts]="whoopWorkouts"
+        [mealEntries]="mealEntries"
+        [isLoading]="isLoadingDashboard"
+        [selectedDate]="selectedDate"
+        (editEntry)="editEntry()"
+        (planWorkout)="openWorkoutPlanner()"
+        (toggleWorkoutComplete)="toggleWorkoutCompleted()"
+        (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
+        (mergeWorkout)="promptMergeWithPlanned($event)"
+        (openInsights)="openInsightsPanel()">
+      </app-dashboard>
+
       <!-- Whoop Status -->
       <div class="whoop-status success" *ngIf="whoopConnected && whoopHasRefreshToken">
         <span class="status-icon">✓</span>
-        <span class="status-text">Whoop connected</span>
+        <span class="status-text">Whoop</span>
       </div>
       <div class="whoop-status expired" *ngIf="whoopExpired && !whoopConnected">
         <span class="status-icon">⚠️</span>
-        <span class="status-text">Whoop expired</span>
-        <button class="reconnect-btn" (click)="reconnectWhoop()">Reconnect</button>
+        <span class="status-text">Whoop</span>
+        <button class="reconnect-btn" (click)="reconnectWhoop()">↻</button>
       </div>
       <a *ngIf="!whoopConnected && !whoopExpired" routerLink="/integrations" class="connect-link">
-        Connect Whoop →
+        Connect Whoop
       </a>
 
       <!-- History -->
@@ -75,23 +92,6 @@
           No entries yet
         </div>
       </div>
-    </section>
-
-    <!-- Right: Dashboard -->
-    <section class="dashboard-section">
-      <app-dashboard
-        [currentEntry]="currentEntry"
-        [whoopWorkouts]="whoopWorkouts"
-        [mealEntries]="mealEntries"
-        [isLoading]="isLoadingDashboard"
-        [selectedDate]="selectedDate"
-        (editEntry)="editEntry()"
-        (planWorkout)="openWorkoutPlanner()"
-        (toggleWorkoutComplete)="toggleWorkoutCompleted()"
-        (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
-        (mergeWorkout)="promptMergeWithPlanned($event)"
-        (openInsights)="openInsightsPanel()">
-      </app-dashboard>
     </section>
   </div>
 

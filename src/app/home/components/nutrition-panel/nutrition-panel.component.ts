@@ -55,26 +55,49 @@ export class NutritionPanelComponent implements OnChanges {
     const select = event.target as HTMLSelectElement;
     const mealId = select.value;
     
-    if (!mealId) return;
+    console.log('Meal dropdown changed:', { mealId, selectedMealType: this.selectedMealType, date: this.selectedDate });
+    
+    if (!mealId) {
+      console.log('No meal ID selected');
+      return;
+    }
     
     const savedMeal = this.savedMeals.find(m => m.id === mealId);
-    if (!savedMeal) return;
+    if (!savedMeal) {
+      console.error('Saved meal not found:', mealId);
+      return;
+    }
     
-    const created = await this.mealEntryService.createMealEntry({
-      date: this.selectedDate,
-      mealType: this.selectedMealType,
-      name: savedMeal.name,
-      calories: savedMeal.calories,
-      protein: savedMeal.protein,
-      carbs: savedMeal.carbs,
-      fats: savedMeal.fats,
-      completed: false,
-      mealId: savedMeal.id
+    console.log('Creating meal entry:', {
+      meal: savedMeal.name,
+      type: this.selectedMealType,
+      date: this.selectedDate
     });
     
-    if (created) {
-      const newEntries = [...this.mealEntries, created];
-      this.mealEntriesChanged.emit(newEntries);
+    try {
+      const created = await this.mealEntryService.createMealEntry({
+        date: this.selectedDate,
+        mealType: this.selectedMealType,
+        name: savedMeal.name,
+        calories: savedMeal.calories,
+        protein: savedMeal.protein,
+        carbs: savedMeal.carbs,
+        fats: savedMeal.fats,
+        completed: false,
+        mealId: savedMeal.id
+      });
+      
+      console.log('Meal entry created:', created);
+      
+      if (created) {
+        const newEntries = [...this.mealEntries, created];
+        console.log('Emitting new entries:', newEntries.length);
+        this.mealEntriesChanged.emit(newEntries);
+      } else {
+        console.error('Failed to create meal entry - no data returned');
+      }
+    } catch (error) {
+      console.error('Error in onMealDropdownChange:', error);
     }
     
     select.value = '';

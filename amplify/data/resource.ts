@@ -38,9 +38,9 @@ const schema = a.schema({
     mealType: a.string().required(), // breakfast, lunch, dinner, snack
     name: a.string().required(),
     calories: a.integer().required(),
-    protein: a.integer(),
-    carbs: a.integer(),
-    fats: a.integer(),
+    protein: a.float(),
+    carbs: a.float(),
+    fats: a.float(),
     completed: a.boolean(), // Has the user eaten this meal?
     mealId: a.string(), // Optional link to Meal library
   }).authorization(allow => [allow.owner()]),
@@ -49,9 +49,9 @@ const schema = a.schema({
   Meal: a.model({
     name: a.string().required(),
     calories: a.integer().required(),
-    protein: a.integer(),
-    carbs: a.integer(),
-    fats: a.integer(),
+    protein: a.float(),
+    carbs: a.float(),
+    fats: a.float(),
   }).authorization(allow => [allow.owner()]),
 });
 

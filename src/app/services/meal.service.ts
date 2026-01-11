@@ -40,6 +40,8 @@ export class MealService {
 
   async createMeal(meal: Omit<Meal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Meal | null> {
     try {
+      console.log('MealService: Creating meal with data:', meal);
+      
       const response = await this.client.models.Meal.create({
         name: meal.name,
         calories: meal.calories,
@@ -48,8 +50,24 @@ export class MealService {
         fats: meal.fats
       });
       
+      console.log('MealService: Create response:', response);
+      
+      // Check for errors in response
+      if (response.errors && response.errors.length > 0) {
+        console.error('MealService: API returned errors:', response.errors);
+        response.errors.forEach((error: any, index: number) => {
+          console.error(`Error ${index + 1}:`, {
+            message: error.message,
+            errorType: error.errorType,
+            errorInfo: error.errorInfo,
+            path: error.path,
+            locations: error.locations
+          });
+        });
+      }
+      
       if (response.data) {
-        return {
+        const createdMeal = {
           id: response.data.id,
           name: response.data.name,
           calories: response.data.calories,
@@ -59,10 +77,14 @@ export class MealService {
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt
         };
+        console.log('MealService: Returning created meal:', createdMeal);
+        return createdMeal;
       }
+      
+      console.log('MealService: No data in response');
       return null;
     } catch (error) {
-      console.error('Error creating meal:', error);
+      console.error('MealService: Error creating meal:', error);
       return null;
     }
   }

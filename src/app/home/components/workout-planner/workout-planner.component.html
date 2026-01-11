@@ -55,14 +55,31 @@
       </div>
     </div>
     
+    <!-- AI Recommendation Banner -->
+    <div class="ai-recommendation" *ngIf="aiRecommendation">
+      <div class="ai-icon">🤖</div>
+      <div class="ai-text">
+        <div class="ai-label">AI Coach Recommendation</div>
+        <div class="ai-message">{{ aiRecommendation }}</div>
+      </div>
+    </div>
+    
     <!-- Actions -->
     <div class="form-actions">
-      <button type="button" class="copy-btn" (click)="copyLastWorkout()" *ngIf="hasLastWorkout()">
+      <button type="button" class="copy-btn" (click)="copyLastWorkout()" *ngIf="hasLastWorkout()" [disabled]="isGeneratingAI">
         📋 Copy Last Workout
+      </button>
+      <button type="button" class="ai-btn" (click)="generateAIRecommendation()" [disabled]="isGeneratingAI">
+        {{ isGeneratingAI ? '⏳ Generating...' : '🤖 AI Recommendation' }}
       </button>
       <div class="spacer"></div>
       <button type="button" (click)="onClose()" class="cancel-btn">Cancel</button>
-      <button type="submit" class="submit-btn">Save Plan</button>
+      <button type="submit" class="submit-btn" [disabled]="isGeneratingAI">Save Plan</button>
+    </div>
+    
+    <!-- AI Error Message -->
+    <div class="ai-error" *ngIf="aiError">
+      {{ aiError }}
     </div>
   </form>
 </div>

@@ -18,7 +18,7 @@
 
   <!-- Edit Mode Notice -->
   <div class="edit-notice" *ngIf="editMode">
-    Use arrows to reorder actions. Click Done when finished.
+    Drag and drop to reorder actions
   </div>
 
   <!-- Progress Bar -->
@@ -30,16 +30,21 @@
   <div class="action-items" *ngIf="!collapsed || !isAllComplete || editMode">
     <div class="loading" *ngIf="isLoading">Loading actions...</div>
     
-    <!-- Edit Mode: Show all actions -->
+    <!-- Edit Mode: Show all actions with drag and drop -->
     <ng-container *ngIf="editMode">
       <div 
         class="action-item edit-item" 
-        *ngFor="let action of visibleActions; let i = index; let first = first; let last = last"
-        [class.completed]="action.status === 'completed'">
+        *ngFor="let action of visibleActions; let i = index"
+        [class.completed]="action.status === 'completed'"
+        [class.dragging]="draggedIndex === i"
+        draggable="true"
+        (dragstart)="onDragStart(i, $event)"
+        (dragover)="onDragOver($event)"
+        (drop)="onDrop(i, $event)"
+        (dragend)="onDragEnd()">
         
-        <div class="reorder-buttons">
-          <button class="reorder-btn" (click)="moveUp(i, $event)" [disabled]="first">▲</button>
-          <button class="reorder-btn" (click)="moveDown(i, $event)" [disabled]="last">▼</button>
+        <div class="drag-handle">
+          <span class="drag-icon">⋮⋮</span>
         </div>
         
         <div class="action-icon">{{ action.icon }}</div>

@@ -89,7 +89,7 @@ export class HomeComponent implements OnInit {
   dailyActions: ActionItem[] = [];
   
   private readonly ACTION_ORDER_KEY = 'jarvis_action_order';
-  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'complete_workout', 'lifeEvents', 'jarvis', 'daily_insights'];
+  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'lifeEvents', 'jarvis', 'complete_workout', 'daily_insights'];
   
   // Merge workflow
   showMergePrompt = false;
@@ -214,25 +214,27 @@ export class HomeComponent implements OnInit {
       }
     };
     
-    // Get saved order or use default
-    const savedOrder = this.getActionOrder();
-    
-    // Build actions in saved order
-    this.dailyActions = savedOrder
-      .filter(id => allActions[id]) // Only include valid IDs
-      .map(id => allActions[id]);
-    
-    // Add meal actions if nutrition is planned
+    // Add meal actions to the actions map if nutrition is planned
     if (hasMeals) {
       const mealActions = this.buildMealActions();
-      // Insert meal actions after the nutrition action
-      const nutritionIndex = this.dailyActions.findIndex(a => a.id === 'nutrition');
-      if (nutritionIndex !== -1) {
-        this.dailyActions.splice(nutritionIndex + 1, 0, ...mealActions);
-      } else {
-        this.dailyActions.push(...mealActions);
-      }
+      mealActions.forEach(action => {
+        allActions[action.id] = action;
+      });
     }
+    
+    // Get saved order
+    const savedOrder = this.getActionOrder();
+    
+    // Build actions list:
+    // 1. Start with saved order
+    // 2. Filter out IDs that don't exist (e.g., removed meal types)
+    // 3. Add any new actions that aren't in saved order (e.g., new meal types)
+    const existingIds = new Set(savedOrder.filter(id => allActions[id]));
+    const newIds = Object.keys(allActions).filter(id => !existingIds.has(id));
+    
+    const finalOrder = [...savedOrder.filter(id => allActions[id]), ...newIds];
+    
+    this.dailyActions = finalOrder.map(id => allActions[id]);
     
     // Load saved action states from entry
     this.loadActionStates();
@@ -322,8 +324,8 @@ export class HomeComponent implements OnInit {
       const saved = localStorage.getItem(this.ACTION_ORDER_KEY);
       if (saved) {
         const order = JSON.parse(saved);
-        // Validate it has all required actions
-        if (Array.isArray(order) && order.length === this.defaultActionOrder.length) {
+        // Return saved order if it exists (can include meal actions now)
+        if (Array.isArray(order) && order.length > 0) {
           return order;
         }
       }
@@ -336,6 +338,7 @@ export class HomeComponent implements OnInit {
   }
   
   onActionsReorder(newOrder: string[]): void {
+    // Save the full order including meal actions
     this.saveActionOrder(newOrder);
     this.buildDailyActions();
   }
@@ -987,7 +990,12 @@ export class HomeComponent implements OnInit {
   }
   
   async onMealEntriesChanged(entries: MealEntry[]): Promise<void> {
+    console.log('Parent: onMealEntriesChanged called with', entries.length, 'entries');
     this.mealEntries = entries;
+    
+    // Reload meal entries from database to ensure consistency
+    await this.loadMealEntries();
+    
     await this.updateNutritionTotals();
     this.buildDailyActions();
   }

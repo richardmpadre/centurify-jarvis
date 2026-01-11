@@ -38,6 +38,7 @@ export class ActionListComponent {
   @Output() toggleEditMode = new EventEmitter<void>();
 
   completedCollapsed = true; // Completed section collapsed by default
+  draggedIndex: number | null = null;
 
   get completedCount(): number {
     return this.actions.filter(a => a.status === 'completed').length;
@@ -76,7 +77,7 @@ export class ActionListComponent {
 
   get visibleActions(): ActionItem[] {
     if (this.editMode) {
-      // Show all actions in edit mode
+      // In edit mode, show all actions (including meal actions for reordering)
       return this.actions;
     }
     // Filter out actions whose dependencies aren't met
@@ -114,22 +115,56 @@ export class ActionListComponent {
     this.toggleEditMode.emit();
   }
 
-  moveUp(index: number, event: Event): void {
-    event.stopPropagation();
-    if (index === 0) return;
-    
-    const newOrder = this.actions.map(a => a.id);
-    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
-    this.reorder.emit(newOrder);
+  onDragStart(index: number, event: DragEvent): void {
+    console.log('Drag start:', index);
+    this.draggedIndex = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', index.toString());
+    }
   }
 
-  moveDown(index: number, event: Event): void {
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
     event.stopPropagation();
-    if (index >= this.actions.length - 1) return;
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }
+
+  onDrop(dropIndex: number, event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
     
-    const newOrder = this.actions.map(a => a.id);
-    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-    this.reorder.emit(newOrder);
+    console.log('Drop at:', dropIndex, 'Dragged from:', this.draggedIndex);
+    
+    if (this.draggedIndex === null || this.draggedIndex === dropIndex) {
+      console.log('Invalid drop - same position or no drag');
+      this.draggedIndex = null;
+      return;
+    }
+
+    // Use visibleActions for reordering since that's what we're displaying in edit mode
+    const visibleActionIds = this.visibleActions.map(a => a.id);
+    const draggedId = visibleActionIds[this.draggedIndex];
+    
+    console.log('Reordering:', { visibleActionIds, draggedId, from: this.draggedIndex, to: dropIndex });
+    
+    // Remove from old position
+    visibleActionIds.splice(this.draggedIndex, 1);
+    
+    // Insert at new position
+    visibleActionIds.splice(dropIndex, 0, draggedId);
+    
+    console.log('New order:', visibleActionIds);
+    
+    this.draggedIndex = null;
+    this.reorder.emit(visibleActionIds);
+  }
+
+  onDragEnd(): void {
+    console.log('Drag end');
+    this.draggedIndex = null;
   }
 
   getStatusIcon(status: string): string {
