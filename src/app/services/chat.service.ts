@@ -39,6 +39,24 @@ export interface DailyInsights {
   raw_text: string; // Full text for storage
 }
 
+export interface WeeklyInsights {
+  summary: string;
+  weekly_score: number;
+  trend: 'improving' | 'stable' | 'declining';
+  averages: {
+    recovery: number | null;
+    sleep: number | null;
+    strain: number | null;
+  };
+  highlights: string[];
+  lowlights: string[];
+  patterns: string[];
+  recommendations: string[];
+  best_day: { date: string; reason: string } | null;
+  focus_for_next_week: string;
+  raw_text: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -300,6 +318,54 @@ export class ChatService {
     }
 
     const result = await response.json();
+    return result;
+  }
+
+  // Generate AI-powered weekly insights
+  async generateWeeklyInsights(data: {
+    weekNumber: number;
+    year: number;
+    startDate: string;
+    endDate: string;
+    days: Array<{
+      date: string;
+      recovery?: number | null;
+      sleep?: number | null;
+      strain?: number | null;
+      rhr?: number | null;
+      workoutCompleted?: boolean;
+      workoutPlanned?: boolean;
+      mealsCompleted?: number;
+      mealsPlanned?: number;
+      tasksCompleted?: number;
+      tasksTotal?: number;
+    }>;
+  }): Promise<WeeklyInsights> {
+    const apiUrl = await this.ensureApiUrl();
+    console.log('Generating weekly insights for week', data.weekNumber, 'of', data.year);
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'generate_weekly_insights',
+        data
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      try {
+        const error = JSON.parse(errorText);
+        throw new Error(error.error || error.details || 'Failed to generate weekly insights');
+      } catch {
+        throw new Error(errorText || 'Failed to generate weekly insights');
+      }
+    }
+
+    const result = await response.json();
+    console.log('Weekly insights response:', result);
     return result;
   }
 }

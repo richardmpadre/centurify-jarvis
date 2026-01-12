@@ -1,0 +1,147 @@
+<div class="insights-page">
+  <!-- Week Navigation -->
+  <div class="week-nav">
+    <button class="nav-btn" (click)="prevWeek()">‹ Prev</button>
+    <div class="week-display">
+      <span class="week-range">{{ weekInfo.displayRange }}</span>
+      <span class="week-number">Week {{ weekInfo.weekNumber }} of {{ weekInfo.year }}</span>
+    </div>
+    <button class="nav-btn" (click)="nextWeek()" [disabled]="isCurrentWeekSelected()">Next ›</button>
+    <button *ngIf="!isCurrentWeekSelected()" class="today-btn" (click)="goToCurrentWeek()">Current Week</button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading week data...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error && !isLoading">
+    <p>{{ error }}</p>
+    <button class="retry-btn" (click)="loadWeekData()">Retry</button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="insights-content" *ngIf="!isLoading && !error">
+    <!-- No Insights Yet -->
+    <div class="empty-state" *ngIf="!insights && !isGenerating">
+      <div class="empty-icon">📊</div>
+      <h3>Weekly Insights</h3>
+      <p>Generate AI-powered insights for this week based on your health data, workouts, and nutrition.</p>
+      <div class="week-summary">
+        <span class="summary-item">
+          <strong>{{ getDaysWithData() }}</strong>/7 days tracked
+        </span>
+        <span class="summary-item">
+          <strong>{{ getWorkoutsCompleted() }}</strong>/{{ getWorkoutsPlanned() }} workouts completed
+        </span>
+      </div>
+      <button class="generate-btn" (click)="generateInsights()" [disabled]="getDaysWithData() === 0">
+        ✨ Generate Weekly Insights
+      </button>
+      <p class="note" *ngIf="getDaysWithData() === 0">Track at least one day to generate insights</p>
+    </div>
+
+    <!-- Generating State -->
+    <div class="generating-state" *ngIf="isGenerating">
+      <div class="loading-spinner"></div>
+      <p>Analyzing your week...</p>
+    </div>
+
+    <!-- Insights Display -->
+    <div class="insights-display" *ngIf="insights && !isGenerating">
+      <!-- Score and Trend Header -->
+      <div class="score-header">
+        <div class="weekly-score" [style.--score-color]="getScoreColor()">
+          <span class="score-value">{{ insights.weekly_score }}</span>
+          <span class="score-label">Weekly Score</span>
+        </div>
+        <div class="trend-indicator" [class]="getTrendClass()">
+          <span class="trend-icon">{{ getTrendIcon() }}</span>
+          <span class="trend-label">{{ insights.trend | titlecase }}</span>
+        </div>
+      </div>
+
+      <!-- Averages Cards -->
+      <div class="averages-section">
+        <h4>Weekly Averages</h4>
+        <div class="averages-grid">
+          <div class="average-card recovery">
+            <span class="avg-value">{{ insights.averages.recovery ?? '--' }}<span class="unit" *ngIf="insights.averages.recovery">%</span></span>
+            <span class="avg-label">Recovery</span>
+          </div>
+          <div class="average-card sleep">
+            <span class="avg-value">{{ insights.averages.sleep ?? '--' }}<span class="unit" *ngIf="insights.averages.sleep">%</span></span>
+            <span class="avg-label">Sleep</span>
+          </div>
+          <div class="average-card strain">
+            <span class="avg-value">{{ insights.averages.strain ?? '--' }}</span>
+            <span class="avg-label">Strain</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="section">
+        <p class="summary-text">{{ insights.summary }}</p>
+      </div>
+
+      <!-- Best Day -->
+      <div class="section best-day" *ngIf="insights.best_day">
+        <h4>⭐ Best Day</h4>
+        <div class="best-day-card">
+          <span class="best-day-date">{{ insights.best_day.date }}</span>
+          <span class="best-day-reason">{{ insights.best_day.reason }}</span>
+        </div>
+      </div>
+
+      <!-- Highlights -->
+      <div class="section" *ngIf="insights.highlights.length > 0">
+        <h4>🏆 Highlights</h4>
+        <ul class="insights-list highlights">
+          <li *ngFor="let item of insights.highlights">{{ item }}</li>
+        </ul>
+      </div>
+
+      <!-- Lowlights -->
+      <div class="section" *ngIf="insights.lowlights.length > 0">
+        <h4>📉 Areas to Improve</h4>
+        <ul class="insights-list lowlights">
+          <li *ngFor="let item of insights.lowlights">{{ item }}</li>
+        </ul>
+      </div>
+
+      <!-- Patterns -->
+      <div class="section" *ngIf="insights.patterns.length > 0">
+        <h4>🔍 Patterns Observed</h4>
+        <ul class="insights-list patterns">
+          <li *ngFor="let item of insights.patterns">{{ item }}</li>
+        </ul>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="section" *ngIf="insights.recommendations.length > 0">
+        <h4>💡 Recommendations</h4>
+        <ul class="insights-list recommendations">
+          <li *ngFor="let item of insights.recommendations">{{ item }}</li>
+        </ul>
+      </div>
+
+      <!-- Focus for Next Week -->
+      <div class="section focus-section" *ngIf="insights.focus_for_next_week">
+        <h4>🎯 Focus for Next Week</h4>
+        <div class="focus-card">
+          {{ insights.focus_for_next_week }}
+        </div>
+      </div>
+
+      <!-- Regenerate Button -->
+      <div class="actions">
+        <button class="regenerate-btn" (click)="generateInsights()">
+          🔄 Regenerate Insights
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

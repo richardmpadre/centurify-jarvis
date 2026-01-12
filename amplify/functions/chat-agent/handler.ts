@@ -32,13 +32,33 @@ interface InsightsData extends HealthData {
 }
 
 interface ChatRequest {
-  action: 'analyze_day' | 'analyze_week' | 'analyze_month' | 'chat' | 'generate_insights' | 'generate_workout_plan';
+  action: 'analyze_day' | 'analyze_week' | 'analyze_month' | 'chat' | 'generate_insights' | 'generate_workout_plan' | 'generate_weekly_insights';
   message?: string;
   prompt?: string; // Alternative to message
-  data?: HealthData | InsightsData | WorkoutPlanData; // Single day data
+  data?: HealthData | InsightsData | WorkoutPlanData | WeeklyInsightsData; // Single day data
   healthData?: HealthData[]; // Multiple days data
   history?: { role: string; content: string }[];
   currentDate?: string;
+}
+
+interface WeeklyInsightsData {
+  weekNumber: number;
+  year: number;
+  startDate: string;
+  endDate: string;
+  days: Array<{
+    date: string;
+    recovery?: number | null;
+    sleep?: number | null;
+    strain?: number | null;
+    rhr?: number | null;
+    workoutCompleted?: boolean;
+    workoutPlanned?: boolean;
+    mealsCompleted?: number;
+    mealsPlanned?: number;
+    tasksCompleted?: number;
+    tasksTotal?: number;
+  }>;
 }
 
 interface WorkoutPlanData {
@@ -117,6 +137,10 @@ export const handler = async (event: any) => {
         const workoutPlanData = data as WorkoutPlanData;
         prompt = buildWorkoutPlanPrompt(workoutPlanData);
         break;
+      case 'generate_weekly_insights':
+        const weeklyData = data as WeeklyInsightsData;
+        prompt = buildWeeklyInsightsPrompt(weeklyData);
+        break;
       default:
         return {
           statusCode: 400,
@@ -146,6 +170,19 @@ export const handler = async (event: any) => {
         statusCode: 200,
         body: JSON.stringify({
           ...parsed,
+          timestamp: new Date().toISOString()
+        })
+      };
+    }
+    
+    // For generate_weekly_insights, parse the structured response
+    if (action === 'generate_weekly_insights') {
+      const parsed = parseWeeklyInsightsResponse(response);
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          ...parsed,
+          raw_text: response,
           timestamp: new Date().toISOString()
         })
       };
@@ -481,6 +518,173 @@ function parseInsightsResponse(response: string): {
     areas_for_improvement: [],
     recommendations: [],
     wellness_score: 50
+  };
+}
+
+function buildWeeklyInsightsPrompt(data: WeeklyInsightsData | undefined): string {
+  if (!data) {
+    return 'Generate generic weekly wellness tips.';
+  }
+
+  const { weekNumber, year, startDate, endDate, days } = data;
+  
+  // Calculate averages
+  const daysWithRecovery = days.filter(d => d.recovery != null);
+  const daysWithSleep = days.filter(d => d.sleep != null);
+  const daysWithStrain = days.filter(d => d.strain != null);
+  
+  const avgRecovery = daysWithRecovery.length > 0 
+    ? Math.round(daysWithRecovery.reduce((sum, d) => sum + (d.recovery || 0), 0) / daysWithRecovery.length)
+    : null;
+  const avgSleep = daysWithSleep.length > 0
+    ? Math.round(daysWithSleep.reduce((sum, d) => sum + (d.sleep || 0), 0) / daysWithSleep.length)
+    : null;
+  const avgStrain = daysWithStrain.length > 0
+    ? Math.round(daysWithStrain.reduce((sum, d) => sum + (d.strain || 0), 0) / daysWithStrain.length * 10) / 10
+    : null;
+  
+  // Calculate workout stats
+  const workoutsPlanned = days.filter(d => d.workoutPlanned).length;
+  const workoutsCompleted = days.filter(d => d.workoutCompleted).length;
+  
+  // Calculate nutrition stats
+  const totalMealsPlanned = days.reduce((sum, d) => sum + (d.mealsPlanned || 0), 0);
+  const totalMealsCompleted = days.reduce((sum, d) => sum + (d.mealsCompleted || 0), 0);
+  const nutritionAdherence = totalMealsPlanned > 0 
+    ? Math.round((totalMealsCompleted / totalMealsPlanned) * 100) 
+    : null;
+  
+  // Find best and worst days
+  const bestDay = daysWithRecovery.length > 0 
+    ? daysWithRecovery.reduce((best, d) => (d.recovery || 0) > (best.recovery || 0) ? d : best)
+    : null;
+  const worstDay = daysWithRecovery.length > 0
+    ? daysWithRecovery.reduce((worst, d) => (d.recovery || 0) < (worst.recovery || 0) ? d : worst)
+    : null;
+  
+  // Daily breakdown
+  const dailyBreakdown = days.map(d => {
+    return `  ${d.date}: Recovery ${d.recovery ?? '-'}%, Sleep ${d.sleep ?? '-'}%, Strain ${d.strain ?? '-'}, Workout: ${d.workoutCompleted ? '✓' : d.workoutPlanned ? '✗ planned' : '-'}`;
+  }).join('\n');
+
+  return `You are Jarvis, a personal health and wellness AI coach. Generate comprehensive WEEKLY insights for Week ${weekNumber} of ${year} (${startDate} to ${endDate}).
+
+**WEEKLY AVERAGES:**
+- Average Recovery: ${avgRecovery ?? 'No data'}%
+- Average Sleep: ${avgSleep ?? 'No data'}%
+- Average Strain: ${avgStrain ?? 'No data'}
+- Days with data: ${daysWithRecovery.length}/7
+
+**WORKOUT PERFORMANCE:**
+- Workouts Completed: ${workoutsCompleted}/${workoutsPlanned} planned
+- Completion Rate: ${workoutsPlanned > 0 ? Math.round((workoutsCompleted / workoutsPlanned) * 100) : 0}%
+
+**NUTRITION ADHERENCE:**
+- Meals Completed: ${totalMealsCompleted}/${totalMealsPlanned}
+- Adherence Rate: ${nutritionAdherence ?? 0}%
+
+**DAILY BREAKDOWN:**
+${dailyBreakdown}
+
+**NOTABLE DAYS:**
+- Best Recovery Day: ${bestDay ? `${bestDay.date} (${bestDay.recovery}%)` : 'N/A'}
+- Lowest Recovery Day: ${worstDay ? `${worstDay.date} (${worstDay.recovery}%)` : 'N/A'}
+
+Generate a comprehensive weekly analysis in the following EXACT JSON format (respond ONLY with valid JSON, no markdown):
+{
+  "summary": "3-4 sentence overview of the week's performance, highlighting key patterns and overall health trend",
+  "weekly_score": 75,
+  "trend": "improving|stable|declining",
+  "averages": {
+    "recovery": ${avgRecovery ?? 'null'},
+    "sleep": ${avgSleep ?? 'null'},
+    "strain": ${avgStrain ?? 'null'}
+  },
+  "highlights": [
+    "Positive achievement 1",
+    "Positive achievement 2",
+    "Positive achievement 3"
+  ],
+  "lowlights": [
+    "Area that needs attention 1",
+    "Area that needs attention 2"
+  ],
+  "patterns": [
+    "Pattern observed 1 (e.g., 'Recovery tends to drop mid-week')",
+    "Pattern observed 2"
+  ],
+  "recommendations": [
+    "Specific actionable recommendation for next week 1",
+    "Specific actionable recommendation for next week 2",
+    "Specific actionable recommendation for next week 3"
+  ],
+  "best_day": {
+    "date": "${bestDay?.date || 'N/A'}",
+    "reason": "Why this was the best day"
+  },
+  "focus_for_next_week": "One key area to focus on improving next week"
+}
+
+**SCORING GUIDELINES (weekly_score 0-100):**
+- Base: 50 points
+- Average Recovery: 80%+ (+20), 60-79% (+10), 40-59% (+0), <40% (-10)
+- Average Sleep: 80%+ (+15), 60-79% (+8), 40-59% (+0), <40% (-8)
+- Workout Completion: 100% (+15), 80%+ (+10), 60-79% (+5), <60% (-5)
+- Nutrition Adherence: 100% (+10), 80%+ (+7), 60-79% (+3), <60% (+0)
+- Consistency (data tracked 6-7 days): +5, (4-5 days): +0, (<4 days): -5
+
+**Rules:**
+- Be specific about patterns you observe across the 7 days
+- Compare performance early in week vs late in week
+- Note any correlations (e.g., poor sleep affecting next day recovery)
+- Keep highlights and lowlights to 2-4 items each
+- Make recommendations actionable and specific`;
+}
+
+function parseWeeklyInsightsResponse(response: string): {
+  summary: string;
+  weekly_score: number;
+  trend: string;
+  averages: { recovery: number | null; sleep: number | null; strain: number | null };
+  highlights: string[];
+  lowlights: string[];
+  patterns: string[];
+  recommendations: string[];
+  best_day: { date: string; reason: string } | null;
+  focus_for_next_week: string;
+} {
+  try {
+    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        summary: parsed.summary || 'Weekly analysis complete.',
+        weekly_score: parsed.weekly_score ?? 50,
+        trend: parsed.trend || 'stable',
+        averages: parsed.averages || { recovery: null, sleep: null, strain: null },
+        highlights: parsed.highlights || [],
+        lowlights: parsed.lowlights || [],
+        patterns: parsed.patterns || [],
+        recommendations: parsed.recommendations || [],
+        best_day: parsed.best_day || null,
+        focus_for_next_week: parsed.focus_for_next_week || 'Continue tracking your health data consistently.'
+      };
+    }
+  } catch (e) {
+    console.error('Failed to parse weekly insights JSON:', e);
+  }
+
+  return {
+    summary: response.substring(0, 500),
+    weekly_score: 50,
+    trend: 'stable',
+    averages: { recovery: null, sleep: null, strain: null },
+    highlights: [],
+    lowlights: [],
+    patterns: [],
+    recommendations: [],
+    best_day: null,
+    focus_for_next_week: 'Continue tracking your health data consistently.'
   };
 }
 

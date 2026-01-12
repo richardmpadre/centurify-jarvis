@@ -53,6 +53,19 @@ const schema = a.schema({
     carbs: a.float(),
     fats: a.float(),
   }).authorization(allow => [allow.owner()]),
+  
+  // Weekly insights - AI-generated weekly analysis
+  WeeklyInsight: a.model({
+    year: a.integer().required(),
+    weekNumber: a.integer().required(),
+    startDate: a.date().required(),
+    endDate: a.date().required(),
+    summary: a.string(),
+    weeklyScore: a.integer(),
+    trend: a.string(), // improving, stable, declining
+    insights: a.string(), // Full JSON of all insights data
+    generatedAt: a.datetime(),
+  }).authorization(allow => [allow.owner()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
