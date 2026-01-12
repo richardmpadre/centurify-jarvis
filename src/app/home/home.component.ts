@@ -82,6 +82,8 @@ export class HomeComponent implements OnInit {
   whoopExpired = false;
   whoopExpiryMinutes: number | null = null;
   whoopHasRefreshToken = false;
+  whoopSyncing = false;
+  whoopSyncMessage = '';
   
   // Action List
   actionsCollapsed = false;
@@ -527,6 +529,16 @@ export class HomeComponent implements OnInit {
     return getFormattedDisplayDate(this.selectedDate);
   }
 
+  getWellnessScore(entry: HealthEntry): number | null {
+    if (!entry?.dailyInsights) return null;
+    try {
+      const insights = JSON.parse(entry.dailyInsights);
+      return insights.wellness_score ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   // ==================== WORKOUT PLANNING ====================
   
   openWorkoutPlanner(): void {
@@ -914,6 +926,98 @@ export class HomeComponent implements OnInit {
       this.whoopMessage = `Error: ${error.message || 'Failed to fetch Whoop data'}`;
     } finally {
       this.whoopLoading = false;
+    }
+  }
+
+  // Quick sync for today's date from the dashboard
+  async quickSyncWhoop() {
+    if (!this.whoopConnected) return;
+    
+    this.whoopSyncing = true;
+    this.whoopSyncMessage = '';
+    
+    try {
+      const today = getLocalDateString(new Date());
+      const yesterday = getPreviousDay(today);
+      
+      const [recoveryData, sleepData, cycleDataToday, cycleDataYesterday] = await Promise.all([
+        this.whoopService.getRecovery(today, today),
+        this.whoopService.getSleep(today, today),
+        this.whoopService.getCycles(today, today),
+        this.whoopService.getCycles(yesterday, yesterday)
+      ]);
+      
+      const recoveryRecord = recoveryData?.records?.[0];
+      const sleepRecord = sleepData?.records?.[0];
+      const cycleRecordToday = cycleDataToday?.records?.[0];
+      const cycleRecordYesterday = cycleDataYesterday?.records?.[0];
+
+      let fieldsUpdated = 0;
+      const updates: any = { date: today };
+      
+      // Find or create today's entry
+      let todayEntry = this.entries.find(e => e.date === today);
+      
+      if (recoveryRecord?.score?.recovery_score != null) {
+        updates.recovery = recoveryRecord.score.recovery_score;
+        fieldsUpdated++;
+      }
+      if (recoveryRecord?.score?.resting_heart_rate != null) {
+        updates.rhr = recoveryRecord.score.resting_heart_rate;
+        fieldsUpdated++;
+      }
+      if (sleepRecord?.score?.sleep_performance_percentage != null) {
+        updates.sleep = sleepRecord.score.sleep_performance_percentage;
+        fieldsUpdated++;
+      }
+      if (cycleRecordToday?.score?.strain != null) {
+        updates.strain = Math.round(cycleRecordToday.score.strain * 10) / 10;
+        fieldsUpdated++;
+      }
+      
+      // Update or create today's entry
+      if (fieldsUpdated > 0) {
+        if (todayEntry?.id) {
+          updates.id = todayEntry.id;
+          await this.healthDataService.updateEntry(updates);
+        } else {
+          await this.healthDataService.saveEntry(updates);
+        }
+      }
+      
+      // Also update yesterday's strain if available
+      if (cycleRecordYesterday?.score?.strain != null) {
+        const yesterdayStrain = Math.round(cycleRecordYesterday.score.strain * 10) / 10;
+        const yesterdayEntry = this.entries.find(e => e.date === yesterday);
+        if (yesterdayEntry?.id) {
+          await this.healthDataService.updateEntry({
+            id: yesterdayEntry.id,
+            date: yesterday,
+            strain: yesterdayStrain
+          });
+        }
+      }
+
+      // Reload data to reflect changes
+      await this.loadEntries();
+      await this.loadDashboard();
+
+      this.whoopSyncMessage = fieldsUpdated > 0 
+        ? `✓ Synced ${fieldsUpdated} field(s)`
+        : 'No new data';
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        this.whoopSyncMessage = '';
+      }, 3000);
+    } catch (error: any) {
+      console.error('Quick sync error:', error);
+      this.whoopSyncMessage = `Error: ${error.message || 'Sync failed'}`;
+      setTimeout(() => {
+        this.whoopSyncMessage = '';
+      }, 5000);
+    } finally {
+      this.whoopSyncing = false;
     }
   }
 

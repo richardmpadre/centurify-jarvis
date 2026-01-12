@@ -24,6 +24,8 @@ export class DashboardComponent {
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
   @Output() openInsights = new EventEmitter<void>();
 
+  showActivities = false;
+
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
     try {
@@ -125,6 +127,32 @@ export class DashboardComponent {
     if (score >= 60) return '#eab308'; // Yellow
     if (score >= 40) return '#f97316'; // Orange
     return '#ef4444'; // Red
+  }
+
+  onViewActivities(): void {
+    this.showActivities = true;
+  }
+
+  closeActivities(): void {
+    this.showActivities = false;
+  }
+
+  formatTime(isoString: string | undefined): string {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+
+  formatDuration(seconds: number | undefined): string {
+    if (!seconds) return '0 min';
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h ${remainingMinutes}m`;
+    }
+    return `${minutes} min`;
   }
 
 }

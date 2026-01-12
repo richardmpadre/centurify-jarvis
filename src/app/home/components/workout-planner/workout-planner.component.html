@@ -44,7 +44,12 @@
     
     <!-- Exercise List -->
     <div class="exercise-list" *ngIf="exercises.length > 0">
-      <h4>Planned Exercises</h4>
+      <div class="exercise-list-header">
+        <h4>Planned Exercises</h4>
+        <button type="button" class="copy-clipboard-btn" (click)="copyToClipboard()" title="Copy to clipboard">
+          {{ copySuccess ? '✓ Copied!' : '📋 Copy' }}
+        </button>
+      </div>
       <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
         <div class="ex-info">
           <span class="ex-name">{{ ex.name }}</span>

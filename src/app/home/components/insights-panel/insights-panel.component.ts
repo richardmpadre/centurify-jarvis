@@ -5,12 +5,29 @@ import { HealthDataService } from '../../../services/health-data.service';
 import { HealthEntry, PlannedWorkout, WhoopWorkout } from '../../../models/health.models';
 import { MealEntry } from '../../../services/meal-entry.service';
 
+export interface ScoreCategory {
+  value: string;
+  points: number;
+  reason: string;
+}
+
+export interface ScoreBreakdown {
+  base: number;
+  recovery: ScoreCategory;
+  sleep: ScoreCategory;
+  workout: ScoreCategory;
+  nutrition: ScoreCategory;
+  tasks: ScoreCategory;
+  total: number;
+}
+
 export interface InsightsData {
   summary: string;
   achievements: string[];
   areas_for_improvement: string[];
   recommendations: string[];
   wellness_score: number;
+  score_breakdown?: ScoreBreakdown;
 }
 
 @Component({
@@ -100,7 +117,8 @@ export class InsightsPanelComponent implements OnChanges {
         achievements: result.achievements,
         areas_for_improvement: result.areas_for_improvement,
         recommendations: result.recommendations,
-        wellness_score: result.wellness_score
+        wellness_score: result.wellness_score,
+        score_breakdown: result.score_breakdown
       };
       
       // Save to database

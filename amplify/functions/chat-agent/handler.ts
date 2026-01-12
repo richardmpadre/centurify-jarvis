@@ -49,13 +49,9 @@ interface WorkoutPlanData {
     rhr?: number | null;
     strain?: number | null;
     weight?: number | null;
+    targetDuration?: number;
+    workoutType?: string;
     nutritionPlan?: {
-      calories: number;
-      protein: number;
-      carbs: number;
-      fats: number;
-    };
-    nutritionCompleted?: {
       calories: number;
       protein: number;
       carbs: number;
@@ -67,13 +63,15 @@ interface WorkoutPlanData {
     experienceLevel?: string;
     preferredDuration?: number;
     availableEquipment?: string[];
+    availableWeights?: number[];
   };
-  recentHistory: Array<{
+  workoutType?: string;
+  sameTypeHistory?: Array<{
     date: string;
     type: string;
     duration?: number;
     strain?: number | null;
-    completed?: boolean;
+    recovery?: number | null;
     exercises?: Array<{
       name: string;
       sets: number;
@@ -81,7 +79,6 @@ interface WorkoutPlanData {
       weight: string;
     }>;
   }>;
-  currentPlan?: any;
 }
 
 export const handler = async (event: any) => {
@@ -99,7 +96,7 @@ export const handler = async (event: any) => {
     switch (action) {
       case 'analyze_day':
         // Support both 'data' (single) and 'healthData[0]' formats
-        const dayData = data || healthData?.[0];
+        const dayData = (data as HealthData) || healthData?.[0];
         prompt = buildDailyAnalysisPrompt(dayData, currentDate || dayData?.date);
         break;
       case 'analyze_week':
@@ -395,16 +392,60 @@ Generate a comprehensive end-of-day analysis in the following EXACT JSON format 
   "achievements": ["achievement 1", "achievement 2", "achievement 3"],
   "areas_for_improvement": ["area 1", "area 2"],
   "recommendations": ["recommendation 1 for tomorrow", "recommendation 2 for tomorrow"],
-  "wellness_score": 75
+  "wellness_score": 65,
+  "score_breakdown": {
+    "base": 50,
+    "recovery": { "value": "${data.recovery ?? 'N/A'}", "points": 5, "reason": "Recovery 40-59% → +5 points" },
+    "sleep": { "value": "${data.sleep ?? 'N/A'}", "points": 10, "reason": "Sleep 60-79% → +10 points" },
+    "workout": { "value": "Not completed", "points": 0, "reason": "No workout recorded" },
+    "nutrition": { "value": "0/0 meals", "points": 0, "reason": "No nutrition plan" },
+    "tasks": { "value": "0/0 tasks", "points": 0, "reason": "No tasks tracked" },
+    "total": 65
+  }
 }
 
-Rules for the response:
-- wellness_score should be 0-100 based on overall day performance
+**CRITICAL: CALCULATE WELLNESS SCORE WITH BREAKDOWN**
+
+Start with base of 50, then calculate each category:
+
+**Recovery (max +25, min -10):**
+- 80%+ → +25 | 60-79% → +15 | 40-59% → +5 | <40% → -10 | No data → +0
+
+**Sleep (max +20, min -10):**
+- 80%+ → +20 | 60-79% → +10 | 40-59% → +0 | <40% → -10 | No data → +0
+
+**Workout (max +15, min -5):**
+- Completed planned → +15 | Unplanned workout → +10 | Planned but skipped → -5 | Rest day → +0
+
+**Nutrition (max +15, min -5):**
+- 100% meals → +15 | 75%+ → +10 | 50-74% → +5 | <50% → -5 | No plan → +0
+
+**Tasks (max +10, min 0):**
+- 100% → +10 | 75%+ → +5 | <75% → +0
+
+**IMPORTANT:** 
+- Use ACTUAL values from the data above (Recovery: ${data.recovery ?? 'N/A'}%, Sleep: ${data.sleep ?? 'N/A'}%)
+- Show the exact calculation in score_breakdown
+- Cap final score between 0-100
 - achievements should highlight what went well (3-5 items)
 - areas_for_improvement should be constructive (2-3 items)
-- recommendations should be actionable for tomorrow (2-3 items)
-- Be encouraging but honest
-- Keep each item concise (under 100 characters)`;
+- recommendations should be actionable for tomorrow`;
+}
+
+interface ScoreCategory {
+  value: string;
+  points: number;
+  reason: string;
+}
+
+interface ScoreBreakdown {
+  base: number;
+  recovery: ScoreCategory;
+  sleep: ScoreCategory;
+  workout: ScoreCategory;
+  nutrition: ScoreCategory;
+  tasks: ScoreCategory;
+  total: number;
 }
 
 function parseInsightsResponse(response: string): {
@@ -413,6 +454,7 @@ function parseInsightsResponse(response: string): {
   areas_for_improvement: string[];
   recommendations: string[];
   wellness_score: number;
+  score_breakdown?: ScoreBreakdown;
 } {
   try {
     // Try to extract JSON from the response
@@ -424,7 +466,8 @@ function parseInsightsResponse(response: string): {
         achievements: parsed.achievements || [],
         areas_for_improvement: parsed.areas_for_improvement || [],
         recommendations: parsed.recommendations || [],
-        wellness_score: parsed.wellness_score ?? 50
+        wellness_score: parsed.wellness_score ?? 50,
+        score_breakdown: parsed.score_breakdown || undefined
       };
     }
   } catch (e) {
@@ -446,73 +489,139 @@ function buildWorkoutPlanPrompt(data: WorkoutPlanData | undefined): string {
     return 'Generate a basic strength training workout plan.';
   }
 
-  const { currentDay, userProfile, recentHistory, currentPlan } = data;
+  const { currentDay, userProfile, sameTypeHistory, workoutType } = data;
+  
+  // Safety checks for undefined data
+  if (!currentDay) {
+    return 'Generate a basic strength training workout plan.';
+  }
+  
+  const targetDuration = currentDay.targetDuration || 40;
+  const workoutTypeName = workoutType || currentDay.workoutType || 'Strength Training';
+  const history = sameTypeHistory || [];
 
-  // Format recent history
-  const historyStr = recentHistory.slice(0, 7).map(h => {
-    if (h.exercises && h.exercises.length > 0) {
-      const exercisesStr = h.exercises.map(e => 
-        `    - ${e.name}: ${e.sets}x${e.reps} @ ${e.weight}`
-      ).join('\n');
-      return `${h.date} - ${h.type} (${h.duration || '-'} min, Strain: ${h.strain || '-'})\n${exercisesStr}`;
-    }
-    return `${h.date} - ${h.type} (Strain: ${h.strain || '-'})`;
-  }).join('\n\n');
+  // Format the last 3 same-type workouts with detailed exercise info
+  let historyStr = 'No previous workouts of this type found.';
+  
+  if (history.length > 0) {
+    historyStr = history.map((workout: any, index: number) => {
+      const label = index === 0 ? 'MOST RECENT' : index === 1 ? '2ND MOST RECENT' : '3RD MOST RECENT';
+      const exercisesStr = workout.exercises?.map((e: any) => 
+        `    - ${e.name}: ${e.sets} sets × ${e.reps} reps @ ${e.weight}`
+      ).join('\n') || '    No exercises recorded';
+      
+      return `[${label}] ${workout.date} (Recovery: ${workout.recovery ?? 'N/A'}%, Strain: ${workout.strain ?? 'N/A'})
+${exercisesStr}`;
+    }).join('\n\n');
+  }
 
-  return `You are an expert strength and conditioning coach AI. Generate a personalized workout plan for TODAY: ${currentDay.date}.
+  // Get exercises from the most recent workout for reference
+  const mostRecentExercises = history[0]?.exercises || [];
+  const exerciseCount = mostRecentExercises.length || 6; // Default to 6 if no history
 
-**CURRENT RECOVERY STATUS:**
+  return `You are an expert strength and conditioning coach AI. Generate a personalized ${workoutTypeName} workout plan for TODAY: ${currentDay.date}.
+
+**TODAY'S HEALTH STATUS:**
 - Recovery Score: ${currentDay.recovery ?? 'Not recorded'}%
 - Sleep Performance: ${currentDay.sleep ?? 'Not recorded'}%
 - Resting Heart Rate: ${currentDay.rhr ?? 'Not recorded'} bpm
 - Yesterday's Strain: ${currentDay.strain ?? 'Not recorded'}
 
-**USER PROFILE:**
-- Training Goal: ${userProfile?.trainingGoal || 'general fitness'}
+**WORKOUT PARAMETERS:**
+- Workout Type: ${workoutTypeName}
+- Target Duration: ${targetDuration} minutes
+- Training Goal: ${userProfile?.trainingGoal || 'strength_building'}
 - Experience Level: ${userProfile?.experienceLevel || 'intermediate'}
-- Preferred Duration: ${userProfile?.preferredDuration || 60} minutes
-- Available Equipment: ${userProfile?.availableEquipment?.join(', ') || 'full gym'}
+- Equipment: ${userProfile?.availableEquipment?.join(', ') || 'dumbbells'}
+- **AVAILABLE DUMBBELL WEIGHTS: ${userProfile?.availableWeights?.join(', ') || '10, 20, 25, 30, 35'} lbs ONLY**
 
-**RECENT TRAINING HISTORY (Last 7 Days):**
-${historyStr || 'No recent training data'}
+**LAST 3 ${workoutTypeName.toUpperCase()} WORKOUTS (for progression tracking):**
+${historyStr}
 
-**INSTRUCTIONS:**
-1. **Maintain Exercise Consistency**: Use the EXACT same exercises from the most recent workout of this type
-2. **Progressive Overload**: Suggest incremental increases in weight (2.5-5 lbs upper, 5-10 lbs lower), reps (+1-2), or sets (+1)
-3. **Respect Recovery**: If recovery <60% or sleep <70%, reduce intensity or suggest active recovery
-4. **Balance Training Split**: Don't train same muscle groups on consecutive days
-5. **Reference Previous Performance**: Always mention what user did last time for each exercise
-6. **Exercise Count**: Include 4-6 exercises for strength workouts (same as previous workout of this type), 3-4 for recovery days
+**CRITICAL INSTRUCTIONS:**
+1. **USE EXACT SAME EXERCISES**: Copy the exercise names EXACTLY from the MOST RECENT workout above (${exerciseCount} exercises). DO NOT change, substitute, or add exercises.
+2. **WEIGHTS MUST BE FROM AVAILABLE SET**: You can ONLY recommend weights from: ${userProfile?.availableWeights?.join(', ') || '10, 20, 25, 30, 35'} lbs. Round to nearest available weight.
+3. **ADJUST INTENSITY BASED ON RECOVERY**:
+   - Recovery <60%: Go DOWN to next available weight (e.g., 25 lbs → 20 lbs)
+   - Recovery 60-79%: Keep SAME weight
+   - Recovery 80%+: Go UP to next available weight (e.g., 20 lbs → 25 lbs)
+4. **MATCH TARGET DURATION (${targetDuration} min)**:
+   - For 40 min: Use 3 sets per exercise
+   - For 60 min: Use 4 sets per exercise
+5. **TRACK PROGRESSION**: Look at the trend across all 3 workouts
+
+**IMPORTANT - WEIGHT SELECTION:**
+- ONLY use these weights: ${userProfile?.availableWeights?.join(', ') || '10, 20, 25, 30, 35'} lbs
+- If previous was 20 lbs and recovery is low (<60%) → use 10 lbs
+- If previous was 20 lbs and recovery is good (80%+) → use 25 lbs
+- Current recovery is ${currentDay.recovery ?? 'unknown'}% - select appropriate weight from available set
 
 Generate the workout plan in the following EXACT JSON format (respond ONLY with valid JSON, no markdown):
 
 {
-  "recommendation": "Brief rationale for today's plan and progression strategy",
-  "workoutType": "Workout type that matches recent history (e.g., 'Upper Body - Push', 'Lower Body')",
-  "targetDuration": 60,
+  "recommendation": "2-3 sentences explaining your weight/rep adjustments based on today's ${currentDay.recovery ?? 'unknown'}% recovery and the progression trend from the last 3 workouts",
+  "workoutType": "${workoutTypeName}",
+  "targetDuration": ${targetDuration},
   "estimatedIntensity": "easy|moderate|hard",
   "exercises": [
     {
-      "name": "Exercise name (MUST match history)",
-      "sets": 4,
+      "name": "EXACT exercise name from most recent workout",
+      "sets": 3,
       "reps": "8",
-      "suggestedWeight": "225 lbs",
-      "progression": "Explain progression (e.g., '+5 lbs from last session')",
-      "previousPerformance": "What user did last time (e.g., '4x8 @ 220 lbs')",
-      "notes": "Form cues or tips"
+      "suggestedWeight": "20 lbs",
+      "progression": "Kept at 20 lbs due to moderate recovery",
+      "previousPerformance": "3x8 @ 20 lbs",
+      "notes": "Form cues"
     }
   ],
-  "warmup": "Suggested warmup routine",
-  "cooldown": "Suggested cooldown/stretching",
-  "nutritionTip": "Brief nutrition recommendation"
+  "warmup": "5 min warmup routine",
+  "cooldown": "5 min cooldown routine",
+  "nutritionTip": "Brief nutrition tip"
 }
 
-**CRITICAL RULES:**
-- Exercise names MUST match exactly from training history
-- Include ALL exercises from the most recent workout of this type (typically 4-6 exercises)
-- Always include "progression" and "previousPerformance" fields
-- If recovery < 60%, suggest active recovery or very light workout
-- Progress systematically: same weight more reps → increase weight`;
+**ABSOLUTE RULES - MUST FOLLOW:**
+1. suggestedWeight MUST be EXACTLY one of: "10 lbs", "20 lbs", "25 lbs", "30 lbs", or "35 lbs"
+2. NO OTHER WEIGHTS ARE ALLOWED - no 15, 17.5, 22.5, 27.5, or any other values
+3. Include EXACTLY ${exerciseCount} exercises (same as most recent workout)
+4. Exercise names must MATCH EXACTLY from history
+5. Sets should be ${targetDuration <= 45 ? 3 : 4} per exercise
+
+**WEIGHT SELECTION GUIDE:**
+- Previous 10 lbs + low recovery → 10 lbs (can't go lower)
+- Previous 10 lbs + good recovery → 20 lbs
+- Previous 20 lbs + low recovery → 10 lbs
+- Previous 20 lbs + good recovery → 25 lbs
+- Previous 25 lbs + low recovery → 20 lbs
+- Previous 25 lbs + good recovery → 30 lbs
+- Previous 30 lbs + low recovery → 25 lbs
+- Previous 30 lbs + good recovery → 35 lbs
+- Previous 35 lbs + low recovery → 30 lbs
+- Previous 35 lbs + good recovery → 35 lbs (max weight)`;
+}
+
+// Helper function to round weight to nearest available dumbbell
+function roundToAvailableWeight(weightStr: string): string {
+  const availableWeights = [10, 20, 25, 30, 35];
+  
+  // Extract number from string like "22.5 lbs" or "25"
+  const match = weightStr.match(/(\d+\.?\d*)/);
+  if (!match) return '20 lbs'; // Default
+  
+  const weight = parseFloat(match[1]);
+  
+  // Find nearest available weight
+  let nearest = availableWeights[0];
+  let minDiff = Math.abs(weight - nearest);
+  
+  for (const w of availableWeights) {
+    const diff = Math.abs(weight - w);
+    if (diff < minDiff) {
+      minDiff = diff;
+      nearest = w;
+    }
+  }
+  
+  return `${nearest} lbs`;
 }
 
 function parseWorkoutPlanResponse(response: string): {
@@ -538,12 +647,19 @@ function parseWorkoutPlanResponse(response: string): {
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
+      
+      // Validate and fix exercise weights to available dumbbells
+      const exercises = (parsed.exercises || []).map((ex: any) => ({
+        ...ex,
+        suggestedWeight: roundToAvailableWeight(ex.suggestedWeight || '20 lbs')
+      }));
+      
       return {
         recommendation: parsed.recommendation || 'AI-generated workout plan',
         workoutType: parsed.workoutType || 'Strength Training',
-        targetDuration: parsed.targetDuration || 60,
+        targetDuration: parsed.targetDuration || 40,
         estimatedIntensity: parsed.estimatedIntensity || 'moderate',
-        exercises: parsed.exercises || [],
+        exercises,
         warmup: parsed.warmup,
         cooldown: parsed.cooldown,
         nutritionTip: parsed.nutritionTip
@@ -557,7 +673,7 @@ function parseWorkoutPlanResponse(response: string): {
   return {
     recommendation: 'Failed to parse AI response. Please try again.',
     workoutType: 'Strength Training',
-    targetDuration: 60,
+    targetDuration: 40,
     estimatedIntensity: 'moderate',
     exercises: []
   };

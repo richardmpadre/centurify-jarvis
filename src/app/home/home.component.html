@@ -10,57 +10,60 @@
     <button *ngIf="!isToday()" class="today-btn" (click)="goToToday()">Today</button>
   </div>
 
-  <!-- Main Two-Column Layout -->
-  <div class="main-layout">
-    <!-- Left: Action List (Primary) -->
-    <section class="actions-section">
-      <app-action-list
-        *ngIf="isToday()"
-        [actions]="dailyActions"
-        [isLoading]="isLoadingDashboard"
-        [collapsed]="actionsCollapsed"
-        [editMode]="actionsEditMode"
-        (actionClick)="onActionClick($event)"
-        (actionUncomplete)="onActionUncomplete($event)"
-        (toggleCollapse)="onActionsToggleCollapse()"
-        (reorder)="onActionsReorder($event)"
-        (toggleEditMode)="onActionsToggleEditMode()">
-      </app-action-list>
-      
-      <!-- Quick Actions for past dates -->
-      <div class="quick-actions" *ngIf="!isToday()">
-        <button *ngIf="!currentEntry" (click)="addEntryForDate()" class="action-btn primary">
-          + Add Entry
-        </button>
-        <button *ngIf="currentEntry" (click)="editEntry()" class="action-btn secondary">
-          ✎ Edit Entry
-        </button>
-        <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
-          {{ whoopLoading ? 'Importing...' : 'Import Whoop' }}
-        </button>
-      </div>
-    </section>
+  <!-- Actions Section - Full Width at Top -->
+  <section class="actions-section-top">
+    <app-action-list
+      *ngIf="isToday()"
+      [actions]="dailyActions"
+      [isLoading]="isLoadingDashboard"
+      [collapsed]="actionsCollapsed"
+      [editMode]="actionsEditMode"
+      (actionClick)="onActionClick($event)"
+      (actionUncomplete)="onActionUncomplete($event)"
+      (toggleCollapse)="onActionsToggleCollapse()"
+      (reorder)="onActionsReorder($event)"
+      (toggleEditMode)="onActionsToggleEditMode()">
+    </app-action-list>
+    
+    <!-- Quick Actions for past dates -->
+    <div class="quick-actions" *ngIf="!isToday()">
+      <button *ngIf="!currentEntry" (click)="addEntryForDate()" class="action-btn primary">
+        + Add Entry
+      </button>
+      <button *ngIf="currentEntry" (click)="editEntry()" class="action-btn secondary">
+        ✎ Edit Entry
+      </button>
+      <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
+        {{ whoopLoading ? 'Importing...' : 'Import Whoop' }}
+      </button>
+    </div>
+  </section>
 
-    <!-- Right: Dashboard (Secondary) -->
-    <section class="dashboard-section">
-      <app-dashboard
-        [currentEntry]="currentEntry"
-        [whoopWorkouts]="whoopWorkouts"
-        [mealEntries]="mealEntries"
-        [isLoading]="isLoadingDashboard"
-        [selectedDate]="selectedDate"
-        (editEntry)="editEntry()"
-        (planWorkout)="openWorkoutPlanner()"
-        (toggleWorkoutComplete)="toggleWorkoutCompleted()"
-        (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
-        (mergeWorkout)="promptMergeWithPlanned($event)"
-        (openInsights)="openInsightsPanel()">
-      </app-dashboard>
+  <!-- Dashboard Section - Bottom with Wellness Score Prominent -->
+  <section class="dashboard-section-bottom">
+    <app-dashboard
+      [currentEntry]="currentEntry"
+      [whoopWorkouts]="whoopWorkouts"
+      [mealEntries]="mealEntries"
+      [isLoading]="isLoadingDashboard"
+      [selectedDate]="selectedDate"
+      (editEntry)="editEntry()"
+      (planWorkout)="openWorkoutPlanner()"
+      (toggleWorkoutComplete)="toggleWorkoutCompleted()"
+      (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
+      (mergeWorkout)="promptMergeWithPlanned($event)"
+      (openInsights)="openInsightsPanel()">
+    </app-dashboard>
 
+    <!-- Bottom sidebar with Whoop and History -->
+    <aside class="sidebar-bottom">
       <!-- Whoop Status -->
       <div class="whoop-status success" *ngIf="whoopConnected && whoopHasRefreshToken">
         <span class="status-icon">✓</span>
         <span class="status-text">Whoop</span>
+        <button class="sync-btn" (click)="quickSyncWhoop()" [disabled]="whoopSyncing" title="Sync latest data">
+          {{ whoopSyncing ? '⟳' : '↻' }}
+        </button>
       </div>
       <div class="whoop-status expired" *ngIf="whoopExpired && !whoopConnected">
         <span class="status-icon">⚠️</span>
@@ -70,6 +73,7 @@
       <a *ngIf="!whoopConnected && !whoopExpired" routerLink="/integrations" class="connect-link">
         Connect Whoop
       </a>
+      <div class="sync-message" *ngIf="whoopSyncMessage">{{ whoopSyncMessage }}</div>
 
       <!-- History -->
       <div class="history-section">
@@ -82,6 +86,7 @@
                (click)="selectedDate = entry.date; loadDashboard()">
             <span class="history-date">{{ entry.date }}</span>
             <div class="history-stats">
+              <span *ngIf="getWellnessScore(entry)" class="mini-stat wellness">{{ getWellnessScore(entry) }}</span>
               <span *ngIf="entry.recovery" class="mini-stat recovery">{{ entry.recovery }}%</span>
               <span *ngIf="entry.strain" class="mini-stat strain">{{ entry.strain }}</span>
             </div>
@@ -92,8 +97,8 @@
           No entries yet
         </div>
       </div>
-    </section>
-  </div>
+    </aside>
+  </section>
 
   <!-- Modals -->
   

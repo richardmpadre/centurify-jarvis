@@ -13,12 +13,29 @@ export interface DayAnalysis {
   score?: number;
 }
 
+export interface ScoreCategory {
+  value: string;
+  points: number;
+  reason: string;
+}
+
+export interface ScoreBreakdown {
+  base: number;
+  recovery: ScoreCategory;
+  sleep: ScoreCategory;
+  workout: ScoreCategory;
+  nutrition: ScoreCategory;
+  tasks: ScoreCategory;
+  total: number;
+}
+
 export interface DailyInsights {
   summary: string;
   achievements: string[];
   areas_for_improvement: string[];
   recommendations: string[];
   wellness_score: number;
+  score_breakdown?: ScoreBreakdown;
   raw_text: string; // Full text for storage
 }
 

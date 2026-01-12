@@ -32,6 +32,51 @@
         <span class="score-label">Wellness Score</span>
       </div>
       
+      <!-- Score Breakdown -->
+      <div class="score-breakdown" *ngIf="insights.score_breakdown">
+        <h4>📊 Score Breakdown</h4>
+        <div class="breakdown-grid">
+          <div class="breakdown-item base">
+            <span class="breakdown-label">Base Score</span>
+            <span class="breakdown-points">{{ insights.score_breakdown.base }}</span>
+          </div>
+          <div class="breakdown-item" [class.positive]="insights.score_breakdown.recovery.points > 0" [class.negative]="insights.score_breakdown.recovery.points < 0">
+            <span class="breakdown-label">💚 Recovery</span>
+            <span class="breakdown-value">{{ insights.score_breakdown.recovery.value }}</span>
+            <span class="breakdown-points">{{ insights.score_breakdown.recovery.points >= 0 ? '+' : '' }}{{ insights.score_breakdown.recovery.points }}</span>
+            <span class="breakdown-reason">{{ insights.score_breakdown.recovery.reason }}</span>
+          </div>
+          <div class="breakdown-item" [class.positive]="insights.score_breakdown.sleep.points > 0" [class.negative]="insights.score_breakdown.sleep.points < 0">
+            <span class="breakdown-label">😴 Sleep</span>
+            <span class="breakdown-value">{{ insights.score_breakdown.sleep.value }}</span>
+            <span class="breakdown-points">{{ insights.score_breakdown.sleep.points >= 0 ? '+' : '' }}{{ insights.score_breakdown.sleep.points }}</span>
+            <span class="breakdown-reason">{{ insights.score_breakdown.sleep.reason }}</span>
+          </div>
+          <div class="breakdown-item" [class.positive]="insights.score_breakdown.workout.points > 0" [class.negative]="insights.score_breakdown.workout.points < 0">
+            <span class="breakdown-label">🏋️ Workout</span>
+            <span class="breakdown-value">{{ insights.score_breakdown.workout.value }}</span>
+            <span class="breakdown-points">{{ insights.score_breakdown.workout.points >= 0 ? '+' : '' }}{{ insights.score_breakdown.workout.points }}</span>
+            <span class="breakdown-reason">{{ insights.score_breakdown.workout.reason }}</span>
+          </div>
+          <div class="breakdown-item" [class.positive]="insights.score_breakdown.nutrition.points > 0" [class.negative]="insights.score_breakdown.nutrition.points < 0">
+            <span class="breakdown-label">🥗 Nutrition</span>
+            <span class="breakdown-value">{{ insights.score_breakdown.nutrition.value }}</span>
+            <span class="breakdown-points">{{ insights.score_breakdown.nutrition.points >= 0 ? '+' : '' }}{{ insights.score_breakdown.nutrition.points }}</span>
+            <span class="breakdown-reason">{{ insights.score_breakdown.nutrition.reason }}</span>
+          </div>
+          <div class="breakdown-item" [class.positive]="insights.score_breakdown.tasks.points > 0" [class.negative]="insights.score_breakdown.tasks.points < 0">
+            <span class="breakdown-label">✅ Tasks</span>
+            <span class="breakdown-value">{{ insights.score_breakdown.tasks.value }}</span>
+            <span class="breakdown-points">{{ insights.score_breakdown.tasks.points >= 0 ? '+' : '' }}{{ insights.score_breakdown.tasks.points }}</span>
+            <span class="breakdown-reason">{{ insights.score_breakdown.tasks.reason }}</span>
+          </div>
+          <div class="breakdown-item total">
+            <span class="breakdown-label">Total</span>
+            <span class="breakdown-points">= {{ insights.score_breakdown.total }}</span>
+          </div>
+        </div>
+      </div>
+      
       <!-- Summary -->
       <div class="insights-section">
         <p class="insights-summary">{{ insights.summary }}</p>
