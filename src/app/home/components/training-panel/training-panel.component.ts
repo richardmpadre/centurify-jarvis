@@ -20,6 +20,18 @@ export class TrainingPanelComponent {
   @Output() openWhoopWorkout = new EventEmitter<WhoopWorkout>();
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
 
+  // Run types for display
+  private runTypes: { [key: string]: string } = {
+    'zone2': 'Zone 2 (Easy/Aerobic)',
+    'tempo': 'Tempo Run',
+    'intervals': 'Intervals',
+    'long_run': 'Long Run',
+    'recovery': 'Recovery Run',
+    'fartlek': 'Fartlek',
+    'race_pace': 'Race Pace',
+    'hill_repeats': 'Hill Repeats'
+  };
+
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
     try {
@@ -31,6 +43,22 @@ export class TrainingPanelComponent {
 
   hasPlannedWorkoutToMerge(): boolean {
     return this.getPlannedWorkout() !== null && !this.currentEntry?.workoutCompleted;
+  }
+
+  getRunTypeLabel(value: string): string {
+    return this.runTypes[value] || value;
+  }
+
+  getWorkoutIcon(type: string): string {
+    switch (type) {
+      case 'Running': return '🏃';
+      case 'Cycling': return '🚴';
+      case 'Swimming': return '🏊';
+      case 'Cardio': return '❤️';
+      case 'HIIT': return '⚡';
+      case 'Yoga': return '🧘';
+      default: return '🏋️';
+    }
   }
 
   onClose(): void {

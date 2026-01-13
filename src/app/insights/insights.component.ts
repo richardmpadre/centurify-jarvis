@@ -118,13 +118,14 @@ export class InsightsComponent implements OnInit {
         const meals = this.mealEntriesByDate[date] || [];
         const completedMeals = meals.filter(m => m.completed);
         
-        // Check if workout was planned
+        // Check if workout was planned (supports both strength and cardio)
         let workoutPlanned = false;
         let workoutCompleted = false;
         if (entry?.plannedWorkout) {
           try {
             const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-            workoutPlanned = planned.exercises?.length > 0;
+            // Workout is planned if it has exercises OR cardio details
+            workoutPlanned = (planned.exercises?.length > 0) || (planned.cardio !== undefined);
           } catch {}
         }
         workoutCompleted = entry?.workoutCompleted ?? false;
@@ -262,7 +263,8 @@ export class InsightsComponent implements OnInit {
           if (!dates.includes(e.date) || !e.plannedWorkout) return false;
           try {
             const planned = JSON.parse(e.plannedWorkout) as PlannedWorkout;
-            return planned.exercises?.length > 0;
+            // Workout is planned if it has exercises OR cardio details
+            return (planned.exercises?.length > 0) || (planned.cardio !== undefined);
           } catch {
             return false;
           }

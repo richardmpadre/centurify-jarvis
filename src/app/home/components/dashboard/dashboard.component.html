@@ -22,6 +22,9 @@
       <div class="stat-content">
         <div class="stat-value">{{ currentEntry?.recovery || '--' }}<span class="unit" *ngIf="currentEntry?.recovery">%</span></div>
         <div class="stat-label">Recovery</div>
+        <div class="stat-comparison" *ngIf="getComparison('recovery')" [class]="getComparisonClass('recovery')">
+          {{ formatComparison('recovery') }}
+        </div>
       </div>
     </div>
 
@@ -31,6 +34,9 @@
       <div class="stat-content">
         <div class="stat-value">{{ currentEntry?.sleep || '--' }}<span class="unit" *ngIf="currentEntry?.sleep">%</span></div>
         <div class="stat-label">Sleep Score</div>
+        <div class="stat-comparison" *ngIf="getComparison('sleep')" [class]="getComparisonClass('sleep')">
+          {{ formatComparison('sleep') }}
+        </div>
       </div>
     </div>
 
@@ -42,6 +48,9 @@
       <div class="stat-content">
         <div class="stat-value">{{ currentEntry?.strain || '--' }}</div>
         <div class="stat-label">Strain <span class="activity-count" *ngIf="whoopWorkouts.length > 0">({{ whoopWorkouts.length }})</span></div>
+        <div class="stat-comparison" *ngIf="getComparison('strain')" [class]="getComparisonClass('strain')">
+          {{ formatComparison('strain') }}
+        </div>
       </div>
     </div>
 
@@ -51,6 +60,9 @@
       <div class="stat-content">
         <div class="stat-value">{{ currentEntry?.rhr || '--' }}<span class="unit" *ngIf="currentEntry?.rhr">bpm</span></div>
         <div class="stat-label">Resting HR</div>
+        <div class="stat-comparison" *ngIf="getComparison('rhr')" [class]="getComparisonClass('rhr')">
+          {{ formatComparison('rhr') }}
+        </div>
       </div>
     </div>
 
@@ -60,6 +72,9 @@
       <div class="stat-content">
         <div class="stat-value">{{ currentEntry?.weight || '--' }}<span class="unit" *ngIf="currentEntry?.weight">lbs</span></div>
         <div class="stat-label">Weight</div>
+        <div class="stat-comparison" *ngIf="getComparison('weight')" [class]="getComparisonClass('weight')">
+          {{ formatComparison('weight') }}
+        </div>
       </div>
     </div>
 
@@ -72,6 +87,9 @@
         </div>
         <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
         <div class="stat-label">Calories</div>
+        <div class="stat-comparison" *ngIf="getComparison('calories')" [class]="getComparisonClass('calories')">
+          {{ formatComparison('calories') }}
+        </div>
       </div>
     </div>
 
@@ -83,6 +101,9 @@
         </div>
         <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
         <div class="stat-label">Protein</div>
+        <div class="stat-comparison" *ngIf="getComparison('protein')" [class]="getComparisonClass('protein')">
+          {{ formatComparison('protein') }}
+        </div>
       </div>
     </div>
 
@@ -94,6 +115,9 @@
         </div>
         <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
         <div class="stat-label">Carbs</div>
+        <div class="stat-comparison" *ngIf="getComparison('carbs')" [class]="getComparisonClass('carbs')">
+          {{ formatComparison('carbs') }}
+        </div>
       </div>
     </div>
 
@@ -105,6 +129,9 @@
         </div>
         <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
         <div class="stat-label">Fats</div>
+        <div class="stat-comparison" *ngIf="getComparison('fats')" [class]="getComparisonClass('fats')">
+          {{ formatComparison('fats') }}
+        </div>
       </div>
     </div>
   </div>
@@ -113,6 +140,31 @@
     Loading dashboard...
   </div>
 
+  <!-- Active Goals Widget -->
+  <div class="goals-widget" *ngIf="activeGoals.length > 0 && !isLoading">
+    <div class="widget-header">
+      <h4>🎯 Active Goals</h4>
+      <a routerLink="/goals" class="view-all-link">View All →</a>
+    </div>
+    <div class="goals-list">
+      <div class="goal-item" *ngFor="let goal of activeGoals.slice(0, 3)">
+        <div class="goal-icon" [style.background]="getGoalTypeConfig(goal).color">
+          {{ getGoalTypeConfig(goal).icon }}
+        </div>
+        <div class="goal-info">
+          <div class="goal-title">{{ goal.title }}</div>
+          <div class="goal-progress-bar">
+            <div 
+              class="goal-progress-fill" 
+              [style.width.%]="goal.progress"
+              [style.background]="getGoalProgressColor(goal.progress)">
+            </div>
+          </div>
+        </div>
+        <div class="goal-progress-text">{{ goal.progress }}%</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Edit Entry Button -->
   <div class="dashboard-actions" *ngIf="currentEntry && !isLoading">

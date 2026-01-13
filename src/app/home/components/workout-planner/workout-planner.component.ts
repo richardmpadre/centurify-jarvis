@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { HealthDataService } from '../../../services/health-data.service';
 import { ChatService } from '../../../services/chat.service';
-import { HealthEntry, PlannedExercise, PlannedWorkout } from '../../../models/health.models';
+import { HealthEntry, PlannedExercise, PlannedWorkout, CardioWorkoutPlan } from '../../../models/health.models';
+
+// Workout types that use cardio-style planning
+const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming', 'Cardio'];
 
 @Component({
   selector: 'app-workout-planner',
@@ -28,6 +31,18 @@ export class WorkoutPlannerComponent implements OnChanges {
   aiRecommendation: string | null = null;
   copySuccess = false;
 
+  // Run types for cardio workouts
+  runTypes = [
+    { value: 'zone2', label: 'Zone 2 (Easy/Aerobic)' },
+    { value: 'tempo', label: 'Tempo Run' },
+    { value: 'intervals', label: 'Intervals' },
+    { value: 'long_run', label: 'Long Run' },
+    { value: 'recovery', label: 'Recovery Run' },
+    { value: 'fartlek', label: 'Fartlek' },
+    { value: 'race_pace', label: 'Race Pace' },
+    { value: 'hill_repeats', label: 'Hill Repeats' }
+  ];
+
   constructor(
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
@@ -36,12 +51,24 @@ export class WorkoutPlannerComponent implements OnChanges {
     this.workoutForm = this.fb.group({
       type: ['Strength Training'],
       targetDuration: [40],
+      // Strength training fields
       exerciseName: [''],
       exerciseSets: [3],
       exerciseReps: ['8-10'],
       exerciseWeight: [''],
-      exerciseNotes: ['']
+      exerciseNotes: [''],
+      // Cardio fields
+      runType: ['zone2'],
+      targetType: ['time'],
+      targetValue: [30],
+      targetPace: [''],
+      cardioNotes: ['']
     });
+  }
+
+  isCardioWorkout(): boolean {
+    const type = this.workoutForm.value.type;
+    return CARDIO_WORKOUT_TYPES.includes(type);
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -86,13 +113,32 @@ export class WorkoutPlannerComponent implements OnChanges {
 
   copyLastWorkout(): void {
     this.aiRecommendation = null;
+    const currentType = this.workoutForm.value.type;
+    const isCurrentCardio = CARDIO_WORKOUT_TYPES.includes(currentType);
+    
     for (const entry of this.allEntries) {
       if (entry.date === this.selectedDate) continue;
       
       if (entry.plannedWorkout) {
         try {
           const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-          if (planned.exercises?.length > 0) {
+          
+          // For cardio, look for matching cardio type
+          if (isCurrentCardio && planned.cardio) {
+            this.workoutForm.patchValue({ 
+              type: planned.type,
+              targetDuration: planned.targetDuration,
+              runType: planned.cardio.runType,
+              targetType: planned.cardio.targetType,
+              targetValue: planned.cardio.targetValue,
+              targetPace: planned.cardio.targetPace || '',
+              cardioNotes: planned.cardio.notes || ''
+            });
+            return;
+          }
+          
+          // For strength, look for exercises
+          if (!isCurrentCardio && planned.exercises?.length > 0) {
             this.exercises = planned.exercises.map(e => ({ ...e }));
             this.workoutForm.patchValue({ 
               type: planned.type,
@@ -106,12 +152,18 @@ export class WorkoutPlannerComponent implements OnChanges {
   }
 
   hasLastWorkout(): boolean {
+    const currentType = this.workoutForm.value.type;
+    const isCurrentCardio = CARDIO_WORKOUT_TYPES.includes(currentType);
+    
     return this.allEntries.some(entry => {
       if (entry.date === this.selectedDate) return false;
       if (entry.plannedWorkout) {
         try {
           const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-          if (planned.exercises?.length > 0) return true;
+          if (isCurrentCardio) {
+            return !!planned.cardio;
+          }
+          return planned.exercises?.length > 0;
         } catch { /* skip */ }
       }
       return false;
@@ -232,11 +284,36 @@ export class WorkoutPlannerComponent implements OnChanges {
 
   async saveWorkoutPlan(): Promise<void> {
     const form = this.workoutForm.value;
-    const plannedWorkout: PlannedWorkout = {
-      type: form.type,
-      targetDuration: form.targetDuration,
-      exercises: this.exercises
-    };
+    
+    let plannedWorkout: PlannedWorkout;
+    
+    if (this.isCardioWorkout()) {
+      // Cardio workout - save cardio details
+      const cardio: CardioWorkoutPlan = {
+        runType: form.runType,
+        targetType: form.targetType,
+        targetValue: form.targetValue,
+        targetPace: form.targetPace || undefined,
+        notes: form.cardioNotes || undefined
+      };
+      
+      // Calculate target duration from cardio values
+      const targetDuration = form.targetType === 'time' ? form.targetValue : form.targetDuration;
+      
+      plannedWorkout = {
+        type: form.type,
+        targetDuration: targetDuration,
+        exercises: [], // No exercises for cardio
+        cardio: cardio
+      };
+    } else {
+      // Strength/other workout - save exercises
+      plannedWorkout = {
+        type: form.type,
+        targetDuration: form.targetDuration,
+        exercises: this.exercises
+      };
+    }
     
     try {
       const payload = {
@@ -262,28 +339,44 @@ export class WorkoutPlannerComponent implements OnChanges {
   }
 
   copyToClipboard(): void {
-    const workoutType = this.workoutForm.value.type || 'Workout';
-    const duration = this.workoutForm.value.targetDuration || 60;
+    const form = this.workoutForm.value;
+    const workoutType = form.type || 'Workout';
     
-    let text = `${workoutType} - ${duration} min\n`;
+    let text = `${workoutType}\n`;
     text += `Date: ${this.selectedDate}\n\n`;
     
     if (this.aiRecommendation) {
       text += `AI Recommendation: ${this.aiRecommendation}\n\n`;
     }
     
-    text += `Exercises:\n`;
-    this.exercises.forEach((ex, i) => {
-      text += `${i + 1}. ${ex.name}\n`;
-      text += `   ${ex.sets} × ${ex.reps}`;
-      if (ex.weight) {
-        text += ` @ ${ex.weight}`;
+    if (this.isCardioWorkout()) {
+      // Cardio workout
+      const runTypeLabel = this.runTypes.find(rt => rt.value === form.runType)?.label || form.runType;
+      text += `Type: ${runTypeLabel}\n`;
+      text += `Target: ${form.targetValue} ${form.targetType === 'time' ? 'minutes' : 'miles'}\n`;
+      if (form.targetPace) {
+        text += `Target Pace: ${form.targetPace}\n`;
       }
-      text += `\n`;
-      if (ex.notes) {
-        text += `   Note: ${ex.notes}\n`;
+      if (form.cardioNotes) {
+        text += `Notes: ${form.cardioNotes}\n`;
       }
-    });
+    } else {
+      // Strength workout
+      const duration = form.targetDuration || 60;
+      text += `Duration: ${duration} min\n\n`;
+      text += `Exercises:\n`;
+      this.exercises.forEach((ex, i) => {
+        text += `${i + 1}. ${ex.name}\n`;
+        text += `   ${ex.sets} × ${ex.reps}`;
+        if (ex.weight) {
+          text += ` @ ${ex.weight}`;
+        }
+        text += `\n`;
+        if (ex.notes) {
+          text += `   Note: ${ex.notes}\n`;
+        }
+      });
+    }
     
     navigator.clipboard.writeText(text).then(() => {
       this.copySuccess = true;
@@ -293,5 +386,9 @@ export class WorkoutPlannerComponent implements OnChanges {
     }).catch(err => {
       console.error('Failed to copy:', err);
     });
+  }
+
+  getRunTypeLabel(value: string): string {
+    return this.runTypes.find(rt => rt.value === value)?.label || value;
   }
 }

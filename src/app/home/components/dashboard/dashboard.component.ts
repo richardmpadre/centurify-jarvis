@@ -1,19 +1,23 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { HealthEntry, PlannedWorkout, WhoopWorkout, PlannedExercise } from '../../../models/health.models';
 import { MealEntry } from '../../../services/meal-entry.service';
+import { Goal, GOAL_TYPE_CONFIG, GOAL_STATUS_CONFIG } from '../../../models/goal.models';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent {
   @Input() currentEntry: HealthEntry | null = null;
+  @Input() yesterdayEntry: HealthEntry | null = null;
   @Input() whoopWorkouts: WhoopWorkout[] = [];
   @Input() mealEntries: MealEntry[] = [];
+  @Input() activeGoals: Goal[] = [];
   @Input() isLoading = false;
   @Input() selectedDate = '';
   
@@ -155,4 +159,121 @@ export class DashboardComponent {
     return `${minutes} min`;
   }
 
+  // Daily comparison methods
+  getComparison(metric: 'recovery' | 'sleep' | 'strain' | 'rhr' | 'weight' | 'calories' | 'protein' | 'carbs' | 'fats'): { 
+    value: number; 
+    isPositive: boolean; 
+    isGood: boolean;
+  } | null {
+    if (!this.currentEntry || !this.yesterdayEntry) return null;
+
+    let currentValue: number | null = null;
+    let yesterdayValue: number | null = null;
+
+    // Get values based on metric
+    switch (metric) {
+      case 'recovery':
+      case 'sleep':
+      case 'strain':
+      case 'rhr':
+      case 'weight':
+        currentValue = this.currentEntry[metric] ?? null;
+        yesterdayValue = this.yesterdayEntry[metric] ?? null;
+        break;
+      case 'calories':
+      case 'protein':
+      case 'carbs':
+      case 'fats':
+        const currentNutrition = this.getCompletedNutrition();
+        const yesterdayNutritionField = `total${metric.charAt(0).toUpperCase() + metric.slice(1)}` as 'totalCalories' | 'totalProtein' | 'totalCarbs' | 'totalFats';
+        currentValue = currentNutrition[metric];
+        yesterdayValue = this.yesterdayEntry[yesterdayNutritionField] ?? null;
+        break;
+    }
+
+    if (currentValue === null || yesterdayValue === null) return null;
+
+    const diff = currentValue - yesterdayValue;
+    if (diff === 0) return null;
+
+    const isPositive = diff > 0;
+    
+    // Determine if positive change is "good" based on metric
+    let isGood = false;
+    switch (metric) {
+      case 'recovery':
+      case 'sleep':
+      case 'weight': // Assuming weight gain is good (could be adjusted based on goals)
+      case 'calories':
+      case 'protein':
+      case 'carbs':
+      case 'fats':
+        isGood = isPositive; // Higher is better
+        break;
+      case 'strain':
+        isGood = isPositive; // Higher strain means more activity (context-dependent)
+        break;
+      case 'rhr':
+        isGood = !isPositive; // Lower resting heart rate is better
+        break;
+    }
+
+    return {
+      value: Math.abs(diff),
+      isPositive,
+      isGood
+    };
+  }
+
+  getComparisonClass(metric: 'recovery' | 'sleep' | 'strain' | 'rhr' | 'weight' | 'calories' | 'protein' | 'carbs' | 'fats'): string {
+    const comparison = this.getComparison(metric);
+    if (!comparison) return '';
+    return comparison.isGood ? 'positive' : 'negative';
+  }
+
+  formatComparison(metric: 'recovery' | 'sleep' | 'strain' | 'rhr' | 'weight' | 'calories' | 'protein' | 'carbs' | 'fats'): string {
+    const comparison = this.getComparison(metric);
+    if (!comparison) return '';
+    
+    const sign = comparison.isPositive ? '+' : '-';
+    let value = comparison.value.toFixed(metric === 'strain' ? 1 : 0);
+    
+    // Add appropriate suffix
+    switch (metric) {
+      case 'recovery':
+      case 'sleep':
+        return `${sign}${value}%`;
+      case 'weight':
+        return `${sign}${value}lbs`;
+      case 'rhr':
+        return `${sign}${value}bpm`;
+      case 'calories':
+        return `${sign}${value}cal`;
+      case 'protein':
+      case 'carbs':
+      case 'fats':
+        return `${sign}${value}g`;
+      default:
+        return `${sign}${value}`;
+    }
+  }
+
+  // Goals helpers
+  getGoalTypeConfig(goal: Goal) {
+    return GOAL_TYPE_CONFIG[goal.goalType];
+  }
+
+  getGoalStatusConfig(goal: Goal) {
+    return GOAL_STATUS_CONFIG[goal.status];
+  }
+
+  getGoalProgressColor(progress: number): string {
+    if (progress >= 100) return '#22c55e';
+    if (progress >= 70) return '#84cc16';
+    if (progress >= 40) return '#eab308';
+    if (progress >= 20) return '#f97316';
+    return '#ef4444';
+  }
+
 }
+

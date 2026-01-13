@@ -43,8 +43,10 @@
   <section class="dashboard-section-bottom">
     <app-dashboard
       [currentEntry]="currentEntry"
+      [yesterdayEntry]="yesterdayEntry"
       [whoopWorkouts]="whoopWorkouts"
       [mealEntries]="mealEntries"
+      [activeGoals]="activeGoals"
       [isLoading]="isLoadingDashboard"
       [selectedDate]="selectedDate"
       (editEntry)="editEntry()"

@@ -6,6 +6,7 @@ import { HealthDataService } from '../services/health-data.service';
 import { WhoopService } from '../services/whoop.service';
 import { MealService } from '../services/meal.service';
 import { MealEntryService, MealEntry } from '../services/meal-entry.service';
+import { GoalService } from '../services/goal.service';
 import { ActionListComponent, ActionItem } from './components/action-list/action-list.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { InsightsPanelComponent } from './components/insights-panel/insights-panel.component';
@@ -21,6 +22,7 @@ import {
   PlannedMeal,
   WhoopWorkout 
 } from '../models/health.models';
+import { Goal } from '../models/goal.models';
 import { 
   getLocalDateString, 
   getFormattedDisplayDate, 
@@ -73,6 +75,7 @@ export class HomeComponent implements OnInit {
   // Data
   entries: HealthEntry[] = [];
   currentEntry: HealthEntry | null = null;
+  yesterdayEntry: HealthEntry | null = null;
   selectedDate = getLocalDateString(new Date());
   whoopWorkouts: WhoopWorkout[] = [];
   whoopWorkoutExercises: { [key: string]: PlannedExercise[] } = {};
@@ -101,6 +104,9 @@ export class HomeComponent implements OnInit {
   showNutritionPanel = false;
   mealEntries: MealEntry[] = [];
   
+  // Goals
+  activeGoals: Goal[] = [];
+
   // Meal detail panel
   showMealDetailPanel = false;
   mealDetailType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
@@ -116,7 +122,8 @@ export class HomeComponent implements OnInit {
     private healthDataService: HealthDataService,
     private whoopService: WhoopService,
     private mealService: MealService,
-    private mealEntryService: MealEntryService
+    private mealEntryService: MealEntryService,
+    private goalService: GoalService
   ) {
     this.healthForm = this.fb.group({
       date: [this.selectedDate, Validators.required],
@@ -134,7 +141,17 @@ export class HomeComponent implements OnInit {
     this.checkWhoopStatus();
     await this.loadEntries();
     await this.loadDashboard();
+    await this.loadActiveGoals();
     this.buildDailyActions();
+  }
+
+  async loadActiveGoals(): Promise<void> {
+    try {
+      this.activeGoals = await this.goalService.getActiveGoals();
+    } catch (error) {
+      console.error('Error loading active goals:', error);
+      this.activeGoals = [];
+    }
   }
 
   // ==================== ACTION LIST ====================
@@ -160,8 +177,8 @@ export class HomeComponent implements OnInit {
       'workout': {
         id: 'workout',
         title: 'Plan Workout',
-        description: 'Schedule training for the day',
-        icon: '🏋️',
+        description: hasWorkoutPlan ? this.getWorkoutDescription() : 'Schedule training for the day',
+        icon: hasWorkoutPlan ? this.getWorkoutIcon() : '🏋️',
         status: hasWorkoutPlan ? 'completed' : 'pending',
         type: 'workout',
         dependsOn: ['biometrics'],
@@ -231,10 +248,20 @@ export class HomeComponent implements OnInit {
     // 1. Start with saved order
     // 2. Filter out IDs that don't exist (e.g., removed meal types)
     // 3. Add any new actions that aren't in saved order (e.g., new meal types)
+    // 4. Ensure 'daily_insights' is always at the end
     const existingIds = new Set(savedOrder.filter(id => allActions[id]));
-    const newIds = Object.keys(allActions).filter(id => !existingIds.has(id));
+    const newIds = Object.keys(allActions).filter(id => !existingIds.has(id) && id !== 'daily_insights');
     
-    const finalOrder = [...savedOrder.filter(id => allActions[id]), ...newIds];
+    // Build order without daily_insights first
+    let finalOrder = savedOrder.filter(id => allActions[id] && id !== 'daily_insights');
+    
+    // Add new actions before daily_insights
+    finalOrder = [...finalOrder, ...newIds];
+    
+    // Always add daily_insights at the end
+    if (allActions['daily_insights']) {
+      finalOrder.push('daily_insights');
+    }
     
     this.dailyActions = finalOrder.map(id => allActions[id]);
     
@@ -612,6 +639,38 @@ export class HomeComponent implements OnInit {
     }
   }
 
+  getWorkoutDescription(): string {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return 'Schedule training for the day';
+    
+    // Cardio workouts
+    if (planned.cardio) {
+      const target = planned.cardio.targetType === 'time' 
+        ? `${planned.cardio.targetValue} min` 
+        : `${planned.cardio.targetValue} mi`;
+      return `${planned.type}: ${target}`;
+    }
+    
+    // Strength workouts
+    const exerciseCount = planned.exercises?.length || 0;
+    return `${planned.type}: ${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}`;
+  }
+
+  getWorkoutIcon(): string {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return '🏋️';
+    
+    switch (planned.type) {
+      case 'Running': return '🏃';
+      case 'Cycling': return '🚴';
+      case 'Swimming': return '🏊';
+      case 'Cardio': return '❤️';
+      case 'HIIT': return '⚡';
+      case 'Yoga': return '🧘';
+      default: return '🏋️';
+    }
+  }
+
   // ==================== WHOOP WORKOUT EDITING ====================
   
   openWhoopWorkoutEditor(workout: WhoopWorkout) {
@@ -741,6 +800,11 @@ export class HomeComponent implements OnInit {
     
     try {
       this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
+      
+      // Load yesterday's entry for comparison
+      const yesterdayDate = getPreviousDay(this.selectedDate);
+      this.yesterdayEntry = this.entries.find(e => e.date === yesterdayDate) || null;
+      
       this.loadWhoopWorkoutExercises();
       
       // Load meal entries from database

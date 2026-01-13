@@ -8,8 +8,29 @@
   <!-- Planned Workout -->
   <div class="training-plan" *ngIf="getPlannedWorkout() as planned">
     <div class="training-plan-header">
-      <span class="training-type">{{ planned.type }}</span>
+      <span class="training-type">{{ getWorkoutIcon(planned.type) }} {{ planned.type }}</span>
       <span class="training-duration">{{ planned.targetDuration }} min target</span>
+    </div>
+    
+    <!-- Cardio Workout Details -->
+    <div class="training-cardio" *ngIf="$any(planned).cardio as cardio">
+      <div class="cardio-details">
+        <div class="cardio-detail">
+          <span class="cardio-label">Type</span>
+          <span class="cardio-value">{{ getRunTypeLabel(cardio.runType) }}</span>
+        </div>
+        <div class="cardio-detail">
+          <span class="cardio-label">Target</span>
+          <span class="cardio-value">{{ cardio.targetValue }} {{ cardio.targetType === 'time' ? 'min' : 'mi' }}</span>
+        </div>
+        <div class="cardio-detail" *ngIf="cardio.targetPace">
+          <span class="cardio-label">Pace</span>
+          <span class="cardio-value">{{ cardio.targetPace }}</span>
+        </div>
+      </div>
+      <div class="cardio-notes" *ngIf="cardio.notes">
+        <span>📝 {{ cardio.notes }}</span>
+      </div>
     </div>
     
     <!-- Actual Stats from Whoop (if merged) -->
@@ -32,6 +53,7 @@
       </div>
     </div>
     
+    <!-- Strength Training Exercises -->
     <div class="training-exercises" *ngIf="planned.exercises?.length">
       <div class="training-exercise" *ngFor="let ex of planned.exercises">
         <span class="exercise-name">{{ ex.name }}</span>

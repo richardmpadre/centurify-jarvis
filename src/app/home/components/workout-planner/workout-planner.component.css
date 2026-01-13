@@ -357,3 +357,88 @@
 .submit-btn:hover {
   background: #00e6bb;
 }
+
+/* Cardio Input Section */
+.cardio-input {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #2a2a4a;
+}
+
+.cardio-input h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #00d4aa;
+}
+
+.cardio-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(0, 212, 170, 0.05);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.cardio-info .info-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.cardio-info .info-text {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  line-height: 1.4;
+}
+
+/* Cardio Summary Section */
+.cardio-summary {
+  margin-bottom: 1rem;
+}
+
+.cardio-summary h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #888;
+}
+
+.summary-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0a1a14 100%);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.summary-label {
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #00d4aa;
+}
+
+/* Form Group full width */
+.form-group.full-width {
+  flex: 1;
+  max-width: none;
+}

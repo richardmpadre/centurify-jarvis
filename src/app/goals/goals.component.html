@@ -1,0 +1,70 @@
+<div class="goals-page">
+  <!-- Header -->
+  <div class="goals-header">
+    <div class="header-left">
+      <h1>Goals</h1>
+      <p class="header-subtitle">Track your life purpose and goals hierarchy</p>
+    </div>
+    <div class="header-actions">
+      <button class="expand-btn" (click)="expandAll()" title="Expand all">
+        <span>+</span>
+      </button>
+      <button class="collapse-btn" (click)="collapseAll()" title="Collapse all">
+        <span>−</span>
+      </button>
+      <button 
+        class="add-purpose-btn" 
+        *ngIf="!hasLifePurpose()" 
+        (click)="openAddLifePurpose()">
+        ⭐ Set Life Purpose
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+    <p>Loading goals...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state" *ngIf="error && !isLoading">
+    <p>{{ error }}</p>
+    <button class="retry-btn" (click)="loadGoals()">Retry</button>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && !error && !hasLifePurpose()">
+    <div class="empty-icon">🎯</div>
+    <h3>Start Your Journey</h3>
+    <p>Define your life purpose to begin building your goal hierarchy.</p>
+    <button class="add-purpose-btn large" (click)="openAddLifePurpose()">
+      ⭐ Set Life Purpose
+    </button>
+  </div>
+
+  <!-- Goals Tree -->
+  <div class="goals-tree" *ngIf="!isLoading && !error && goalTree">
+    <app-goal-tree-node
+      [goal]="goalTree"
+      [level]="0"
+      [isExpanded]="isExpanded(goalTree.id)"
+      [expandedGoals]="expandedGoals"
+      (toggleExpand)="toggleExpand($event)"
+      (addChild)="onAddChild($event)"
+      (editGoal)="onEditGoal($event)"
+      (deleteGoal)="onDeleteGoal($event)"
+      (progressUpdate)="onProgressUpdate($event)"
+      (toggleMilestone)="onToggleMilestone($event)">
+    </app-goal-tree-node>
+  </div>
+</div>
+
+<!-- Goal Modal -->
+<app-goal-modal
+  *ngIf="showModal"
+  [editingGoal]="editingGoal"
+  [parentGoal]="parentGoalForNew"
+  (close)="closeModal()"
+  (save)="onSaveGoal($event)">
+</app-goal-modal>

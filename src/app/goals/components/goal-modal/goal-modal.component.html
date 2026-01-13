@@ -1,0 +1,109 @@
+<div class="modal-overlay" (click)="onClose()"></div>
+<div class="modal goal-modal">
+  <div class="modal-header">
+    <h3>{{ getModalTitle() }}</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <form [formGroup]="goalForm" (ngSubmit)="onSubmit()" class="modal-content">
+    <!-- Title -->
+    <div class="form-group">
+      <label>Title <span class="required">*</span></label>
+      <input 
+        type="text" 
+        formControlName="title" 
+        placeholder="What do you want to achieve?">
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label>Description</label>
+      <textarea 
+        formControlName="description" 
+        placeholder="Describe this goal in more detail..."
+        rows="3"></textarea>
+    </div>
+
+    <!-- Goal Type -->
+    <div class="form-group" *ngIf="availableTypes.length > 1">
+      <label>Goal Type</label>
+      <select formControlName="goalType">
+        <option *ngFor="let type of availableTypes" [value]="type">
+          {{ getTypeConfig(type).icon }} {{ getTypeConfig(type).label }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Status -->
+    <div class="form-group" *ngIf="editingGoal">
+      <label>Status</label>
+      <select formControlName="status">
+        <option *ngFor="let status of statusOptions" [value]="status">
+          {{ getStatusConfig(status).label }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Progress -->
+    <div class="form-group" *ngIf="editingGoal">
+      <label>Progress: {{ goalForm.value.progress }}%</label>
+      <input 
+        type="range" 
+        formControlName="progress" 
+        min="0" 
+        max="100" 
+        step="5">
+    </div>
+
+    <!-- Dates -->
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" formControlName="startDate">
+      </div>
+      <div class="form-group">
+        <label>Target Date</label>
+        <input type="date" formControlName="targetDate">
+      </div>
+    </div>
+
+    <!-- Milestones -->
+    <div class="form-group milestones-section">
+      <label>Milestones</label>
+      <div class="milestone-input">
+        <input 
+          type="text" 
+          formControlName="newMilestone" 
+          placeholder="Add a milestone..."
+          (keyup.enter)="addMilestone()">
+        <button type="button" class="add-milestone-btn" (click)="addMilestone()">+ Add</button>
+      </div>
+      <div class="milestones-list" *ngIf="milestones.length > 0">
+        <div class="milestone-item" *ngFor="let milestone of milestones; let i = index">
+          <span class="milestone-check" [class.completed]="milestone.completed">
+            {{ milestone.completed ? '✓' : '○' }}
+          </span>
+          <span class="milestone-title">{{ milestone.title }}</span>
+          <button type="button" class="remove-milestone-btn" (click)="removeMilestone(i)">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea 
+        formControlName="notes" 
+        placeholder="Any additional notes..."
+        rows="2"></textarea>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button type="button" class="cancel-btn" (click)="onClose()">Cancel</button>
+      <button type="submit" class="save-btn" [disabled]="goalForm.invalid">
+        {{ editingGoal ? 'Save Changes' : 'Create Goal' }}
+      </button>
+    </div>
+  </form>
+</div>

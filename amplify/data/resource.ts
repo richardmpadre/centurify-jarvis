@@ -66,6 +66,22 @@ const schema = a.schema({
     insights: a.string(), // Full JSON of all insights data
     generatedAt: a.datetime(),
   }).authorization(allow => [allow.owner()]),
+  
+  // Goals - hierarchical goal tree structure
+  Goal: a.model({
+    title: a.string().required(),
+    description: a.string(),
+    goalType: a.string().required(), // 'life_purpose', 'life_goal', 'yearly', 'quarterly', 'monthly', 'ad_hoc'
+    parentGoalId: a.string(), // null for Life Purpose, points to parent for others
+    status: a.string(), // 'not_started', 'in_progress', 'completed', 'paused', 'abandoned'
+    progress: a.integer(), // 0-100
+    startDate: a.date(),
+    targetDate: a.date(),
+    completedDate: a.date(),
+    sortOrder: a.integer(), // for custom sorting among siblings
+    milestones: a.string(), // JSON array of milestone objects
+    notes: a.string(),
+  }).authorization(allow => [allow.owner()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

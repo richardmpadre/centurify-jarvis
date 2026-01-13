@@ -53,11 +53,22 @@ export interface PlannedExercise {
   notes: string;
 }
 
+// Cardio workout plan details
+export interface CardioWorkoutPlan {
+  runType: string; // 'zone2', 'tempo', 'intervals', 'long_run', 'recovery', 'fartlek'
+  targetType: 'time' | 'distance';
+  targetValue: number; // minutes or miles
+  targetPace?: string; // e.g., "9:00/mi"
+  notes?: string;
+}
+
 // Planned workout for a day
 export interface PlannedWorkout {
   type: string;
   targetDuration: number;
   exercises: PlannedExercise[];
+  // Cardio-specific fields
+  cardio?: CardioWorkoutPlan;
 }
 
 // Morning checklist item definition

@@ -1,0 +1,113 @@
+<div class="goal-node" [style]="getIndentStyle()">
+  <!-- Goal Card -->
+  <div class="goal-card" [style.--type-color]="getTypeColor()">
+    <!-- Expand/Collapse Toggle -->
+    <button 
+      class="expand-toggle" 
+      *ngIf="hasChildren()"
+      (click)="onToggleExpand()"
+      [class.expanded]="isExpanded">
+      <span class="toggle-icon">▶</span>
+    </button>
+    <div class="no-toggle" *ngIf="!hasChildren()"></div>
+
+    <!-- Goal Icon -->
+    <div class="goal-icon" [style.background]="getTypeColor()">
+      {{ getTypeConfig().icon }}
+    </div>
+
+    <!-- Goal Content -->
+    <div class="goal-content">
+      <div class="goal-header">
+        <div class="goal-title-row">
+          <h4 class="goal-title">{{ goal.title }}</h4>
+          <span class="goal-type-badge" [style.background]="getTypeColor()">
+            {{ getTypeConfig().label }}
+          </span>
+        </div>
+        <p class="goal-description" *ngIf="goal.description">{{ goal.description }}</p>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="goal-progress">
+        <div class="progress-bar">
+          <div 
+            class="progress-fill" 
+            [style.width.%]="goal.progress"
+            [style.background]="getProgressColor()">
+          </div>
+        </div>
+        <span class="progress-text">{{ goal.progress }}%</span>
+      </div>
+
+      <!-- Meta Info -->
+      <div class="goal-meta">
+        <span 
+          class="status-badge" 
+          [style.color]="getStatusConfig().color"
+          [style.background]="getStatusConfig().bgColor">
+          {{ getStatusConfig().label }}
+        </span>
+        <span class="date-info" *ngIf="goal.targetDate">
+          Target: {{ formatDate(goal.targetDate) }}
+        </span>
+        <span class="children-count" *ngIf="hasChildren()">
+          {{ goal.children?.length }} sub-goal{{ goal.children?.length === 1 ? '' : 's' }}
+        </span>
+      </div>
+
+      <!-- Milestones (if expanded and has milestones) -->
+      <div class="goal-milestones" *ngIf="isExpanded && goal.milestones?.length">
+        <div class="milestones-header">Milestones</div>
+        <div 
+          class="milestone-item" 
+          *ngFor="let milestone of goal.milestones"
+          [class.completed]="milestone.completed"
+          (click)="onMilestoneToggle(milestone.id)">
+          <span class="milestone-check">{{ milestone.completed ? '✓' : '○' }}</span>
+          <span class="milestone-title">{{ milestone.title }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="goal-actions">
+      <button 
+        class="action-btn add-btn" 
+        *ngIf="canAddChild()"
+        (click)="onAddChild()"
+        title="Add sub-goal">
+        +
+      </button>
+      <button 
+        class="action-btn edit-btn" 
+        (click)="onEdit()"
+        title="Edit goal">
+        ✎
+      </button>
+      <button 
+        class="action-btn delete-btn" 
+        (click)="onDelete()"
+        title="Delete goal">
+        ×
+      </button>
+    </div>
+  </div>
+
+  <!-- Children (recursive) -->
+  <div class="goal-children" *ngIf="isExpanded && hasChildren()">
+    <app-goal-tree-node
+      *ngFor="let child of goal.children"
+      [goal]="child"
+      [level]="level + 1"
+      [isExpanded]="isChildExpanded(child.id)"
+      [expandedGoals]="expandedGoals"
+      (toggleExpand)="onChildToggleExpand($event)"
+      (addChild)="onChildAddChild($event)"
+      (editGoal)="onChildEditGoal($event)"
+      (deleteGoal)="onChildDeleteGoal($event)"
+      (progressUpdate)="onChildProgressUpdate($event)"
+      (toggleMilestone)="onChildToggleMilestone($event)">
+    </app-goal-tree-node>
+  </div>
+</div>
