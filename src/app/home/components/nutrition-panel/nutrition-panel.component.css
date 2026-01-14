@@ -153,11 +153,40 @@
   margin-bottom: 1rem;
 }
 
-.quick-add-label {
-  display: block;
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 0.75rem;
+}
+
+.quick-add-label {
+  margin: 0;
   font-size: 0.9rem;
   color: #a0a0b0;
+}
+
+.copy-yesterday-btn {
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 212, 170, 0.15);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 8px;
+  color: #00d4aa;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-yesterday-btn:hover:not(:disabled) {
+  background: rgba(0, 212, 170, 0.25);
+  border-color: rgba(0, 212, 170, 0.5);
+}
+
+.copy-yesterday-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .quick-add-row {

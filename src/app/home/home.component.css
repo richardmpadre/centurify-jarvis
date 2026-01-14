@@ -332,6 +332,11 @@
   color: #00d4aa;
 }
 
+.mini-stat.sleep {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
 .mini-stat.strain {
   background: rgba(255, 165, 0, 0.2);
   color: #ffa500;

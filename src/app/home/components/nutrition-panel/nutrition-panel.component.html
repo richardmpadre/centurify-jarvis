@@ -40,7 +40,17 @@
   
   <!-- Quick Add Section -->
   <div class="quick-add-section">
-    <label class="quick-add-label">Add a meal:</label>
+    <div class="section-header">
+      <label class="quick-add-label">Add a meal:</label>
+      <button 
+        type="button"
+        class="copy-yesterday-btn"
+        (click)="copyYesterdaysMeals()"
+        [disabled]="isCopyingYesterday || !hasYesterdaysMeals()"
+        title="Copy all meals from yesterday">
+        {{ isCopyingYesterday ? '⏳ Copying...' : '📋 Copy Yesterday' }}
+      </button>
+    </div>
     
     <div class="quick-add-row">
       <!-- Meal Type Selector -->

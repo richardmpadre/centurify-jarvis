@@ -90,6 +90,7 @@
             <div class="history-stats">
               <span *ngIf="getWellnessScore(entry)" class="mini-stat wellness">{{ getWellnessScore(entry) }}</span>
               <span *ngIf="entry.recovery" class="mini-stat recovery">{{ entry.recovery }}%</span>
+              <span *ngIf="entry.sleep" class="mini-stat sleep">{{ entry.sleep }}%</span>
               <span *ngIf="entry.strain" class="mini-stat strain">{{ entry.strain }}</span>
             </div>
           </div>
@@ -219,6 +220,7 @@
     [isOpen]="showNutritionPanel"
     [selectedDate]="selectedDate"
     [mealEntries]="mealEntries"
+    [allEntries]="entries"
     (close)="closeNutritionPanel()"
     (mealEntriesChanged)="onMealEntriesChanged($event)"
     (planSaved)="onNutritionPlanSaved()">

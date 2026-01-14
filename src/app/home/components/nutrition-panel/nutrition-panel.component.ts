@@ -15,6 +15,7 @@ export class NutritionPanelComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() selectedDate = '';
   @Input() mealEntries: MealEntry[] = [];
+  @Input() allEntries: any[] = []; // All entries for finding yesterday's meals
   
   @Output() close = new EventEmitter<void>();
   @Output() mealEntriesChanged = new EventEmitter<MealEntry[]>();
@@ -23,6 +24,7 @@ export class NutritionPanelComponent implements OnChanges {
   savedMeals: Meal[] = [];
   selectedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
   isLoadingMeals = false;
+  isCopyingYesterday = false;
 
   constructor(
     private mealService: MealService,
@@ -140,5 +142,69 @@ export class NutritionPanelComponent implements OnChanges {
 
   onClose(): void {
     this.close.emit();
+  }
+
+  async copyYesterdaysMeals(): Promise<void> {
+    this.isCopyingYesterday = true;
+    try {
+      // Get yesterday's date
+      const yesterday = this.getYesterdayDate();
+      
+      // Get yesterday's meal entries
+      const yesterdayMeals = await this.mealEntryService.getMealEntriesForDate(yesterday);
+      
+      if (yesterdayMeals.length === 0) {
+        alert('No meals found for yesterday');
+        return;
+      }
+      
+      // Create new meal entries for today based on yesterday's
+      const newEntries: MealEntry[] = [];
+      for (const meal of yesterdayMeals) {
+        const created = await this.mealEntryService.createMealEntry({
+          date: this.selectedDate,
+          mealType: meal.mealType,
+          name: meal.name,
+          calories: meal.calories,
+          protein: meal.protein,
+          carbs: meal.carbs,
+          fats: meal.fats,
+          completed: false,
+          mealId: meal.mealId || null
+        });
+        
+        if (created) {
+          newEntries.push(created);
+        }
+      }
+      
+      // Emit the combined list
+      const allEntries = [...this.mealEntries, ...newEntries];
+      this.mealEntriesChanged.emit(allEntries);
+      
+    } catch (error) {
+      console.error('Error copying yesterday\'s meals:', error);
+      alert('Failed to copy yesterday\'s meals');
+    } finally {
+      this.isCopyingYesterday = false;
+    }
+  }
+
+  hasYesterdaysMeals(): boolean {
+    // Check if we have allEntries to look at
+    if (!this.allEntries || this.allEntries.length === 0) {
+      return false;
+    }
+    
+    const yesterday = this.getYesterdayDate();
+    // Check if there are any entries for yesterday
+    return this.allEntries.some((entry: any) => entry.date === yesterday);
+  }
+
+  private getYesterdayDate(): string {
+    const today = new Date(this.selectedDate);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
   }
 }
