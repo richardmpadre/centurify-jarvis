@@ -25,6 +25,10 @@ export class GoalsComponent implements OnInit {
   
   // Expanded state
   expandedGoals = new Set<string>();
+  
+  // Life goal selection
+  selectedLifeGoalId: string | null = null;
+  lifeGoals: Goal[] = [];
 
   constructor(private goalService: GoalService) {}
 
@@ -40,12 +44,20 @@ export class GoalsComponent implements OnInit {
       this.goals = await this.goalService.getGoalsWithChildren();
       this.goalTree = await this.goalService.getGoalTree();
       
-      // Auto-expand life purpose and life goals
+      // Extract life goals
+      this.lifeGoals = this.goals.filter(g => g.goalType === 'life_goal');
+      
+      // Auto-select first life goal if none selected
+      if (this.lifeGoals.length > 0 && !this.selectedLifeGoalId) {
+        this.selectedLifeGoalId = this.lifeGoals[0].id;
+      }
+      
+      // Auto-expand life purpose and selected life goal
       if (this.goalTree) {
         this.expandedGoals.add(this.goalTree.id);
-        this.goalTree.children?.forEach(child => {
-          this.expandedGoals.add(child.id);
-        });
+        if (this.selectedLifeGoalId) {
+          this.expandedGoals.add(this.selectedLifeGoalId);
+        }
       }
     } catch (err: any) {
       console.error('Error loading goals:', err);
@@ -183,5 +195,26 @@ export class GoalsComponent implements OnInit {
     if (this.goalTree) {
       this.expandedGoals.add(this.goalTree.id);
     }
+  }
+  
+  selectLifeGoal(goalId: string): void {
+    this.selectedLifeGoalId = goalId;
+    // Auto-expand selected life goal
+    this.expandedGoals.add(goalId);
+  }
+  
+  getSelectedLifeGoal(): Goal | null {
+    if (!this.selectedLifeGoalId) return null;
+    return this.lifeGoals.find(g => g.id === this.selectedLifeGoalId) || null;
+  }
+  
+  getFilteredGoalTree(): Goal[] {
+    if (!this.goalTree || this.lifeGoals.length === 0) return [];
+    
+    const selectedGoal = this.getSelectedLifeGoal();
+    if (!selectedGoal) return [];
+    
+    // Return just the children of the selected life goal (not the life goal itself)
+    return selectedGoal.children || [];
   }
 }

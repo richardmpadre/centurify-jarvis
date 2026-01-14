@@ -1,9 +1,12 @@
 <div class="goals-page">
-  <!-- Header -->
-  <div class="goals-header">
-    <div class="header-left">
-      <h1>Goals</h1>
-      <p class="header-subtitle">Track your life purpose and goals hierarchy</p>
+  <!-- Life Purpose Banner -->
+  <div class="life-purpose-banner" *ngIf="!isLoading && goalTree">
+    <div class="purpose-content">
+      <span class="purpose-icon">⭐</span>
+      <div class="purpose-text">
+        <span class="purpose-title">{{ goalTree.title }}</span>
+        <span class="purpose-description" *ngIf="goalTree.description">{{ goalTree.description }}</span>
+      </div>
     </div>
     <div class="header-actions">
       <button class="expand-btn" (click)="expandAll()" title="Expand all">
@@ -12,11 +15,25 @@
       <button class="collapse-btn" (click)="collapseAll()" title="Collapse all">
         <span>−</span>
       </button>
+    </div>
+  </div>
+
+  <!-- Set Life Purpose Button -->
+  <div class="set-purpose-container" *ngIf="!hasLifePurpose()">
+    <button class="add-purpose-btn" (click)="openAddLifePurpose()">
+      ⭐ Set Life Purpose
+    </button>
+  </div>
+
+  <!-- Life Goal Selector Tabs -->
+  <div class="life-goal-selector" *ngIf="!isLoading && lifeGoals.length > 0">
+    <div class="goal-tabs">
       <button 
-        class="add-purpose-btn" 
-        *ngIf="!hasLifePurpose()" 
-        (click)="openAddLifePurpose()">
-        ⭐ Set Life Purpose
+        *ngFor="let lifeGoal of lifeGoals"
+        class="goal-tab"
+        [class.active]="selectedLifeGoalId === lifeGoal.id"
+        (click)="selectLifeGoal(lifeGoal.id)">
+        {{ lifeGoal.title }}
       </button>
     </div>
   </div>
@@ -44,11 +61,12 @@
   </div>
 
   <!-- Goals Tree -->
-  <div class="goals-tree" *ngIf="!isLoading && !error && goalTree">
+  <div class="goals-tree" *ngIf="!isLoading && !error && getFilteredGoalTree().length > 0">
     <app-goal-tree-node
-      [goal]="goalTree"
+      *ngFor="let goal of getFilteredGoalTree()"
+      [goal]="goal"
       [level]="0"
-      [isExpanded]="isExpanded(goalTree.id)"
+      [isExpanded]="isExpanded(goal.id)"
       [expandedGoals]="expandedGoals"
       (toggleExpand)="toggleExpand($event)"
       (addChild)="onAddChild($event)"
@@ -57,6 +75,15 @@
       (progressUpdate)="onProgressUpdate($event)"
       (toggleMilestone)="onToggleMilestone($event)">
     </app-goal-tree-node>
+  </div>
+
+  <!-- Empty state for when no sub-goals exist -->
+  <div class="no-subgoals-state" *ngIf="!isLoading && !error && lifeGoals.length > 0 && getFilteredGoalTree().length === 0">
+    <div class="empty-icon">📋</div>
+    <p>No goals yet under {{ getSelectedLifeGoal()?.title }}.</p>
+    <button class="add-child-btn" (click)="onAddChild(getSelectedLifeGoal()!)">
+      + Add Goal
+    </button>
   </div>
 </div>
 

@@ -27,10 +27,7 @@ export class GoalModalComponent implements OnInit {
       goalType: ['', Validators.required],
       status: ['not_started'],
       progress: [0],
-      startDate: [''],
-      targetDate: [''],
-      notes: [''],
-      newMilestone: ['']
+      targetDate: ['']
     });
   }
 
@@ -48,16 +45,13 @@ export class GoalModalComponent implements OnInit {
         goalType: this.editingGoal.goalType,
         status: this.editingGoal.status,
         progress: this.editingGoal.progress,
-        startDate: this.editingGoal.startDate || '',
-        targetDate: this.editingGoal.targetDate || '',
-        notes: this.editingGoal.notes || ''
+        targetDate: this.editingGoal.targetDate || ''
       });
       this.milestones = this.editingGoal.milestones ? [...this.editingGoal.milestones] : [];
     } else if (this.parentGoal) {
-      // New child goal - set parent type defaults
-      const defaultType = GOAL_TYPE_CONFIG[this.parentGoal.goalType].allowedChildren[0];
+      // New child goal - default to ad_hoc for sub-goals
       this.goalForm.patchValue({
-        goalType: defaultType
+        goalType: 'ad_hoc'
       });
     } else {
       // New life purpose
@@ -112,6 +106,10 @@ export class GoalModalComponent implements OnInit {
     return ['not_started', 'in_progress', 'completed', 'paused', 'abandoned'];
   }
 
+  isSubGoal(): boolean {
+    return this.parentGoal !== null;
+  }
+
   getModalTitle(): string {
     if (this.editingGoal) {
       return `Edit ${GOAL_TYPE_CONFIG[this.editingGoal.goalType].label}`;
@@ -137,10 +135,8 @@ export class GoalModalComponent implements OnInit {
       goalType: formValue.goalType,
       status: formValue.status,
       progress: formValue.progress,
-      startDate: formValue.startDate || undefined,
       targetDate: formValue.targetDate || undefined,
-      notes: formValue.notes || undefined,
-      milestones: this.milestones.length > 0 ? this.milestones : undefined
+      milestones: this.milestones
     };
 
     this.save.emit(goalData);

@@ -4,32 +4,64 @@
   padding: 1.5rem;
 }
 
-/* Header */
-.goals-header {
+/* Life Purpose Banner */
+.life-purpose-banner {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 2rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #3d3420, #332a18);
+  border: 2px solid #FFD700;
+  border-radius: 12px;
+  margin-bottom: 1rem;
   gap: 1rem;
-  flex-wrap: wrap;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
 }
 
-.header-left h1 {
-  margin: 0;
-  font-size: 1.75rem;
+.purpose-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.purpose-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.purpose-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.purpose-title {
+  font-size: 1.1rem;
+  font-weight: 600;
   color: #e0e0e0;
 }
 
-.header-subtitle {
-  margin: 0.5rem 0 0;
-  font-size: 0.9rem;
-  color: #888;
+.purpose-description {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .header-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-shrink: 0;
+}
+
+.set-purpose-container {
+  text-align: center;
+  margin-bottom: 1.5rem;
 }
 
 .expand-btn,
@@ -74,6 +106,56 @@
 .add-purpose-btn.large {
   padding: 1rem 2rem;
   font-size: 1.1rem;
+}
+
+/* Life Goal Selector */
+.life-goal-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.goal-tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.goal-tab {
+  padding: 0.6rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 10px;
+  color: #a0a0a0;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.goal-tab:hover {
+  background: rgba(139, 92, 246, 0.15);
+  color: #c0c0c0;
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.goal-tab.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(124, 58, 237, 0.25));
+  border-color: #8b5cf6;
+  color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+.goal-tab.active:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(124, 58, 237, 0.35));
+  transform: translateY(-1px);
 }
 
 /* Loading State */
@@ -155,9 +237,46 @@
 
 /* Goals Tree */
 .goals-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* No Sub-goals State */
+.no-subgoals-state {
+  text-align: center;
+  padding: 3rem 2rem;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 16px;
-  padding: 1rem;
+  border: 1px dashed #3a3a5a;
+}
+
+.no-subgoals-state .empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-subgoals-state p {
+  color: #888;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.add-child-btn {
+  padding: 0.75rem 1.5rem;
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid #8b5cf6;
+  border-radius: 10px;
+  color: #e0e0e0;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-child-btn:hover {
+  background: rgba(139, 92, 246, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Responsive */

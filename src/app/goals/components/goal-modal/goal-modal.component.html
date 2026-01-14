@@ -24,8 +24,8 @@
         rows="3"></textarea>
     </div>
 
-    <!-- Goal Type -->
-    <div class="form-group" *ngIf="availableTypes.length > 1">
+    <!-- Goal Type (only for Life Purpose and Life Goals) -->
+    <div class="form-group" *ngIf="!isSubGoal() && availableTypes.length > 1">
       <label>Goal Type</label>
       <select formControlName="goalType">
         <option *ngFor="let type of availableTypes" [value]="type">
@@ -34,7 +34,7 @@
       </select>
     </div>
 
-    <!-- Status -->
+    <!-- Status (only when editing) -->
     <div class="form-group" *ngIf="editingGoal">
       <label>Status</label>
       <select formControlName="status">
@@ -44,7 +44,7 @@
       </select>
     </div>
 
-    <!-- Progress -->
+    <!-- Progress (only when editing) -->
     <div class="form-group" *ngIf="editingGoal">
       <label>Progress: {{ goalForm.value.progress }}%</label>
       <input 
@@ -55,47 +55,10 @@
         step="5">
     </div>
 
-    <!-- Dates -->
-    <div class="form-row">
-      <div class="form-group">
-        <label>Start Date</label>
-        <input type="date" formControlName="startDate">
-      </div>
-      <div class="form-group">
-        <label>Target Date</label>
-        <input type="date" formControlName="targetDate">
-      </div>
-    </div>
-
-    <!-- Milestones -->
-    <div class="form-group milestones-section">
-      <label>Milestones</label>
-      <div class="milestone-input">
-        <input 
-          type="text" 
-          formControlName="newMilestone" 
-          placeholder="Add a milestone..."
-          (keyup.enter)="addMilestone()">
-        <button type="button" class="add-milestone-btn" (click)="addMilestone()">+ Add</button>
-      </div>
-      <div class="milestones-list" *ngIf="milestones.length > 0">
-        <div class="milestone-item" *ngFor="let milestone of milestones; let i = index">
-          <span class="milestone-check" [class.completed]="milestone.completed">
-            {{ milestone.completed ? '✓' : '○' }}
-          </span>
-          <span class="milestone-title">{{ milestone.title }}</span>
-          <button type="button" class="remove-milestone-btn" (click)="removeMilestone(i)">×</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notes -->
+    <!-- Target Date (single field) -->
     <div class="form-group">
-      <label>Notes</label>
-      <textarea 
-        formControlName="notes" 
-        placeholder="Any additional notes..."
-        rows="2"></textarea>
+      <label>Target Date</label>
+      <input type="date" formControlName="targetDate">
     </div>
 
     <!-- Actions -->

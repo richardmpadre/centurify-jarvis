@@ -175,7 +175,11 @@ export class GoalService {
       if (updates.targetDate !== undefined) updateData.targetDate = updates.targetDate || null;
       if (updates.completedDate !== undefined) updateData.completedDate = updates.completedDate || null;
       if (updates.sortOrder !== undefined) updateData.sortOrder = updates.sortOrder;
-      if (updates.milestones !== undefined) updateData.milestones = updates.milestones ? JSON.stringify(updates.milestones) : null;
+      if (updates.milestones !== undefined) {
+        updateData.milestones = (updates.milestones && updates.milestones.length > 0) 
+          ? JSON.stringify(updates.milestones) 
+          : null;
+      }
       if (updates.notes !== undefined) updateData.notes = updates.notes || null;
       
       const { data: record, errors } = await client.models.Goal.update(updateData);
