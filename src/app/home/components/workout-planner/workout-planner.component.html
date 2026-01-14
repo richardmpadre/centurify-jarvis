@@ -27,6 +27,38 @@
       </div>
     </div>
     
+    <!-- Saved Templates Section -->
+    <div class="templates-section" *ngIf="!isCardioWorkout() && savedWorkouts.length > 0">
+      <button type="button" class="templates-toggle-btn" (click)="toggleTemplateList()">
+        <span class="templates-icon">📚</span>
+        <span>{{ showTemplateList ? 'Hide' : 'Load from' }} Saved Templates ({{ savedWorkouts.length }})</span>
+        <span class="dropdown-arrow" [class.open]="showTemplateList">▼</span>
+      </button>
+      
+      <div class="templates-list" *ngIf="showTemplateList">
+        <div class="templates-header">
+          <span>Select a template to load</span>
+          <a routerLink="/training" class="manage-link" (click)="onClose()">Manage →</a>
+        </div>
+        <div class="template-item" *ngFor="let workout of savedWorkouts" (click)="loadTemplate(workout)">
+          <div class="template-info">
+            <span class="template-icon">{{ workout.category === 'strength' ? '💪' : workout.category === 'cardio' ? '🏃' : workout.category === 'hiit' ? '🔥' : '📝' }}</span>
+            <div class="template-details">
+              <span class="template-name">{{ workout.name }}</span>
+              <span class="template-meta">
+                <span *ngIf="workout.exercises?.length">{{ workout.exercises.length }} exercises</span>
+                <span *ngIf="workout.duration"> • {{ workout.duration }} min</span>
+                <span *ngIf="workout.difficulty" class="difficulty-badge" [style.color]="workout.difficulty === 'beginner' ? '#00d4aa' : workout.difficulty === 'advanced' ? '#ef4444' : '#f59e0b'">
+                  {{ workout.difficulty }}
+                </span>
+              </span>
+            </div>
+          </div>
+          <span class="load-arrow">→</span>
+        </div>
+      </div>
+    </div>
+    
     <!-- Cardio Input (for Running, Cycling, Swimming, Cardio) -->
     <div class="cardio-input" *ngIf="isCardioWorkout()">
       <h4>{{ workoutForm.value.type }} Details</h4>

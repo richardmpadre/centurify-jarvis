@@ -54,6 +54,17 @@ const schema = a.schema({
     fats: a.float(),
   }).authorization(allow => [allow.owner()]),
   
+  // Workout library - saved workout templates for reuse
+  Workout: a.model({
+    name: a.string().required(),
+    description: a.string(),
+    duration: a.integer(), // minutes
+    exercises: a.string(), // JSON array of exercise objects
+    category: a.string(), // strength, cardio, flexibility, sports, etc.
+    difficulty: a.string(), // beginner, intermediate, advanced
+    estimatedCalories: a.integer(),
+  }).authorization(allow => [allow.owner()]),
+  
   // Weekly insights - AI-generated weekly analysis
   WeeklyInsight: a.model({
     year: a.integer().required(),

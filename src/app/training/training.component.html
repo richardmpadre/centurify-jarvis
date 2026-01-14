@@ -1,0 +1,233 @@
+<div class="training-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <a routerLink="/" class="back-link">← Back</a>
+      <h1>💪 Training Templates</h1>
+    </div>
+    <button class="add-btn" (click)="openAddForm()">
+      + Add Workout
+    </button>
+  </header>
+
+  <!-- Stats Summary -->
+  <div class="stats-summary" *ngIf="workouts.length > 0 && !isLoading">
+    <div class="stat-box">
+      <span class="stat-number">{{ workouts.length }}</span>
+      <span class="stat-label">Templates Saved</span>
+    </div>
+    <div class="stat-box duration">
+      <span class="stat-number">{{ getAverageDuration() }} min</span>
+      <span class="stat-label">Avg Duration</span>
+    </div>
+    <div class="stat-box calories">
+      <span class="stat-number">{{ getTotalCalories() }}</span>
+      <span class="stat-label">Total Est. Cal</span>
+    </div>
+    <div class="stat-box strength">
+      <span class="stat-number">{{ getWorkoutsByCategory('strength') }}</span>
+      <span class="stat-label">Strength</span>
+    </div>
+  </div>
+
+  <!-- Search & Filters -->
+  <div class="controls">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        placeholder="Search workouts..." 
+        [value]="searchQuery"
+        (input)="onSearchChange($event)">
+    </div>
+
+    <div class="filter-group">
+      <div class="filter-tabs">
+        <button 
+          *ngFor="let cat of categories" 
+          class="filter-tab"
+          [class.active]="categoryFilter === cat.value"
+          (click)="categoryFilter = cat.value">
+          {{ cat.label }}
+        </button>
+      </div>
+      
+      <div class="filter-tabs difficulty-tabs">
+        <button 
+          *ngFor="let diff of difficulties" 
+          class="filter-tab"
+          [class.active]="difficultyFilter === diff.value"
+          (click)="difficultyFilter = diff.value">
+          {{ diff.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner">⏳</div>
+    <p>Loading workouts...</p>
+  </div>
+
+  <!-- Workouts Grid -->
+  <div class="workouts-grid" *ngIf="filteredWorkouts.length > 0 && !isLoading">
+    <div class="workout-card" *ngFor="let workout of filteredWorkouts">
+      <div class="workout-card-header">
+        <div class="workout-title-row">
+          <span class="category-icon">{{ getCategoryIcon(workout.category) }}</span>
+          <h3 class="workout-name">{{ workout.name }}</h3>
+        </div>
+        <div class="workout-actions">
+          <button class="action-icon" title="Duplicate" (click)="duplicateWorkout(workout)">📋</button>
+          <button class="action-icon" title="Edit" (click)="openEditForm(workout)">✏️</button>
+          <button class="action-icon delete" title="Delete" (click)="deleteWorkout(workout)">🗑️</button>
+        </div>
+      </div>
+      
+      <p class="workout-description" *ngIf="workout.description">{{ workout.description }}</p>
+      
+      <div class="workout-meta">
+        <div class="meta-item" *ngIf="workout.duration">
+          <span class="meta-icon">⏱️</span>
+          <span class="meta-value">{{ workout.duration }} min</span>
+        </div>
+        <div class="meta-item" *ngIf="workout.estimatedCalories">
+          <span class="meta-icon">🔥</span>
+          <span class="meta-value">{{ workout.estimatedCalories }} cal</span>
+        </div>
+        <div class="meta-item" *ngIf="workout.difficulty">
+          <span class="difficulty-badge" [style.color]="getDifficultyColor(workout.difficulty)">
+            {{ workout.difficulty }}
+          </span>
+        </div>
+      </div>
+
+      <div class="exercises-list" *ngIf="workout.exercises && workout.exercises.length > 0">
+        <h4 class="exercises-title">Exercises ({{ workout.exercises.length }})</h4>
+        <div class="exercise-item" *ngFor="let ex of workout.exercises">
+          <span class="exercise-name">{{ ex.name }}</span>
+          <span class="exercise-details" *ngIf="ex.sets || ex.reps || ex.weight">
+            <span *ngIf="ex.sets">{{ ex.sets }} sets</span>
+            <span *ngIf="ex.sets && ex.reps"> × </span>
+            <span *ngIf="ex.reps">{{ ex.reps }} reps</span>
+            <span *ngIf="ex.weight"> &#64; {{ ex.weight }} lbs</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="workouts.length === 0 && !isLoading">
+    <div class="empty-icon">🏋️</div>
+    <h2>No workouts yet</h2>
+    <p>Start building your workout library by adding your first training template.</p>
+    <button class="add-btn large" (click)="openAddForm()">+ Add Your First Workout</button>
+  </div>
+
+  <!-- No Results -->
+  <div class="no-results" *ngIf="workouts.length > 0 && filteredWorkouts.length === 0 && !isLoading">
+    <p>No workouts match your search or filters.</p>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()"></div>
+  <div class="modal" *ngIf="showForm">
+    <div class="modal-header">
+      <h3>{{ editingWorkoutId ? 'Edit Workout' : 'Add New Workout' }}</h3>
+      <button class="close-btn" (click)="closeForm()">×</button>
+    </div>
+    
+    <form [formGroup]="workoutForm" (ngSubmit)="submitForm()">
+      <div class="form-group">
+        <label>Workout Name *</label>
+        <input type="text" formControlName="name" placeholder="e.g., Upper Body Strength">
+      </div>
+      
+      <div class="form-group">
+        <label>Description</label>
+        <textarea formControlName="description" placeholder="Brief description of the workout..." rows="2"></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select formControlName="category">
+            <option value="strength">💪 Strength</option>
+            <option value="cardio">🏃 Cardio</option>
+            <option value="flexibility">🧘 Flexibility</option>
+            <option value="sports">⚽ Sports</option>
+            <option value="hiit">🔥 HIIT</option>
+            <option value="other">📝 Other</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Difficulty</label>
+          <select formControlName="difficulty">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Duration (min)</label>
+          <input type="number" formControlName="duration" min="0">
+        </div>
+        <div class="form-group">
+          <label>Est. Calories</label>
+          <input type="number" formControlName="estimatedCalories" min="0">
+        </div>
+      </div>
+
+      <div class="exercises-section">
+        <div class="exercises-header">
+          <label>Exercises</label>
+          <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add Exercise</button>
+        </div>
+
+        <div formArrayName="exercises" class="exercises-form-list">
+          <div *ngFor="let exercise of exercises.controls; let i = index" 
+               [formGroupName]="i" 
+               class="exercise-form-item">
+            <div class="exercise-form-header">
+              <span class="exercise-number">{{ i + 1 }}</span>
+              <button type="button" class="remove-exercise-btn" (click)="removeExercise(i)">×</button>
+            </div>
+            
+            <div class="form-group">
+              <input type="text" formControlName="name" placeholder="Exercise name *">
+            </div>
+            
+            <div class="exercise-details-row">
+              <div class="form-group small">
+                <input type="number" formControlName="sets" placeholder="Sets" min="0">
+              </div>
+              <div class="form-group small">
+                <input type="text" formControlName="reps" placeholder="Reps">
+              </div>
+              <div class="form-group small">
+                <input type="number" formControlName="weight" placeholder="Weight (lbs)" min="0">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <input type="text" formControlName="notes" placeholder="Notes (optional)">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="cancel-btn" (click)="closeForm()" [disabled]="isSaving">Cancel</button>
+        <button type="submit" class="submit-btn" [disabled]="!workoutForm.valid || isSaving">
+          {{ isSaving ? 'Saving...' : (editingWorkoutId ? 'Save Changes' : 'Add Workout') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

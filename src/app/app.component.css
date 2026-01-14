@@ -28,6 +28,7 @@ header h1 {
 .nav-links {
   display: flex;
   gap: 1rem;
+  align-items: center;
 }
 
 .nav-links a {
@@ -46,6 +47,70 @@ header h1 {
 .nav-links a.active {
   color: white;
   background-color: rgba(255,255,255,0.2);
+}
+
+/* Dropdown Navigation */
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-toggle {
+  color: rgba(255,255,255,0.8);
+  background: transparent;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-dropdown-toggle:hover {
+  color: white;
+  background-color: rgba(255,255,255,0.1);
+}
+
+.nav-dropdown.active .nav-dropdown-toggle {
+  color: white;
+  background-color: rgba(255,255,255,0.2);
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.nav-dropdown-toggle.open .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  background: #1565c0;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  min-width: 150px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.nav-dropdown-menu a {
+  display: block;
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  transition: background-color 0.2s;
+}
+
+.nav-dropdown-menu a:hover {
+  background-color: rgba(255,255,255,0.15);
+  color: white;
 }
 
 .user-info {

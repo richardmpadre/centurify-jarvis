@@ -14,6 +14,7 @@ import { filter } from 'rxjs/operators';
 export class AppComponent {
   title = 'Jarvis';
   isPublicRoute = false;
+  libraryDropdownOpen = false;
   
   private publicRoutes = ['/privacy'];
 
@@ -29,6 +30,19 @@ export class AppComponent {
     
     // Check initial route
     this.isPublicRoute = this.publicRoutes.some(route => this.router.url.startsWith(route));
+  }
+
+  toggleLibraryDropdown() {
+    this.libraryDropdownOpen = !this.libraryDropdownOpen;
+  }
+
+  closeLibraryDropdown() {
+    this.libraryDropdownOpen = false;
+  }
+
+  isLibraryRoute(): boolean {
+    const url = this.router.url;
+    return url.includes('/nutrition') || url.includes('/training');
   }
 }
 

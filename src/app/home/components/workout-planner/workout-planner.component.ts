@@ -1,8 +1,10 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+ import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../../../services/health-data.service';
 import { ChatService } from '../../../services/chat.service';
+import { WorkoutService, Workout } from '../../../services/workout.service';
 import { HealthEntry, PlannedExercise, PlannedWorkout, CardioWorkoutPlan } from '../../../models/health.models';
 
 // Workout types that use cardio-style planning
@@ -11,11 +13,11 @@ const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming', 'Cardio'];
 @Component({
   selector: 'app-workout-planner',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './workout-planner.component.html',
   styleUrl: './workout-planner.component.css'
 })
-export class WorkoutPlannerComponent implements OnChanges {
+export class WorkoutPlannerComponent implements OnChanges, OnInit {
   @Input() isOpen = false;
   @Input() currentEntry: HealthEntry | null = null;
   @Input() selectedDate = '';
@@ -30,6 +32,11 @@ export class WorkoutPlannerComponent implements OnChanges {
   aiError: string | null = null;
   aiRecommendation: string | null = null;
   copySuccess = false;
+  
+  // Training templates
+  savedWorkouts: Workout[] = [];
+  showTemplateList = false;
+  isLoadingTemplates = false;
 
   // Run types for cardio workouts
   runTypes = [
@@ -46,7 +53,8 @@ export class WorkoutPlannerComponent implements OnChanges {
   constructor(
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private workoutService: WorkoutService
   ) {
     this.workoutForm = this.fb.group({
       type: ['Strength Training'],
@@ -69,6 +77,63 @@ export class WorkoutPlannerComponent implements OnChanges {
   isCardioWorkout(): boolean {
     const type = this.workoutForm.value.type;
     return CARDIO_WORKOUT_TYPES.includes(type);
+  }
+
+  async ngOnInit(): Promise<void> {
+    await this.loadSavedWorkouts();
+  }
+
+  async loadSavedWorkouts(): Promise<void> {
+    this.isLoadingTemplates = true;
+    try {
+      this.savedWorkouts = await this.workoutService.getAllWorkouts();
+      // Sort by most recently updated
+      this.savedWorkouts.sort((a, b) => {
+        const dateA = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        const dateB = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        return dateA - dateB;
+      });
+    } catch (error) {
+      console.error('Failed to load saved workouts:', error);
+    } finally {
+      this.isLoadingTemplates = false;
+    }
+  }
+
+  toggleTemplateList(): void {
+    this.showTemplateList = !this.showTemplateList;
+  }
+
+  loadTemplate(workout: Workout): void {
+    this.aiRecommendation = null;
+    
+    // Set workout type and duration
+    this.workoutForm.patchValue({
+      type: this.mapCategoryToType(workout.category),
+      targetDuration: workout.duration || 40
+    });
+    
+    // Load exercises
+    this.exercises = workout.exercises.map(ex => ({
+      name: ex.name,
+      sets: ex.sets || 3,
+      reps: ex.reps || '8-10',
+      weight: ex.weight ? ex.weight.toString() : '',
+      notes: ex.notes || ''
+    }));
+    
+    this.showTemplateList = false;
+  }
+
+  private mapCategoryToType(category: string | null): string {
+    switch (category) {
+      case 'strength': return 'Strength Training';
+      case 'cardio': return 'Cardio';
+      case 'hiit': return 'HIIT';
+      case 'flexibility': return 'Yoga';
+      case 'sports': return 'Other';
+      default: return 'Strength Training';
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {

@@ -19,7 +19,18 @@
             <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Health</a>
             <a routerLink="/goals" routerLinkActive="active">Goals</a>
             <a routerLink="/insights" routerLinkActive="active">Insights</a>
-            <a routerLink="/nutrition" routerLinkActive="active">Nutrition</a>
+            
+            <!-- Library Dropdown -->
+            <div class="nav-dropdown" [class.active]="isLibraryRoute()">
+              <button class="nav-dropdown-toggle" (click)="toggleLibraryDropdown()" [class.open]="libraryDropdownOpen">
+                Library <span class="dropdown-arrow">▼</span>
+              </button>
+              <div class="nav-dropdown-menu" *ngIf="libraryDropdownOpen">
+                <a routerLink="/nutrition" (click)="closeLibraryDropdown()">🥗 Nutrition</a>
+                <a routerLink="/training" (click)="closeLibraryDropdown()">💪 Training</a>
+              </div>
+            </div>
+            
             <a routerLink="/integrations" routerLinkActive="active">Integrations</a>
           </nav>
         </div>

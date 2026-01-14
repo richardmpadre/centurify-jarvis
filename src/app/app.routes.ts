@@ -4,6 +4,7 @@ import { IntegrationsComponent } from './integrations/integrations.component';
 import { WhoopCallbackComponent } from './whoop-callback/whoop-callback.component';
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
 import { NutritionComponent } from './nutrition/nutrition.component';
+import { TrainingComponent } from './training/training.component';
 import { InsightsComponent } from './insights/insights.component';
 import { GoalsComponent } from './goals/goals.component';
 
@@ -13,6 +14,7 @@ export const routes: Routes = [
   { path: 'goals', component: GoalsComponent },
   { path: 'insights', component: InsightsComponent },
   { path: 'nutrition', component: NutritionComponent },
+  { path: 'training', component: TrainingComponent },
   { path: 'integrations', component: IntegrationsComponent },
   { path: 'whoop/callback', component: WhoopCallbackComponent },
   { path: 'privacy', component: PrivacyPolicyComponent }

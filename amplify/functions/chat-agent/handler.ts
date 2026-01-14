@@ -429,41 +429,53 @@ Generate a comprehensive end-of-day analysis in the following EXACT JSON format 
   "achievements": ["achievement 1", "achievement 2", "achievement 3"],
   "areas_for_improvement": ["area 1", "area 2"],
   "recommendations": ["recommendation 1 for tomorrow", "recommendation 2 for tomorrow"],
-  "wellness_score": 65,
+  "wellness_score": CALCULATED_SCORE_HERE,
   "score_breakdown": {
     "base": 50,
-    "recovery": { "value": "${data.recovery ?? 'N/A'}", "points": 5, "reason": "Recovery 40-59% → +5 points" },
-    "sleep": { "value": "${data.sleep ?? 'N/A'}", "points": 10, "reason": "Sleep 60-79% → +10 points" },
-    "workout": { "value": "Not completed", "points": 0, "reason": "No workout recorded" },
-    "nutrition": { "value": "0/0 meals", "points": 0, "reason": "No nutrition plan" },
-    "tasks": { "value": "0/0 tasks", "points": 0, "reason": "No tasks tracked" },
-    "total": 65
+    "recovery": { "value": "ACTUAL_VALUE", "points": CALCULATED_POINTS, "reason": "Explanation of how points were calculated" },
+    "sleep": { "value": "ACTUAL_VALUE", "points": CALCULATED_POINTS, "reason": "Explanation of how points were calculated" },
+    "workout": { "value": "ACTUAL_STATUS", "points": CALCULATED_POINTS, "reason": "Explanation of how points were calculated" },
+    "nutrition": { "value": "ACTUAL_MEALS", "points": CALCULATED_POINTS, "reason": "Explanation of how points were calculated" },
+    "tasks": { "value": "ACTUAL_COMPLETION", "points": CALCULATED_POINTS, "reason": "Explanation of how points were calculated" },
+    "total": CALCULATED_TOTAL_SCORE
   }
 }
 
-**CRITICAL: CALCULATE WELLNESS SCORE WITH BREAKDOWN**
+**CRITICAL: YOU MUST CALCULATE THE WELLNESS SCORE - DO NOT USE EXAMPLE VALUES**
 
-Start with base of 50, then calculate each category:
+Start with base of 50, then ADD/SUBTRACT points for each category based on ACTUAL DATA:
 
 **Recovery (max +25, min -10):**
+- Current value: ${data.recovery ?? 'N/A'}%
 - 80%+ → +25 | 60-79% → +15 | 40-59% → +5 | <40% → -10 | No data → +0
 
 **Sleep (max +20, min -10):**
+- Current value: ${data.sleep ?? 'N/A'}%
 - 80%+ → +20 | 60-79% → +10 | 40-59% → +0 | <40% → -10 | No data → +0
 
 **Workout (max +15, min -5):**
+- Current status: ${data.workoutCompleted ? 'Completed' : 'Not completed'}
+- Workouts recorded: ${data.workouts?.length ?? 0}
 - Completed planned → +15 | Unplanned workout → +10 | Planned but skipped → -5 | Rest day → +0
 
 **Nutrition (max +15, min -5):**
+- Current: ${data.nutrition?.mealsCompleted ?? 0}/${data.nutrition?.mealsPlanned ?? 0} meals
 - 100% meals → +15 | 75%+ → +10 | 50-74% → +5 | <50% → -5 | No plan → +0
 
 **Tasks (max +10, min 0):**
+- Current: ${data.checklistStats?.completed ?? 0}/${data.checklistStats?.total ?? 0} tasks
 - 100% → +10 | 75%+ → +5 | <75% → +0
 
+**CALCULATION EXAMPLE:**
+If Recovery=75%, Sleep=85%, Workout=Completed, Nutrition=3/4 meals, Tasks=5/6:
+Base: 50 + Recovery: 15 + Sleep: 20 + Workout: 15 + Nutrition: 10 + Tasks: 5 = 115 (cap at 100)
+
 **IMPORTANT:** 
-- Use ACTUAL values from the data above (Recovery: ${data.recovery ?? 'N/A'}%, Sleep: ${data.sleep ?? 'N/A'}%)
-- Show the exact calculation in score_breakdown
-- Cap final score between 0-100
+- Calculate each category's points based on the ACTUAL values shown above
+- Show your exact calculation in score_breakdown with the real data values
+- Sum all points: base + recovery + sleep + workout + nutrition + tasks
+- Cap final wellness_score between 0-100
+- The "total" in score_breakdown should match wellness_score
 - achievements should highlight what went well (3-5 items)
 - areas_for_improvement should be constructive (2-3 items)
 - recommendations should be actionable for tomorrow`;
