@@ -1,15 +1,58 @@
 <div class="goal-node" [style]="getIndentStyle()">
-  <!-- Goal Card -->
-  <div class="goal-card" [style.--type-color]="getTypeColor()">
+  <!-- Ad-hoc Goal - Compact List Item Style -->
+  <div class="goal-list-item" *ngIf="goal.goalType === 'ad_hoc'">
+    <div class="list-item-status" 
+         [style.background]="getStatusConfig().color"
+         [title]="getStatusConfig().label">
+    </div>
+    
+    <div class="list-item-icon">
+      {{ getTypeConfig().icon }}
+    </div>
+    
+    <div class="list-item-content">
+      <span class="list-item-title">{{ goal.title }}</span>
+    </div>
+    
+    <span class="list-item-badge" 
+          *ngIf="goal.status === 'completed'"
+          [style.color]="getStatusConfig().color">
+      {{ getStatusConfig().label }}
+    </span>
+    
+    <span class="list-item-date" *ngIf="goal.completedDate">
+      {{ formatDate(goal.completedDate) }}
+    </span>
+    
+    <div class="list-item-actions">
+      <button 
+        class="action-btn edit-btn" 
+        (click)="onEdit()"
+        title="Edit goal">
+        ✎
+      </button>
+      <button 
+        class="action-btn delete-btn" 
+        (click)="onDelete()"
+        title="Delete goal">
+        ×
+      </button>
+    </div>
+  </div>
+
+  <!-- Regular Goal Card (non ad-hoc) -->
+  <div class="goal-card" 
+       *ngIf="goal.goalType !== 'ad_hoc'"
+       [style.--type-color]="getTypeColor()">
     <!-- Expand/Collapse Toggle -->
     <button 
       class="expand-toggle" 
-      *ngIf="hasChildren()"
+      *ngIf="hasChildren() && goal.goalType !== 'yearly'"
       (click)="onToggleExpand()"
       [class.expanded]="isExpanded">
       <span class="toggle-icon">▶</span>
     </button>
-    <div class="no-toggle" *ngIf="!hasChildren()"></div>
+    <div class="no-toggle" *ngIf="!hasChildren() || goal.goalType === 'yearly'"></div>
 
     <!-- Goal Icon -->
     <div class="goal-icon" [style.background]="getTypeColor()">
@@ -48,7 +91,10 @@
           [style.background]="getStatusConfig().bgColor">
           {{ getStatusConfig().label }}
         </span>
-        <span class="date-info" *ngIf="goal.targetDate">
+        <span class="date-info" *ngIf="goal.status === 'completed' && goal.completedDate">
+          Completed: {{ formatDate(goal.completedDate) }}
+        </span>
+        <span class="date-info" *ngIf="goal.status !== 'completed' && goal.targetDate">
           Target: {{ formatDate(goal.targetDate) }}
         </span>
         <span class="children-count" *ngIf="hasChildren()">
@@ -94,8 +140,10 @@
     </div>
   </div>
 
-  <!-- Children (recursive) -->
-  <div class="goal-children" *ngIf="isExpanded && hasChildren()">
+  <!-- Children (recursive) - Always expanded for yearly goals -->
+  <div class="goal-children" 
+       [class.ad-hoc-children]="goal.goalType === 'yearly'"
+       *ngIf="(goal.goalType === 'yearly' || isExpanded) && hasChildren()">
     <app-goal-tree-node
       *ngFor="let child of goal.children"
       [goal]="child"

@@ -92,6 +92,7 @@ const schema = a.schema({
     sortOrder: a.integer(), // for custom sorting among siblings
     milestones: a.string(), // JSON array of milestone objects
     notes: a.string(),
+    requiresDailyAction: a.boolean(), // For yearly goals - generates daily action prompt
   }).authorization(allow => [allow.owner()]),
 });
 

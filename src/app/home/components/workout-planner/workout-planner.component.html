@@ -1,14 +1,14 @@
 <div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
 <div class="modal workout-modal" *ngIf="isOpen">
   <div class="modal-header">
-    <h3>{{ isCardioWorkout() ? '🏃' : '🏋️' }} Plan Workout</h3>
+    <h3>{{ isRestDay() ? '😴' : isCardioWorkout() ? '🏃' : '🏋️' }} Plan Workout</h3>
     <button class="close-btn" (click)="onClose()">×</button>
   </div>
   
   <form [formGroup]="workoutForm" (ngSubmit)="saveWorkoutPlan()" class="modal-content">
     <!-- Workout Type -->
     <div class="form-row">
-      <div class="form-group" [class.full-width]="isCardioWorkout()">
+      <div class="form-group" [class.full-width]="isCardioWorkout() || isRestDay()">
         <label>Workout Type</label>
         <select formControlName="type">
           <option>Strength Training</option>
@@ -18,17 +18,33 @@
           <option>Cardio</option>
           <option>HIIT</option>
           <option>Yoga</option>
+          <option>Rest Day</option>
           <option>Other</option>
         </select>
       </div>
-      <div class="form-group" *ngIf="!isCardioWorkout()">
+      <div class="form-group" *ngIf="!isCardioWorkout() && !isRestDay()">
         <label>Target Duration (min)</label>
         <input type="number" formControlName="targetDuration" min="1">
       </div>
     </div>
     
+    <!-- Rest Day Message -->
+    <div class="rest-day-message" *ngIf="isRestDay()">
+      <div class="rest-icon">😴</div>
+      <div class="rest-content">
+        <h4>Rest Day</h4>
+        <p>Recovery is just as important as training. Your body needs time to adapt and grow stronger.</p>
+        <div class="rest-tips">
+          <div class="tip-item">✓ Focus on sleep quality</div>
+          <div class="tip-item">✓ Stay hydrated</div>
+          <div class="tip-item">✓ Light stretching or walking is okay</div>
+          <div class="tip-item">✓ Monitor your recovery score</div>
+        </div>
+      </div>
+    </div>
+    
     <!-- Saved Templates Section -->
-    <div class="templates-section" *ngIf="!isCardioWorkout() && savedWorkouts.length > 0">
+    <div class="templates-section" *ngIf="!isCardioWorkout() && !isRestDay() && savedWorkouts.length > 0">
       <button type="button" class="templates-toggle-btn" (click)="toggleTemplateList()">
         <span class="templates-icon">📚</span>
         <span>{{ showTemplateList ? 'Hide' : 'Load from' }} Saved Templates ({{ savedWorkouts.length }})</span>
@@ -104,7 +120,7 @@
     </div>
     
     <!-- Exercise Input (for Strength Training, HIIT, Yoga, Other) -->
-    <div class="exercise-input" *ngIf="!isCardioWorkout()">
+    <div class="exercise-input" *ngIf="!isCardioWorkout() && !isRestDay()">
       <h4>Add Exercises</h4>
       <div class="form-row">
         <input type="text" formControlName="exerciseName" placeholder="Exercise name">
@@ -119,7 +135,7 @@
     </div>
     
     <!-- Exercise List (for strength training) -->
-    <div class="exercise-list" *ngIf="!isCardioWorkout() && exercises.length > 0">
+    <div class="exercise-list" *ngIf="!isCardioWorkout() && !isRestDay() && exercises.length > 0">
       <div class="exercise-list-header">
         <h4>Planned Exercises</h4>
         <button type="button" class="copy-clipboard-btn" (click)="copyToClipboard()" title="Copy to clipboard">
@@ -166,15 +182,15 @@
     
     <!-- Actions -->
     <div class="form-actions">
-      <button type="button" class="copy-btn" (click)="copyLastWorkout()" *ngIf="hasLastWorkout()" [disabled]="isGeneratingAI">
+      <button type="button" class="copy-btn" (click)="copyLastWorkout()" *ngIf="hasLastWorkout() && !isRestDay()" [disabled]="isGeneratingAI">
         📋 Copy Last {{ isCardioWorkout() ? 'Run' : 'Workout' }}
       </button>
-      <button type="button" class="ai-btn" (click)="generateAIRecommendation()" [disabled]="isGeneratingAI" *ngIf="!isCardioWorkout()">
+      <button type="button" class="ai-btn" (click)="generateAIRecommendation()" [disabled]="isGeneratingAI" *ngIf="!isCardioWorkout() && !isRestDay()">
         {{ isGeneratingAI ? '⏳ Generating...' : '🤖 AI Recommendation' }}
       </button>
       <div class="spacer"></div>
       <button type="button" (click)="onClose()" class="cancel-btn">Cancel</button>
-      <button type="submit" class="submit-btn" [disabled]="isGeneratingAI">Save Plan</button>
+      <button type="submit" class="submit-btn" [disabled]="isGeneratingAI">{{ isRestDay() ? 'Schedule Rest Day' : 'Save Plan' }}</button>
     </div>
     
     <!-- AI Error Message -->

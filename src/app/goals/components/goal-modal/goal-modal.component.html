@@ -61,6 +61,15 @@
       <input type="date" formControlName="targetDate">
     </div>
 
+    <!-- Daily Action Toggle (only for yearly goals) -->
+    <div class="form-group checkbox-group" *ngIf="isYearlyGoal()">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="requiresDailyAction">
+        <span class="checkbox-text">Requires daily action</span>
+      </label>
+      <p class="field-hint">When enabled, you'll be prompted daily to select an ad-hoc goal to prioritize.</p>
+    </div>
+
     <!-- Actions -->
     <div class="form-actions">
       <button type="button" class="cancel-btn" (click)="onClose()">Cancel</button>

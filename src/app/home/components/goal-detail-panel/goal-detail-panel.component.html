@@ -1,0 +1,86 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal goal-detail-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>📌 Today's Focus</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <!-- Loading State -->
+  <div class="loading" *ngIf="isLoading">Loading goal...</div>
+  
+  <!-- Goal Not Found -->
+  <div class="not-found" *ngIf="!isLoading && !goal">
+    <p>Goal not found.</p>
+  </div>
+  
+  <!-- Goal Details -->
+  <div class="goal-details" *ngIf="!isLoading && goal">
+    <!-- Parent Context -->
+    <div class="parent-context" *ngIf="parentGoalTitle">
+      <span class="context-label">From</span>
+      <span class="context-value">{{ parentGoalTitle }}</span>
+    </div>
+    
+    <!-- Goal Title -->
+    <div class="goal-title-section">
+      <h4>{{ goal.title }}</h4>
+      <span 
+        class="goal-status-badge"
+        [style.color]="getStatusConfig(goal.status).color"
+        [style.background]="getStatusConfig(goal.status).bgColor">
+        {{ getStatusConfig(goal.status).label }}
+      </span>
+    </div>
+    
+    <!-- Description -->
+    <p class="goal-description" *ngIf="goal.description">
+      {{ goal.description }}
+    </p>
+    
+    <!-- Progress -->
+    <div class="goal-progress-section">
+      <div class="progress-header">
+        <span class="progress-label">Progress</span>
+        <span class="progress-value">{{ goal.progress }}%</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" [style.width.%]="goal.progress"></div>
+      </div>
+    </div>
+    
+    <!-- Target Date -->
+    <div class="goal-meta" *ngIf="goal.targetDate">
+      <span class="meta-label">Target Date</span>
+      <span class="meta-value">{{ goal.targetDate }}</span>
+    </div>
+    
+    <!-- Milestones -->
+    <div class="milestones-section" *ngIf="goal.milestones && goal.milestones.length > 0">
+      <h5>Milestones</h5>
+      <div class="milestone-list">
+        <div class="milestone-item" *ngFor="let milestone of goal.milestones" [class.completed]="milestone.completed">
+          <span class="milestone-check">{{ milestone.completed ? '✓' : '○' }}</span>
+          <span class="milestone-title">{{ milestone.title }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Actions -->
+  <div class="goal-actions" *ngIf="!isLoading && goal">
+    <button 
+      *ngIf="!isCompleted()"
+      class="complete-btn"
+      (click)="onMarkComplete()"
+      [disabled]="isCompleting">
+      {{ isCompleting ? 'Completing...' : '✓ Mark Complete' }}
+    </button>
+    <button 
+      *ngIf="isCompleted()"
+      class="incomplete-btn"
+      (click)="onMarkIncomplete()"
+      [disabled]="isCompleting">
+      {{ isCompleting ? 'Updating...' : '↩ Mark Incomplete' }}
+    </button>
+  </div>
+</div>

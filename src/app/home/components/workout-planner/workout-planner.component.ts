@@ -79,6 +79,11 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     return CARDIO_WORKOUT_TYPES.includes(type);
   }
 
+  isRestDay(): boolean {
+    const type = this.workoutForm.value.type;
+    return type === 'Rest Day';
+  }
+
   async ngOnInit(): Promise<void> {
     await this.loadSavedWorkouts();
   }
@@ -352,7 +357,14 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     
     let plannedWorkout: PlannedWorkout;
     
-    if (this.isCardioWorkout()) {
+    if (this.isRestDay()) {
+      // Rest day - minimal data
+      plannedWorkout = {
+        type: 'Rest Day',
+        targetDuration: 0,
+        exercises: []
+      };
+    } else if (this.isCardioWorkout()) {
       // Cardio workout - save cardio details
       const cardio: CardioWorkoutPlan = {
         runType: form.runType,

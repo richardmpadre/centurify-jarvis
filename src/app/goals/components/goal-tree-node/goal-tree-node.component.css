@@ -2,6 +2,113 @@
   margin-bottom: 0.5rem;
 }
 
+/* Ad-hoc List Item - Microsoft To Do style */
+.goal-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  min-height: 48px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.goal-list-item:hover {
+  background: #eeeeee;
+  border-color: #d0d0d0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.list-item-status {
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.list-item-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.list-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-item-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item-badge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  background: rgba(34, 197, 94, 0.15);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.list-item-date {
+  font-size: 0.75rem;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.list-item-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.goal-list-item:hover .list-item-actions {
+  opacity: 1;
+}
+
+.list-item-actions .action-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  background: rgba(0, 0, 0, 0.06);
+  color: #666;
+}
+
+.list-item-actions .action-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: #333;
+}
+
+.list-item-actions .edit-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.list-item-actions .delete-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* Regular Goal Card */
 .goal-card {
   display: flex;
   align-items: flex-start;
@@ -273,4 +380,19 @@
   padding-left: 0;
   border-left: 2px solid rgba(255, 255, 255, 0.05);
   margin-left: 12px;
+}
+
+/* Ad-hoc children in list layout */
+.ad-hoc-children {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-left: 0;
+  border-left: none;
+  margin-left: 0;
+}
+
+.ad-hoc-children .goal-node {
+  margin-bottom: 0;
 }

@@ -1,0 +1,60 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal goal-priority-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>🎯 Today's Priority</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <!-- Yearly Goal Context -->
+  <div class="yearly-goal-context" *ngIf="yearlyGoal">
+    <span class="context-label">Yearly Goal</span>
+    <span class="context-title">{{ yearlyGoal.title }}</span>
+    <div class="context-progress">
+      <div class="progress-bar" [style.width.%]="yearlyGoal.progress"></div>
+    </div>
+    <span class="context-progress-text">{{ yearlyGoal.progress }}% complete</span>
+  </div>
+  
+  <!-- Ad-hoc Goals List -->
+  <div class="goals-section">
+    <h4>Select today's focus:</h4>
+    
+    <div class="loading" *ngIf="isLoading">Loading goals...</div>
+    
+    <div class="no-goals" *ngIf="!isLoading && adHocGoals.length === 0">
+      <p>No ad-hoc goals available.</p>
+      <p class="hint">Add ad-hoc goals under this yearly goal to enable daily selection.</p>
+    </div>
+    
+    <div class="goals-list" *ngIf="!isLoading && adHocGoals.length > 0">
+      <div 
+        class="goal-item" 
+        *ngFor="let goal of adHocGoals"
+        [class.selected]="isSelected(goal)"
+        (click)="onSelectGoal(goal)">
+        
+        <div class="goal-check">
+          <span *ngIf="isSelected(goal)">✓</span>
+        </div>
+        
+        <div class="goal-content">
+          <span class="goal-title">{{ goal.title }}</span>
+          <div class="goal-meta">
+            <span 
+              class="goal-status"
+              [style.color]="getStatusConfig(goal.status).color"
+              [style.background]="getStatusConfig(goal.status).bgColor">
+              {{ getStatusConfig(goal.status).label }}
+            </span>
+            <span class="goal-progress">{{ goal.progress }}%</span>
+          </div>
+        </div>
+        
+        <div class="goal-select-icon">
+          <span *ngIf="!isSelected(goal)">→</span>
+          <span *ngIf="isSelected(goal)" class="selected-icon">★</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

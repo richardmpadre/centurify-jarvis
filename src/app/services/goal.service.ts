@@ -143,7 +143,8 @@ export class GoalService {
         completedDate: goal.completedDate || undefined,
         sortOrder: goal.sortOrder ?? (maxOrder + 1),
         milestones: goal.milestones ? JSON.stringify(goal.milestones) : undefined,
-        notes: goal.notes || undefined
+        notes: goal.notes || undefined,
+        requiresDailyAction: goal.requiresDailyAction || undefined
       });
       
       if (errors) {
@@ -181,6 +182,7 @@ export class GoalService {
           : null;
       }
       if (updates.notes !== undefined) updateData.notes = updates.notes || null;
+      if (updates.requiresDailyAction !== undefined) updateData.requiresDailyAction = updates.requiresDailyAction;
       
       const { data: record, errors } = await client.models.Goal.update(updateData);
       
@@ -301,6 +303,49 @@ export class GoalService {
     );
   }
 
+  /**
+   * Get yearly goals that require daily action
+   */
+  async getGoalsRequiringDailyAction(): Promise<Goal[]> {
+    try {
+      const { data: records } = await client.models.Goal.list({
+        filter: {
+          goalType: { eq: 'yearly' },
+          requiresDailyAction: { eq: true }
+        }
+      });
+      
+      return records
+        .map(record => this.mapRecordToGoal(record))
+        .filter(g => g.status !== 'completed' && g.status !== 'abandoned');
+    } catch (error) {
+      console.error('Error fetching goals requiring daily action:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get ad-hoc child goals of a specific parent goal
+   */
+  async getAdHocChildGoals(parentId: string): Promise<Goal[]> {
+    try {
+      const { data: records } = await client.models.Goal.list({
+        filter: {
+          parentGoalId: { eq: parentId },
+          goalType: { eq: 'ad_hoc' }
+        }
+      });
+      
+      return records
+        .map(record => this.mapRecordToGoal(record))
+        .filter(g => g.status !== 'completed' && g.status !== 'abandoned')
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch (error) {
+      console.error('Error fetching ad-hoc child goals:', error);
+      return [];
+    }
+  }
+
   private mapRecordToGoal(record: any): Goal {
     let milestones: Milestone[] | undefined;
     if (record.milestones) {
@@ -325,6 +370,7 @@ export class GoalService {
       sortOrder: record.sortOrder ?? 0,
       milestones,
       notes: record.notes ?? undefined,
+      requiresDailyAction: record.requiresDailyAction ?? undefined,
       createdAt: record.createdAt ?? undefined,
       updatedAt: record.updatedAt ?? undefined
     };

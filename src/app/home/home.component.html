@@ -280,6 +280,24 @@
     (insightsSaved)="onInsightsSaved()">
   </app-insights-panel>
 
+  <!-- Goal Priority Panel -->
+  <app-goal-priority-panel
+    [isOpen]="showGoalPriorityPanel"
+    [yearlyGoal]="currentPriorityGoal"
+    [selectedGoalId]="currentPriorityGoal ? getSelectedGoalId(currentPriorityGoal.id) : null"
+    (close)="closeGoalPriorityPanel()"
+    (selectGoal)="onGoalSelected($event)">
+  </app-goal-priority-panel>
+
+  <!-- Goal Detail Panel -->
+  <app-goal-detail-panel
+    [isOpen]="showGoalDetailPanel"
+    [goalId]="currentGoalDetailId"
+    [parentGoalTitle]="currentGoalParentTitle"
+    (close)="closeGoalDetailPanel()"
+    (goalCompleted)="onGoalCompleted($event)">
+  </app-goal-detail-panel>
+
   <!-- Chat Panel -->
   <app-chat-panel
     [currentEntry]="currentEntry"

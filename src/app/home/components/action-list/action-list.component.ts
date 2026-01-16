@@ -7,12 +7,13 @@ export interface ActionItem {
   description: string;
   icon: string;
   status: 'pending' | 'in_progress' | 'completed';
-  type: 'biometrics' | 'workout' | 'nutrition' | 'life_events' | 'jarvis' | 'custom' | 'meal' | 'insights';
+  type: 'biometrics' | 'workout' | 'nutrition' | 'life_events' | 'jarvis' | 'custom' | 'meal' | 'insights' | 'goal_priority';
   priority?: number;
   dependsOn?: string[]; // IDs of actions that must complete first
   createsEntry?: string; // Type of entry this creates when completed
   externalLink?: string;
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'; // For meal actions
+  yearlyGoalId?: string; // For goal_priority actions - the yearly goal this action relates to
   // If set, clicking on completed action reopens the panel/form instead of toggling status
   // This is used for actions whose status is auto-derived from data (e.g., biometrics, meals)
   reopenOnComplete?: boolean;

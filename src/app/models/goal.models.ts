@@ -27,6 +27,7 @@ export interface Goal {
   sortOrder: number;
   milestones?: Milestone[];
   notes?: string;
+  requiresDailyAction?: boolean; // For yearly goals - generates daily action prompt
   children?: Goal[]; // Populated by service for tree view
   createdAt?: string;
   updatedAt?: string;

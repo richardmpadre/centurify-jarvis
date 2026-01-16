@@ -15,6 +15,8 @@ import { WorkoutPlannerComponent } from './components/workout-planner/workout-pl
 import { TrainingPanelComponent } from './components/training-panel/training-panel.component';
 import { NutritionPanelComponent } from './components/nutrition-panel/nutrition-panel.component';
 import { MealDetailPanelComponent } from './components/meal-detail-panel/meal-detail-panel.component';
+import { GoalPriorityPanelComponent, DailyGoalSelection } from './components/goal-priority-panel/goal-priority-panel.component';
+import { GoalDetailPanelComponent } from './components/goal-detail-panel/goal-detail-panel.component';
 import { 
   HealthEntry, 
   PlannedExercise, 
@@ -46,7 +48,9 @@ import {
     WorkoutPlannerComponent,
     TrainingPanelComponent,
     NutritionPanelComponent,
-    MealDetailPanelComponent
+    MealDetailPanelComponent,
+    GoalPriorityPanelComponent,
+    GoalDetailPanelComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
@@ -94,7 +98,7 @@ export class HomeComponent implements OnInit {
   dailyActions: ActionItem[] = [];
   
   private readonly ACTION_ORDER_KEY = 'jarvis_action_order';
-  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'lifeEvents', 'jarvis', 'complete_workout', 'daily_insights'];
+  private defaultActionOrder = ['biometrics', 'workout', 'nutrition', 'lifeEvents', 'complete_workout', 'daily_insights'];
   
   // Merge workflow
   showMergePrompt = false;
@@ -116,6 +120,17 @@ export class HomeComponent implements OnInit {
   
   // Daily Insights panel
   showInsightsPanel = false;
+
+  // Goal Priority panel
+  showGoalPriorityPanel = false;
+  goalsRequiringDailyAction: Goal[] = [];
+  currentPriorityGoal: Goal | null = null;
+  selectedDailyGoals: { [yearlyGoalId: string]: { goalId: string; goalTitle: string } } = {};
+
+  // Goal Detail panel
+  showGoalDetailPanel = false;
+  currentGoalDetailId: string | null = null;
+  currentGoalParentTitle: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -142,6 +157,7 @@ export class HomeComponent implements OnInit {
     await this.loadEntries();
     await this.loadDashboard();
     await this.loadActiveGoals();
+    await this.loadGoalsRequiringDailyAction();
     this.buildDailyActions();
   }
 
@@ -151,6 +167,30 @@ export class HomeComponent implements OnInit {
     } catch (error) {
       console.error('Error loading active goals:', error);
       this.activeGoals = [];
+    }
+  }
+
+  async loadGoalsRequiringDailyAction(): Promise<void> {
+    try {
+      this.goalsRequiringDailyAction = await this.goalService.getGoalsRequiringDailyAction();
+      this.loadSelectedDailyGoals();
+    } catch (error) {
+      console.error('Error loading goals requiring daily action:', error);
+      this.goalsRequiringDailyAction = [];
+    }
+  }
+
+  private loadSelectedDailyGoals(): void {
+    if (!this.currentEntry?.morningChecklist) {
+      this.selectedDailyGoals = {};
+      return;
+    }
+    
+    try {
+      const saved = JSON.parse(this.currentEntry.morningChecklist);
+      this.selectedDailyGoals = saved.selectedDailyGoals || {};
+    } catch {
+      this.selectedDailyGoals = {};
     }
   }
 
@@ -213,15 +253,6 @@ export class HomeComponent implements OnInit {
         type: 'life_events',
         externalLink: 'https://docs.google.com/document/d/1H0-yjnxuFXoHDBXiF5moIkYSLhXucWRB1FJWSsFi6vU/edit'
       },
-      'jarvis': {
-        id: 'jarvis',
-        title: 'Iterate Jarvis',
-        description: 'Work on Jarvis improvements',
-        icon: '🤖',
-        status: 'pending',
-        type: 'jarvis',
-        externalLink: 'https://trello.com/b/piRDYqCn/jarvis'
-      },
       'daily_insights': {
         id: 'daily_insights',
         title: 'Wrap Up Day',
@@ -240,6 +271,42 @@ export class HomeComponent implements OnInit {
         allActions[action.id] = action;
       });
     }
+    
+    // Add goal priority actions for yearly goals requiring daily action
+    this.goalsRequiringDailyAction.forEach(yearlyGoal => {
+      const actionId = `goal_priority_${yearlyGoal.id}`;
+      const selectedGoal = this.selectedDailyGoals[yearlyGoal.id];
+      const isCompleted = !!selectedGoal;
+      
+      // Add the selection action
+      allActions[actionId] = {
+        id: actionId,
+        title: `Focus: ${yearlyGoal.title}`,
+        description: isCompleted 
+          ? `Today: ${selectedGoal.goalTitle}` 
+          : 'Select today\'s priority goal',
+        icon: '🎯',
+        status: isCompleted ? 'completed' : 'pending',
+        type: 'goal_priority',
+        yearlyGoalId: yearlyGoal.id,
+        reopenOnComplete: true
+      };
+      
+      // If a goal is selected, add it as a workable action
+      if (selectedGoal) {
+        const goalActionId = `goal_work_${selectedGoal.goalId}`;
+        allActions[goalActionId] = {
+          id: goalActionId,
+          title: selectedGoal.goalTitle,
+          description: `Work on: ${yearlyGoal.title}`,
+          icon: '📌',
+          status: 'pending',
+          type: 'custom',
+          dependsOn: [actionId],
+          reopenOnComplete: false // Allow toggling completion
+        };
+      }
+    });
     
     // Get saved order
     const savedOrder = this.getActionOrder();
@@ -418,6 +485,10 @@ export class HomeComponent implements OnInit {
       case 'custom':
         if (action.id === 'complete_workout') {
           this.openTrainingPanel();
+        } else if (action.id.startsWith('goal_work_')) {
+          // Goal work actions - open goal detail panel
+          const goalId = action.id.replace('goal_work_', '');
+          this.openGoalDetailPanel(goalId, action.description.replace('Work on: ', ''));
         }
         break;
         
@@ -442,6 +513,12 @@ export class HomeComponent implements OnInit {
         
       case 'insights':
         this.openInsightsPanel();
+        break;
+        
+      case 'goal_priority':
+        if (action.yearlyGoalId) {
+          this.openGoalPriorityPanel(action.yearlyGoalId);
+        }
         break;
     }
   }
@@ -630,6 +707,95 @@ export class HomeComponent implements OnInit {
     this.buildDailyActions();
   }
   
+  // ==================== GOAL PRIORITY PANEL ====================
+  
+  openGoalPriorityPanel(yearlyGoalId: string): void {
+    const yearlyGoal = this.goalsRequiringDailyAction.find(g => g.id === yearlyGoalId);
+    if (yearlyGoal) {
+      this.currentPriorityGoal = yearlyGoal;
+      this.showGoalPriorityPanel = true;
+    }
+  }
+  
+  closeGoalPriorityPanel(): void {
+    this.showGoalPriorityPanel = false;
+    this.currentPriorityGoal = null;
+  }
+  
+  async onGoalSelected(selection: DailyGoalSelection): Promise<void> {
+    // Save the selected goal
+    this.selectedDailyGoals[selection.yearlyGoalId] = {
+      goalId: selection.selectedGoalId,
+      goalTitle: selection.selectedGoalTitle
+    };
+    
+    // Save to morningChecklist
+    await this.saveSelectedDailyGoals();
+    
+    this.buildDailyActions();
+    this.closeGoalPriorityPanel();
+  }
+  
+  private async saveSelectedDailyGoals(): Promise<void> {
+    // Load existing states first
+    let states: { [key: string]: any } = {};
+    if (this.currentEntry?.morningChecklist) {
+      try {
+        states = JSON.parse(this.currentEntry.morningChecklist);
+      } catch { /* ignore */ }
+    }
+    
+    // Update with selected daily goals
+    states['selectedDailyGoals'] = this.selectedDailyGoals;
+    
+    const payload = {
+      date: this.selectedDate,
+      morningChecklist: JSON.stringify(states)
+    };
+    
+    try {
+      if (this.currentEntry?.id) {
+        await this.healthDataService.updateEntry({ id: this.currentEntry.id, ...payload });
+      } else {
+        await this.healthDataService.saveEntry(payload);
+      }
+      await this.loadEntries();
+      this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
+    } catch (error) {
+      console.error('Error saving selected daily goals:', error);
+    }
+  }
+  
+  getSelectedGoalId(yearlyGoalId: string): string | null {
+    return this.selectedDailyGoals[yearlyGoalId]?.goalId || null;
+  }
+  
+  // ==================== GOAL DETAIL PANEL ====================
+  
+  openGoalDetailPanel(goalId: string, parentTitle: string): void {
+    this.currentGoalDetailId = goalId;
+    this.currentGoalParentTitle = parentTitle;
+    this.showGoalDetailPanel = true;
+  }
+  
+  closeGoalDetailPanel(): void {
+    this.showGoalDetailPanel = false;
+    this.currentGoalDetailId = null;
+    this.currentGoalParentTitle = '';
+  }
+  
+  async onGoalCompleted(goal: Goal): Promise<void> {
+    // Mark the corresponding action as complete
+    const actionId = `goal_work_${goal.id}`;
+    await this.markActionComplete(actionId);
+    
+    // Reload goals data
+    await this.loadActiveGoals();
+    
+    this.buildDailyActions();
+    this.closeGoalDetailPanel();
+  }
+  
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
     try {
@@ -806,6 +972,7 @@ export class HomeComponent implements OnInit {
       this.yesterdayEntry = this.entries.find(e => e.date === yesterdayDate) || null;
       
       this.loadWhoopWorkoutExercises();
+      this.loadSelectedDailyGoals();
       
       // Load meal entries from database
       await this.loadMealEntries();

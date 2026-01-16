@@ -27,7 +27,8 @@ export class GoalModalComponent implements OnInit {
       goalType: ['', Validators.required],
       status: ['not_started'],
       progress: [0],
-      targetDate: ['']
+      targetDate: [''],
+      requiresDailyAction: [false]
     });
   }
 
@@ -45,7 +46,8 @@ export class GoalModalComponent implements OnInit {
         goalType: this.editingGoal.goalType,
         status: this.editingGoal.status,
         progress: this.editingGoal.progress,
-        targetDate: this.editingGoal.targetDate || ''
+        targetDate: this.editingGoal.targetDate || '',
+        requiresDailyAction: this.editingGoal.requiresDailyAction || false
       });
       this.milestones = this.editingGoal.milestones ? [...this.editingGoal.milestones] : [];
     } else if (this.parentGoal) {
@@ -110,6 +112,10 @@ export class GoalModalComponent implements OnInit {
     return this.parentGoal !== null;
   }
 
+  isYearlyGoal(): boolean {
+    return this.goalForm.value.goalType === 'yearly';
+  }
+
   getModalTitle(): string {
     if (this.editingGoal) {
       return `Edit ${GOAL_TYPE_CONFIG[this.editingGoal.goalType].label}`;
@@ -138,6 +144,11 @@ export class GoalModalComponent implements OnInit {
       targetDate: formValue.targetDate || undefined,
       milestones: this.milestones
     };
+
+    // Only include requiresDailyAction for yearly goals
+    if (formValue.goalType === 'yearly') {
+      goalData.requiresDailyAction = formValue.requiresDailyAction || false;
+    }
 
     this.save.emit(goalData);
   }

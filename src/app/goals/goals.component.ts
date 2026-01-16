@@ -52,13 +52,18 @@ export class GoalsComponent implements OnInit {
         this.selectedLifeGoalId = this.lifeGoals[0].id;
       }
       
-      // Auto-expand life purpose and selected life goal
+      // Auto-expand life purpose, selected life goal, and all yearly goals
       if (this.goalTree) {
         this.expandedGoals.add(this.goalTree.id);
         if (this.selectedLifeGoalId) {
           this.expandedGoals.add(this.selectedLifeGoalId);
         }
       }
+      
+      // Always expand all yearly goals
+      this.goals.filter(g => g.goalType === 'yearly').forEach(g => {
+        this.expandedGoals.add(g.id);
+      });
     } catch (err: any) {
       console.error('Error loading goals:', err);
       this.error = err.message || 'Failed to load goals';
