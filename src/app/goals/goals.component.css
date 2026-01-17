@@ -64,26 +64,23 @@
   margin-bottom: 1.5rem;
 }
 
-.expand-btn,
-.collapse-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #3a3a5a;
+.add-life-goal-btn {
+  padding: 0.625rem 1rem;
+  background: #00d4aa;
+  color: #000;
+  border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #888;
-  font-size: 1.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.expand-btn:hover,
-.collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+.add-life-goal-btn:hover {
+  background: #00e6bb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
 }
 
 .add-purpose-btn {

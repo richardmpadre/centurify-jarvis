@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MealService, Meal } from '../../../services/meal.service';
 import { MealEntryService, MealEntry } from '../../../services/meal-entry.service';
 
 @Component({
   selector: 'app-meal-detail-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './meal-detail-panel.component.html',
   styleUrl: './meal-detail-panel.component.css'
 })
@@ -21,6 +22,8 @@ export class MealDetailPanelComponent implements OnChanges {
   @Output() mealTypeCompleted = new EventEmitter<string>();
   
   savedMeals: Meal[] = [];
+  filteredMeals: Meal[] = [];
+  searchQuery = '';
   isLoadingMeals = false;
 
   constructor(
@@ -30,6 +33,7 @@ export class MealDetailPanelComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
+      this.searchQuery = '';
       this.loadSavedMeals();
     }
   }
@@ -38,11 +42,24 @@ export class MealDetailPanelComponent implements OnChanges {
     this.isLoadingMeals = true;
     try {
       this.savedMeals = await this.mealService.getAllMeals();
+      this.filteredMeals = [...this.savedMeals];
     } catch (error) {
       console.error('Error loading saved meals:', error);
       this.savedMeals = [];
+      this.filteredMeals = [];
     } finally {
       this.isLoadingMeals = false;
+    }
+  }
+
+  filterMeals(): void {
+    const query = this.searchQuery.toLowerCase().trim();
+    if (!query) {
+      this.filteredMeals = [...this.savedMeals];
+    } else {
+      this.filteredMeals = this.savedMeals.filter(meal =>
+        meal.name.toLowerCase().includes(query)
+      );
     }
   }
 
@@ -53,10 +70,10 @@ export class MealDetailPanelComponent implements OnChanges {
   getTotals(): { calories: number; protein: number; fats: number; carbs: number } {
     const meals = this.getMealsForType();
     return meals.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0),
-      protein: totals.protein + (meal.protein || 0),
-      fats: totals.fats + (meal.fats || 0),
-      carbs: totals.carbs + (meal.carbs || 0)
+      calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
+      protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
+      fats: totals.fats + (meal.fats || 0) * (meal.portion || 1),
+      carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
   }
 
@@ -91,7 +108,8 @@ export class MealDetailPanelComponent implements OnChanges {
         carbs: savedMeal.carbs,
         fats: savedMeal.fats,
         completed: false,
-        mealId: savedMeal.id
+        mealId: savedMeal.id,
+        portion: 1
       });
       
       console.log('Meal entry created:', created);
@@ -114,6 +132,29 @@ export class MealDetailPanelComponent implements OnChanges {
       const newEntries = this.mealEntries.filter(m => m.id !== mealId);
       this.mealEntriesChanged.emit(newEntries);
     }
+  }
+
+  async updatePortion(mealEntry: MealEntry, newPortion: number): Promise<void> {
+    if (newPortion <= 0) return;
+    
+    const updated = await this.mealEntryService.updateMealEntry(mealEntry.id, {
+      portion: newPortion
+    });
+    
+    if (updated) {
+      const newEntries = this.mealEntries.map(m => 
+        m.id === updated.id ? updated : m
+      );
+      this.mealEntriesChanged.emit(newEntries);
+    }
+  }
+
+  getCalculatedValue(baseValue: number | null, portion: number): number {
+    return Math.round((baseValue || 0) * portion * 100) / 100;
+  }
+
+  roundToTwo(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   onMarkComplete(): void {

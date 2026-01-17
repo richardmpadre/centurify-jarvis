@@ -87,6 +87,12 @@ export class GoalsComponent implements OnInit {
     this.showModal = true;
   }
 
+  onAddLifeGoal(): void {
+    this.editingGoal = null;
+    this.parentGoalForNew = this.goalTree;
+    this.showModal = true;
+  }
+
   onAddChild(parent: Goal): void {
     this.editingGoal = null;
     this.parentGoalForNew = parent;
@@ -123,7 +129,8 @@ export class GoalsComponent implements OnInit {
           targetDate: goalData.targetDate,
           sortOrder: 0,
           milestones: goalData.milestones,
-          notes: goalData.notes
+          notes: goalData.notes,
+          requiresDailyAction: goalData.requiresDailyAction
         };
         await this.goalService.createGoal(newGoal);
       }

@@ -43,6 +43,7 @@ const schema = a.schema({
     fats: a.float(),
     completed: a.boolean(), // Has the user eaten this meal?
     mealId: a.string(), // Optional link to Meal library
+    portion: a.float(), // Portion size multiplier (e.g., 1.0 = 1 serving)
   }).authorization(allow => [allow.owner()]),
   
   // Meal library - saved meal templates for reuse

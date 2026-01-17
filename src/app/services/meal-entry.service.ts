@@ -13,6 +13,7 @@ export interface MealEntry {
   fats: number | null;
   completed: boolean;
   mealId: string | null;
+  portion: number; // portion size multiplier (e.g., 1.0 = 1 serving, 0.5 = half serving)
   createdAt?: string;
   updatedAt?: string;
 }
@@ -55,7 +56,8 @@ export class MealEntryService {
         carbs: entry.carbs,
         fats: entry.fats,
         completed: entry.completed ?? false,
-        mealId: entry.mealId
+        mealId: entry.mealId,
+        portion: entry.portion ?? 1
       });
       
       if (response.data) {
@@ -138,6 +140,7 @@ export class MealEntryService {
       fats: data.fats ?? null,
       completed: data.completed ?? false,
       mealId: data.mealId ?? null,
+      portion: data.portion ?? 1,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt
     };

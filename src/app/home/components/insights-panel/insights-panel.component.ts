@@ -80,10 +80,10 @@ export class InsightsPanelComponent implements OnChanges {
     try {
       const completedMeals = this.mealEntries.filter(m => m.completed);
       const nutritionTotals = completedMeals.reduce((acc, m) => ({
-        totalCalories: acc.totalCalories + (m.calories || 0),
-        totalProtein: acc.totalProtein + (m.protein || 0),
-        totalCarbs: acc.totalCarbs + (m.carbs || 0),
-        totalFats: acc.totalFats + (m.fats || 0)
+        totalCalories: acc.totalCalories + (m.calories || 0) * (m.portion || 1),
+        totalProtein: acc.totalProtein + (m.protein || 0) * (m.portion || 1),
+        totalCarbs: acc.totalCarbs + (m.carbs || 0) * (m.portion || 1),
+        totalFats: acc.totalFats + (m.fats || 0) * (m.portion || 1)
       }), { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0 });
       
       const completedActions = this.dailyActions.filter(a => a.status === 'completed').length;

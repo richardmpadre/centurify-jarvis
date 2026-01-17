@@ -8,21 +8,57 @@
   <!-- Meals for this type -->
   <div class="meal-detail-list" *ngIf="getMealsForType().length > 0">
     <div class="meal-detail-item" *ngFor="let meal of getMealsForType()">
-      <div class="meal-detail-info">
-        <span class="meal-detail-name">{{ meal.name }}</span>
-        <span class="meal-detail-macros">
-          {{ meal.calories }} cal • {{ meal.protein }}p / {{ meal.carbs }}c / {{ meal.fats }}f
-        </span>
+      <div class="meal-detail-content">
+        <div class="meal-detail-header">
+          <span class="meal-detail-name">{{ meal.name }}</span>
+          <button class="remove-meal-btn" (click)="removeMeal(meal.id)" title="Remove meal">×</button>
+        </div>
+        
+        <div class="meal-detail-macros">
+          <span class="macro-item">{{ getCalculatedValue(meal.calories, meal.portion) }} cal</span>
+          <span class="macro-item">{{ getCalculatedValue(meal.protein, meal.portion) }}g protein</span>
+          <span class="macro-item">{{ getCalculatedValue(meal.carbs, meal.portion) }}g carbs</span>
+          <span class="macro-item">{{ getCalculatedValue(meal.fats, meal.portion) }}g fats</span>
+        </div>
+        
+        <div class="portion-control">
+          <label class="portion-label">Portion:</label>
+          <div class="portion-input-group">
+            <button class="portion-btn" (click)="updatePortion(meal, meal.portion - 0.25)" [disabled]="meal.portion <= 0.25">-</button>
+            <input 
+              type="number" 
+              class="portion-input" 
+              [(ngModel)]="meal.portion" 
+              (change)="updatePortion(meal, meal.portion)"
+              min="0.1"
+              step="0.25">
+            <button class="portion-btn" (click)="updatePortion(meal, meal.portion + 0.25)">+</button>
+          </div>
+        </div>
       </div>
-      <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
     </div>
     
     <!-- Totals for this meal type -->
     <div class="meal-detail-totals">
-      <span class="detail-total">{{ getTotals().calories }} cal</span>
-      <span class="detail-total">{{ getTotals().protein }}g protein</span>
-      <span class="detail-total">{{ getTotals().carbs }}g carbs</span>
-      <span class="detail-total">{{ getTotals().fats }}g fats</span>
+      <div class="totals-header">Total for {{ getMealTypeLabel() }}</div>
+      <div class="totals-grid">
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().calories) }}</span>
+          <span class="total-label">calories</span>
+        </span>
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().protein) }}g</span>
+          <span class="total-label">protein</span>
+        </span>
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().carbs) }}g</span>
+          <span class="total-label">carbs</span>
+        </span>
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().fats) }}g</span>
+          <span class="total-label">fats</span>
+        </span>
+      </div>
     </div>
   </div>
   
@@ -32,19 +68,50 @@
   
   <!-- Add more meals -->
   <div class="add-meal-section">
-    <label>Add another meal:</label>
-    <select 
-      class="meal-dropdown" 
-      #mealSelect
-      [value]="''" 
-      (change)="addMealToType(mealSelect.value); mealSelect.value = ''"
-      [disabled]="isLoadingMeals">
-      <option value="" disabled>{{ isLoadingMeals ? 'Loading...' : 'Select meal...' }}</option>
-      <option *ngFor="let meal of savedMeals" [value]="meal.id">
-        {{ meal.name }} ({{ meal.calories }} cal)
-      </option>
-    </select>
-    <a href="/nutrition" class="add-new-link">+ Add new meal</a>
+    <div class="section-header">
+      <span class="section-icon">➕</span>
+      <label>Add meal to {{ getMealTypeLabel() }}</label>
+    </div>
+    
+    <!-- Search Input -->
+    <div class="search-wrapper">
+      <input 
+        type="text" 
+        class="meal-search-input"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="filterMeals()"
+        placeholder="🔍 Search meals..."
+        [disabled]="isLoadingMeals">
+    </div>
+    
+    <!-- Filtered Meals List -->
+    <div class="meals-list" *ngIf="!isLoadingMeals && filteredMeals.length > 0">
+      <div 
+        *ngFor="let meal of filteredMeals" 
+        class="meal-list-item"
+        (click)="addMealToType(meal.id)">
+        <div class="meal-item-header">
+          <span class="meal-item-name">{{ meal.name }}</span>
+          <span class="meal-item-calories">{{ meal.calories }} cal</span>
+        </div>
+        <div class="meal-item-macros">
+          {{ meal.protein }}g protein • {{ meal.carbs }}g carbs • {{ meal.fats }}g fats
+        </div>
+      </div>
+    </div>
+    
+    <div class="no-results" *ngIf="!isLoadingMeals && searchQuery && filteredMeals.length === 0">
+      No meals found matching "{{ searchQuery }}"
+    </div>
+    
+    <div class="loading-meals" *ngIf="isLoadingMeals">
+      Loading meals...
+    </div>
+    
+    <a href="/nutrition" class="add-new-link">
+      <span class="link-icon">+</span>
+      Create new meal in library
+    </a>
   </div>
   
   <!-- Actions -->

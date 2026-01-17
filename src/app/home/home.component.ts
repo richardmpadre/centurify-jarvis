@@ -370,7 +370,7 @@ export class HomeComponent implements OnInit {
       const typeMeals = mealsByType[type];
       if (typeMeals.length > 0) {
         const mealNames = typeMeals.map(m => m.name).join(', ');
-        const totalCals = typeMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
+        const totalCals = typeMeals.reduce((sum, m) => sum + (m.calories || 0) * (m.portion || 1), 0);
         const allCompleted = typeMeals.every(m => m.completed);
         
         actions.push({

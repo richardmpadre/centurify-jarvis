@@ -93,6 +93,37 @@ export class GoalTreeNodeComponent {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
+  getSortedChildren(): Goal[] {
+    if (!this.goal.children || this.goal.children.length === 0) {
+      return [];
+    }
+
+    return [...this.goal.children].sort((a, b) => {
+      // First, separate completed from non-completed
+      const aCompleted = a.status === 'completed';
+      const bCompleted = b.status === 'completed';
+      
+      if (aCompleted && !bCompleted) return 1; // a goes after b
+      if (!aCompleted && bCompleted) return -1; // a goes before b
+      
+      // Both completed or both not completed - sort by target date
+      const aDate = a.targetDate ? new Date(a.targetDate).getTime() : null;
+      const bDate = b.targetDate ? new Date(b.targetDate).getTime() : null;
+      
+      // Goals with dates come before goals without dates
+      if (aDate && !bDate) return -1;
+      if (!aDate && bDate) return 1;
+      
+      // Both have dates - sort ascending (earliest first)
+      if (aDate && bDate) {
+        return aDate - bDate;
+      }
+      
+      // Both have no dates - maintain original order (by sortOrder)
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
+  }
+
   // Pass through events from child nodes
   onChildToggleExpand(id: string): void {
     this.toggleExpand.emit(id);

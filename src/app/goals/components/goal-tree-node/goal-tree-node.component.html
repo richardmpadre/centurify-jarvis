@@ -14,6 +14,10 @@
       <span class="list-item-title">{{ goal.title }}</span>
     </div>
     
+    <span class="list-item-target-date" *ngIf="goal.status !== 'completed' && goal.targetDate">
+      {{ formatDate(goal.targetDate) }}
+    </span>
+    
     <span class="list-item-badge" 
           *ngIf="goal.status === 'completed'"
           [style.color]="getStatusConfig().color">
@@ -145,7 +149,7 @@
        [class.ad-hoc-children]="goal.goalType === 'yearly'"
        *ngIf="(goal.goalType === 'yearly' || isExpanded) && hasChildren()">
     <app-goal-tree-node
-      *ngFor="let child of goal.children"
+      *ngFor="let child of getSortedChildren()"
       [goal]="child"
       [level]="level + 1"
       [isExpanded]="isChildExpanded(child.id)"

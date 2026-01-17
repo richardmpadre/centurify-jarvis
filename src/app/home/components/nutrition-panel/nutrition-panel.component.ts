@@ -86,7 +86,8 @@ export class NutritionPanelComponent implements OnChanges {
         carbs: savedMeal.carbs,
         fats: savedMeal.fats,
         completed: false,
-        mealId: savedMeal.id
+        mealId: savedMeal.id,
+        portion: 1
       });
       
       console.log('Meal entry created:', created);
@@ -115,10 +116,10 @@ export class NutritionPanelComponent implements OnChanges {
 
   getNutritionTotals(): { calories: number; protein: number; fats: number; carbs: number } {
     return this.mealEntries.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0),
-      protein: totals.protein + (meal.protein || 0),
-      fats: totals.fats + (meal.fats || 0),
-      carbs: totals.carbs + (meal.carbs || 0)
+      calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
+      protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
+      fats: totals.fats + (meal.fats || 0) * (meal.portion || 1),
+      carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
   }
 
@@ -170,7 +171,8 @@ export class NutritionPanelComponent implements OnChanges {
           carbs: meal.carbs,
           fats: meal.fats,
           completed: false,
-          mealId: meal.mealId || null
+          mealId: meal.mealId || null,
+          portion: meal.portion || 1
         });
         
         if (created) {
