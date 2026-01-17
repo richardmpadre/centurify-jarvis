@@ -84,22 +84,38 @@ export class DashboardComponent {
   getCompletedNutrition(): { calories: number; protein: number; fats: number; carbs: number } {
     // Only count meals that are marked as completed
     const completedMeals = this.mealEntries.filter(m => m.completed);
-    return completedMeals.reduce((totals, meal) => ({
+    const totals = completedMeals.reduce((totals, meal) => ({
       calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
       protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
       carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1),
       fats: totals.fats + (meal.fats || 0) * (meal.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+    
+    // Round all values to whole numbers
+    return {
+      calories: Math.round(totals.calories),
+      protein: Math.round(totals.protein),
+      carbs: Math.round(totals.carbs),
+      fats: Math.round(totals.fats)
+    };
   }
 
   getPlannedNutrition(): { calories: number; protein: number; fats: number; carbs: number } {
     // All planned meals (completed or not)
-    return this.mealEntries.reduce((totals, meal) => ({
+    const totals = this.mealEntries.reduce((totals, meal) => ({
       calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
       protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
       carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1),
       fats: totals.fats + (meal.fats || 0) * (meal.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+    
+    // Round all values to whole numbers
+    return {
+      calories: Math.round(totals.calories),
+      protein: Math.round(totals.protein),
+      carbs: Math.round(totals.carbs),
+      fats: Math.round(totals.fats)
+    };
   }
 
   hasNutritionData(): boolean {

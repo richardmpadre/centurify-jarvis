@@ -50,6 +50,18 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     { value: 'hill_repeats', label: 'Hill Repeats' }
   ];
 
+  // Form default values
+  private readonly DEFAULT_VALUES = {
+    type: 'Strength Training',
+    targetDuration: 40,
+    exerciseSets: 3,
+    exerciseReps: '8-10',
+    runType: 'zone2',
+    targetType: 'time',
+    targetValue: 30,
+    distanceUnit: 'miles'
+  };
+
   constructor(
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
@@ -57,36 +69,45 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     private workoutService: WorkoutService
   ) {
     this.workoutForm = this.fb.group({
-      type: ['Strength Training'],
-      targetDuration: [40],
+      type: [this.DEFAULT_VALUES.type],
+      targetDuration: [this.DEFAULT_VALUES.targetDuration],
       // Strength training fields
       exerciseName: [''],
-      exerciseSets: [3],
-      exerciseReps: ['8-10'],
+      exerciseSets: [this.DEFAULT_VALUES.exerciseSets],
+      exerciseReps: [this.DEFAULT_VALUES.exerciseReps],
       exerciseWeight: [''],
       exerciseNotes: [''],
       // Cardio fields
-      runType: ['zone2'],
-      targetType: ['time'],
-      targetValue: [30],
+      runType: [this.DEFAULT_VALUES.runType],
+      targetType: [this.DEFAULT_VALUES.targetType],
+      targetValue: [this.DEFAULT_VALUES.targetValue],
+      distanceUnit: [this.DEFAULT_VALUES.distanceUnit],
       targetPace: [''],
       cardioNotes: ['']
     });
   }
 
+  ngOnInit(): void {
+    this.loadSavedWorkouts();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['isOpen']?.currentValue) {
+      this.resetForm();
+    }
+  }
+
+  // ===== Workout Type Checks =====
+  
   isCardioWorkout(): boolean {
-    const type = this.workoutForm.value.type;
-    return CARDIO_WORKOUT_TYPES.includes(type);
+    return CARDIO_WORKOUT_TYPES.includes(this.workoutForm.value.type);
   }
 
   isRestDay(): boolean {
-    const type = this.workoutForm.value.type;
-    return type === 'Rest Day';
+    return this.workoutForm.value.type === 'Rest Day';
   }
 
-  async ngOnInit(): Promise<void> {
-    await this.loadSavedWorkouts();
-  }
+  // ===== Template Management =====
 
   async loadSavedWorkouts(): Promise<void> {
     this.isLoadingTemplates = true;
@@ -131,32 +152,28 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
   }
 
   private mapCategoryToType(category: string | null): string {
-    switch (category) {
-      case 'strength': return 'Strength Training';
-      case 'cardio': return 'Cardio';
-      case 'hiit': return 'HIIT';
-      case 'flexibility': return 'Yoga';
-      case 'sports': return 'Other';
-      default: return 'Strength Training';
-    }
+    const categoryMap: Record<string, string> = {
+      strength: 'Strength Training',
+      cardio: 'Cardio',
+      hiit: 'HIIT',
+      flexibility: 'Yoga',
+      sports: 'Other'
+    };
+    return categoryMap[category || ''] || 'Strength Training';
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    if (changes['isOpen'] && this.isOpen) {
-      this.loadExistingPlan();
-    }
-  }
+  // ===== Form Management =====
 
-  private loadExistingPlan(): void {
-    // Always start with a fresh form (default 40 minutes)
-    // Users can use "Copy Last Workout" if they want to load previous plan
+  private resetForm(): void {
     this.exercises = [];
     this.aiRecommendation = null;
     this.workoutForm.patchValue({
-      type: 'Strength Training',
-      targetDuration: 40
+      type: this.DEFAULT_VALUES.type,
+      targetDuration: this.DEFAULT_VALUES.targetDuration
     });
   }
+
+  // ===== Exercise Management =====
 
   addExercise(): void {
     const form = this.workoutForm.value;
@@ -181,8 +198,43 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     this.exercises.splice(index, 1);
   }
 
+  // ===== Copy Last Workout =====
+
   copyLastWorkout(): void {
     this.aiRecommendation = null;
+    const lastWorkout = this.getLastWorkout();
+    
+    if (!lastWorkout) return;
+    
+    const planned = lastWorkout.workout;
+    const isCurrentCardio = CARDIO_WORKOUT_TYPES.includes(this.workoutForm.value.type);
+    
+    // For cardio, copy cardio data
+    if (isCurrentCardio && planned.cardio) {
+      this.workoutForm.patchValue({ 
+        type: planned.type,
+        targetDuration: planned.targetDuration,
+        runType: planned.cardio.runType,
+        targetType: planned.cardio.targetType,
+        targetValue: planned.cardio.targetValue,
+        distanceUnit: planned.cardio.distanceUnit || 'miles',
+        targetPace: planned.cardio.targetPace || '',
+        cardioNotes: planned.cardio.notes || ''
+      });
+      return;
+    }
+    
+    // For strength, copy exercises
+    if (!isCurrentCardio && planned.exercises?.length > 0) {
+      this.exercises = planned.exercises.map(e => ({ ...e }));
+      this.workoutForm.patchValue({ 
+        type: planned.type,
+        targetDuration: planned.targetDuration 
+      });
+    }
+  }
+
+  private getLastWorkout(): { workout: PlannedWorkout; date: string } | null {
     const currentType = this.workoutForm.value.type;
     const isCurrentCardio = CARDIO_WORKOUT_TYPES.includes(currentType);
     
@@ -193,52 +245,79 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
         try {
           const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
           
-          // For cardio, look for matching cardio type
+          // For cardio, look for cardio workouts
           if (isCurrentCardio && planned.cardio) {
-            this.workoutForm.patchValue({ 
-              type: planned.type,
-              targetDuration: planned.targetDuration,
-              runType: planned.cardio.runType,
-              targetType: planned.cardio.targetType,
-              targetValue: planned.cardio.targetValue,
-              targetPace: planned.cardio.targetPace || '',
-              cardioNotes: planned.cardio.notes || ''
-            });
-            return;
+            return { workout: planned, date: entry.date };
           }
           
-          // For strength, look for exercises
+          // For strength, look for workouts with exercises
           if (!isCurrentCardio && planned.exercises?.length > 0) {
-            this.exercises = planned.exercises.map(e => ({ ...e }));
-            this.workoutForm.patchValue({ 
-              type: planned.type,
-              targetDuration: planned.targetDuration 
-            });
-            return;
+            return { workout: planned, date: entry.date };
           }
         } catch { /* skip */ }
       }
     }
+    return null;
   }
 
   hasLastWorkout(): boolean {
-    const currentType = this.workoutForm.value.type;
-    const isCurrentCardio = CARDIO_WORKOUT_TYPES.includes(currentType);
-    
-    return this.allEntries.some(entry => {
-      if (entry.date === this.selectedDate) return false;
-      if (entry.plannedWorkout) {
-        try {
-          const planned = JSON.parse(entry.plannedWorkout) as PlannedWorkout;
-          if (isCurrentCardio) {
-            return !!planned.cardio;
-          }
-          return planned.exercises?.length > 0;
-        } catch { /* skip */ }
-      }
-      return false;
-    });
+    return this.getLastWorkout() !== null;
   }
+
+  getLastWorkoutDetails(): string {
+    const lastWorkout = this.getLastWorkout();
+    if (!lastWorkout) return '';
+    
+    const { workout: planned, date } = lastWorkout;
+    const isCurrentCardio = CARDIO_WORKOUT_TYPES.includes(this.workoutForm.value.type);
+    
+    // Format date
+    const workoutDate = new Date(date);
+    const formattedDate = workoutDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    
+    // For cardio
+    if (isCurrentCardio && planned.cardio) {
+      const parts: string[] = [];
+      
+      // Date first
+      parts.push(formattedDate);
+      
+      // Run type
+      parts.push(this.getRunTypeLabel(planned.cardio.runType));
+      
+      // Target (distance or time)
+      if (planned.cardio.targetType === 'time') {
+        parts.push(`${planned.cardio.targetValue} min`);
+      } else {
+        const unit = planned.cardio.distanceUnit === 'km' ? 'km' : 'mi';
+        parts.push(`${planned.cardio.targetValue} ${unit}`);
+        
+        // Show estimated time for distance-based
+        if (planned.targetDuration && planned.targetDuration > 0) {
+          parts.push(`~${planned.targetDuration} min`);
+        }
+      }
+      
+      // Pace if available
+      if (planned.cardio.targetPace) {
+        parts.push(`@ ${planned.cardio.targetPace}`);
+      }
+      
+      return parts.join(' • ');
+    }
+    
+    // For strength
+    if (!isCurrentCardio && planned.exercises?.length > 0) {
+      return `${formattedDate} • ${planned.exercises.length} exercise${planned.exercises.length !== 1 ? 's' : ''} • ${planned.targetDuration} min`;
+    }
+    
+    return '';
+  }
+
+  // ===== AI Workout Generation =====
 
   async generateAIRecommendation(): Promise<void> {
     this.isGeneratingAI = true;
@@ -287,18 +366,26 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
   }
 
   private buildTrainingData(): any {
-    const selectedType = this.workoutForm.value.type || 'Strength Training';
+    const selectedType = this.workoutForm.value.type || this.DEFAULT_VALUES.type;
     
-    // Current day metrics
-    const currentDay = {
+    return {
+      currentDay: this.buildCurrentDayData(selectedType),
+      userProfile: this.buildUserProfile(),
+      sameTypeHistory: this.getSameTypeWorkoutHistory(selectedType),
+      workoutType: selectedType
+    };
+  }
+
+  private buildCurrentDayData(workoutType: string): any {
+    return {
       date: this.selectedDate,
       recovery: this.currentEntry?.recovery || null,
       sleep: this.currentEntry?.sleep || null,
       rhr: this.currentEntry?.rhr || null,
       strain: this.currentEntry?.strain || null,
       weight: this.currentEntry?.weight || null,
-      targetDuration: this.workoutForm.value.targetDuration || 40,
-      workoutType: selectedType,
+      targetDuration: this.workoutForm.value.targetDuration || this.DEFAULT_VALUES.targetDuration,
+      workoutType,
       nutritionPlan: this.currentEntry?.totalCalories ? {
         calories: this.currentEntry.totalCalories,
         protein: this.currentEntry.totalProtein || 0,
@@ -306,91 +393,51 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
         fats: this.currentEntry.totalFats || 0
       } : undefined
     };
+  }
 
-    // Get last 3 workouts of the SAME type for progression tracking
-    const sameTypeWorkouts = this.allEntries
-      .filter(entry => entry.date < this.selectedDate && entry.plannedWorkout)
-      .map(entry => {
-        try {
-          const planned = JSON.parse(entry.plannedWorkout!) as PlannedWorkout;
-          return {
-            date: entry.date,
-            type: planned.type,
-            duration: planned.targetDuration,
-            strain: entry.strain || null,
-            recovery: entry.recovery || null,
-            exercises: planned.exercises.map(ex => ({
-              name: ex.name,
-              sets: ex.sets,
-              reps: ex.reps,
-              weight: ex.weight
-            }))
-          };
-        } catch {
-          return null;
-        }
-      })
-      .filter(item => item !== null && item.type === selectedType)
-      .slice(0, 3); // Last 3 workouts of same type
-
-    console.log(`Found ${sameTypeWorkouts.length} previous ${selectedType} workouts`);
-
-    // User profile with specific equipment
-    const userProfile = {
+  private buildUserProfile(): any {
+    return {
       trainingGoal: 'strength_building',
       experienceLevel: 'intermediate',
-      preferredDuration: 40,
+      preferredDuration: this.DEFAULT_VALUES.targetDuration,
       availableEquipment: ['dumbbells', 'bench'],
       availableWeights: [10, 20, 25, 30, 35] // lbs
     };
-
-    return {
-      currentDay,
-      userProfile,
-      sameTypeHistory: sameTypeWorkouts, // Renamed for clarity
-      workoutType: selectedType
-    };
   }
 
-  async saveWorkoutPlan(): Promise<void> {
-    const form = this.workoutForm.value;
-    
-    let plannedWorkout: PlannedWorkout;
-    
-    if (this.isRestDay()) {
-      // Rest day - minimal data
-      plannedWorkout = {
-        type: 'Rest Day',
-        targetDuration: 0,
-        exercises: []
+  private getSameTypeWorkoutHistory(selectedType: string): any[] {
+    return this.allEntries
+      .filter(entry => entry.date < this.selectedDate && entry.plannedWorkout)
+      .map(entry => this.parseWorkoutHistory(entry))
+      .filter(item => item !== null && item.type === selectedType)
+      .slice(0, 3); // Last 3 workouts of same type
+  }
+
+  private parseWorkoutHistory(entry: HealthEntry): any {
+    try {
+      const planned = JSON.parse(entry.plannedWorkout!) as PlannedWorkout;
+      return {
+        date: entry.date,
+        type: planned.type,
+        duration: planned.targetDuration,
+        strain: entry.strain || null,
+        recovery: entry.recovery || null,
+        exercises: planned.exercises.map(ex => ({
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight: ex.weight
+        }))
       };
-    } else if (this.isCardioWorkout()) {
-      // Cardio workout - save cardio details
-      const cardio: CardioWorkoutPlan = {
-        runType: form.runType,
-        targetType: form.targetType,
-        targetValue: form.targetValue,
-        targetPace: form.targetPace || undefined,
-        notes: form.cardioNotes || undefined
-      };
-      
-      // Calculate target duration from cardio values
-      const targetDuration = form.targetType === 'time' ? form.targetValue : form.targetDuration;
-      
-      plannedWorkout = {
-        type: form.type,
-        targetDuration: targetDuration,
-        exercises: [], // No exercises for cardio
-        cardio: cardio
-      };
-    } else {
-      // Strength/other workout - save exercises
-      plannedWorkout = {
-        type: form.type,
-        targetDuration: form.targetDuration,
-        exercises: this.exercises
-      };
+    } catch {
+      return null;
     }
+  }
+
+  // ===== Save Workout =====
+
+  async saveWorkoutPlan(): Promise<void> {
+    const plannedWorkout = this.buildPlannedWorkout();
     
     try {
       const payload = {
@@ -411,6 +458,66 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     }
   }
 
+  private buildPlannedWorkout(): PlannedWorkout {
+    if (this.isRestDay()) {
+      return this.buildRestDayWorkout();
+    }
+    
+    if (this.isCardioWorkout()) {
+      return this.buildCardioWorkout();
+    }
+    
+    return this.buildStrengthWorkout();
+  }
+
+  private buildRestDayWorkout(): PlannedWorkout {
+    return {
+      type: 'Rest Day',
+      targetDuration: 0,
+      exercises: []
+    };
+  }
+
+  private buildCardioWorkout(): PlannedWorkout {
+    const form = this.workoutForm.value;
+    
+    const cardio: CardioWorkoutPlan = {
+      runType: form.runType,
+      targetType: form.targetType,
+      targetValue: form.targetValue,
+      distanceUnit: form.distanceUnit || 'miles',
+      targetPace: form.targetPace || undefined,
+      notes: form.cardioNotes || undefined
+    };
+    
+    // Calculate target duration
+    let targetDuration = form.targetDuration;
+    if (form.targetType === 'time') {
+      targetDuration = form.targetValue;
+    } else {
+      const estimated = this.getEstimatedDuration();
+      targetDuration = estimated || form.targetDuration;
+    }
+    
+    return {
+      type: form.type,
+      targetDuration,
+      exercises: [],
+      cardio
+    };
+  }
+
+  private buildStrengthWorkout(): PlannedWorkout {
+    const form = this.workoutForm.value;
+    return {
+      type: form.type,
+      targetDuration: form.targetDuration,
+      exercises: this.exercises
+    };
+  }
+
+  // ===== Utility Methods =====
+
   onClose(): void {
     this.close.emit();
   }
@@ -430,7 +537,18 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       // Cardio workout
       const runTypeLabel = this.runTypes.find(rt => rt.value === form.runType)?.label || form.runType;
       text += `Type: ${runTypeLabel}\n`;
-      text += `Target: ${form.targetValue} ${form.targetType === 'time' ? 'minutes' : 'miles'}\n`;
+      
+      if (form.targetType === 'distance') {
+        const unit = form.distanceUnit || 'miles';
+        text += `Target: ${form.targetValue} ${unit}\n`;
+        const estimated = this.getEstimatedDuration();
+        if (estimated) {
+          text += `Estimated Duration: ~${estimated} minutes\n`;
+        }
+      } else {
+        text += `Target: ${form.targetValue} minutes\n`;
+      }
+      
       if (form.targetPace) {
         text += `Target Pace: ${form.targetPace}\n`;
       }
@@ -467,5 +585,32 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
 
   getRunTypeLabel(value: string): string {
     return this.runTypes.find(rt => rt.value === value)?.label || value;
+  }
+
+  getDistanceLabel(): string {
+    const unit = this.workoutForm.value.distanceUnit || 'miles';
+    return unit === 'km' ? 'Kilometers' : 'Miles';
+  }
+
+  getDistanceUnit(): string {
+    const unit = this.workoutForm.value.distanceUnit || 'miles';
+    return unit === 'km' ? 'km' : 'mi';
+  }
+
+  getEstimatedDuration(): number | null {
+    const form = this.workoutForm.value;
+    if (form.targetType !== 'distance' || !form.targetValue || !form.targetPace) {
+      return null;
+    }
+
+    const paceMatch = form.targetPace.match(/(\d+):(\d+)/);
+    if (!paceMatch) return null;
+
+    const paceInMinutes = parseInt(paceMatch[1]) + (parseInt(paceMatch[2]) / 60);
+    const distance = parseFloat(form.targetValue);
+    const unit = form.distanceUnit || 'miles';
+    const distanceInMiles = unit === 'km' ? distance * 0.621371 : distance;
+    
+    return Math.round(distanceInMiles * paceInMinutes);
   }
 }

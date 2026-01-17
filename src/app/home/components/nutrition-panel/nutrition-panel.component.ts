@@ -22,6 +22,8 @@ export class NutritionPanelComponent implements OnChanges {
   @Output() planSaved = new EventEmitter<void>();
   
   savedMeals: Meal[] = [];
+  filteredMeals: Meal[] = [];
+  searchQuery = '';
   selectedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
   isLoadingMeals = false;
   isCopyingYesterday = false;
@@ -33,6 +35,7 @@ export class NutritionPanelComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['isOpen'] && this.isOpen) {
+      this.searchQuery = '';
       this.loadSavedMeals();
     }
   }
@@ -41,16 +44,63 @@ export class NutritionPanelComponent implements OnChanges {
     this.isLoadingMeals = true;
     try {
       this.savedMeals = await this.mealService.getAllMeals();
+      this.filteredMeals = [...this.savedMeals];
     } catch (error) {
       console.error('Error loading saved meals:', error);
       this.savedMeals = [];
+      this.filteredMeals = [];
     } finally {
       this.isLoadingMeals = false;
     }
   }
 
+  filterMeals(): void {
+    const query = this.searchQuery.toLowerCase().trim();
+    if (!query) {
+      this.filteredMeals = [...this.savedMeals];
+    } else {
+      this.filteredMeals = this.savedMeals.filter(meal =>
+        meal.name.toLowerCase().includes(query)
+      );
+    }
+  }
+
   selectMealType(type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): void {
     this.selectedMealType = type;
+  }
+
+  async addMealToType(mealId: string): Promise<void> {
+    if (!mealId) return;
+    
+    const savedMeal = this.savedMeals.find(m => m.id === mealId);
+    if (!savedMeal) {
+      console.error('Saved meal not found:', mealId);
+      return;
+    }
+    
+    try {
+      const created = await this.mealEntryService.createMealEntry({
+        date: this.selectedDate,
+        mealType: this.selectedMealType,
+        name: savedMeal.name,
+        calories: savedMeal.calories,
+        protein: savedMeal.protein,
+        carbs: savedMeal.carbs,
+        fats: savedMeal.fats,
+        completed: false,
+        mealId: savedMeal.id,
+        portion: 1
+      });
+      
+      if (created) {
+        const newEntries = [...this.mealEntries, created];
+        this.mealEntriesChanged.emit(newEntries);
+        this.searchQuery = '';
+        this.filteredMeals = [...this.savedMeals];
+      }
+    } catch (error) {
+      console.error('Error adding meal:', error);
+    }
   }
 
   async onMealDropdownChange(event: Event): Promise<void> {
@@ -135,6 +185,28 @@ export class NutritionPanelComponent implements OnChanges {
 
   getMealTypeLabel(type: string): string {
     return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+
+  getMealsByType(type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): MealEntry[] {
+    return this.mealEntries.filter(m => m.mealType === type);
+  }
+
+  hasMealsForType(type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): boolean {
+    return this.getMealsByType(type).length > 0;
+  }
+
+  getMealTypeTotals(type: 'breakfast' | 'lunch' | 'dinner' | 'snack'): { calories: number; protein: number; carbs: number; fats: number } {
+    const meals = this.getMealsByType(type);
+    return meals.reduce((totals, meal) => ({
+      calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
+      protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
+      carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1),
+      fats: totals.fats + (meal.fats || 0) * (meal.portion || 1)
+    }), { calories: 0, protein: 0, carbs: 0, fats: 0 });
+  }
+
+  roundToTwo(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   onSavePlan(): void {

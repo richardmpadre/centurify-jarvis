@@ -81,6 +81,7 @@ export class HomeComponent implements OnInit {
   currentEntry: HealthEntry | null = null;
   yesterdayEntry: HealthEntry | null = null;
   selectedDate = getLocalDateString(new Date());
+  showDatePicker = false;
   whoopWorkouts: WhoopWorkout[] = [];
   whoopWorkoutExercises: { [key: string]: PlannedExercise[] } = {};
   
@@ -633,6 +634,25 @@ export class HomeComponent implements OnInit {
     return getFormattedDisplayDate(this.selectedDate);
   }
 
+  toggleDatePicker(): void {
+    this.showDatePicker = !this.showDatePicker;
+    if (this.showDatePicker) {
+      // Auto-focus the date input when opened
+      setTimeout(() => {
+        const input = document.querySelector('.date-picker-input') as HTMLInputElement;
+        if (input) {
+          input.focus();
+          input.showPicker?.(); // Show native date picker if supported
+        }
+      }, 0);
+    }
+  }
+
+  onDateChange(): void {
+    this.showDatePicker = false;
+    this.loadDashboard();
+  }
+
   getWellnessScore(entry: HealthEntry): number | null {
     if (!entry?.dailyInsights) return null;
     try {
@@ -811,10 +831,13 @@ export class HomeComponent implements OnInit {
     
     // Cardio workouts
     if (planned.cardio) {
-      const target = planned.cardio.targetType === 'time' 
-        ? `${planned.cardio.targetValue} min` 
-        : `${planned.cardio.targetValue} mi`;
-      return `${planned.type}: ${target}`;
+      if (planned.cardio.targetType === 'time') {
+        return `${planned.type}: ${planned.cardio.targetValue} min`;
+      } else {
+        const unit = planned.cardio.distanceUnit || 'miles';
+        const unitLabel = unit === 'km' ? 'km' : 'mi';
+        return `${planned.type}: ${planned.cardio.targetValue} ${unitLabel}`;
+      }
     }
     
     // Strength workouts

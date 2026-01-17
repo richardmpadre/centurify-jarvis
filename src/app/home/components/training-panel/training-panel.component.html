@@ -21,7 +21,9 @@
         </div>
         <div class="cardio-detail">
           <span class="cardio-label">Target</span>
-          <span class="cardio-value">{{ cardio.targetValue }} {{ cardio.targetType === 'time' ? 'min' : 'mi' }}</span>
+          <span class="cardio-value">
+            {{ cardio.targetValue }} {{ cardio.targetType === 'time' ? 'min' : (cardio.distanceUnit === 'km' ? 'km' : 'mi') }}
+          </span>
         </div>
         <div class="cardio-detail" *ngIf="cardio.targetPace">
           <span class="cardio-label">Pace</span>

@@ -79,6 +79,42 @@
   margin-bottom: 1.5rem;
 }
 
+.last-workout-info {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.15), rgba(0, 168, 138, 0.1));
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.last-workout-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.last-workout-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.last-workout-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #00d4aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.last-workout-summary {
+  font-size: 0.9rem;
+  color: #e0e0e0;
+  line-height: 1.4;
+}
+
 .ai-icon {
   font-size: 1.5rem;
   flex-shrink: 0;

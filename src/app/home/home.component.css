@@ -45,6 +45,19 @@
 .date-display {
   text-align: center;
   min-width: 150px;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.date-display:hover {
+  background: rgba(0, 212, 170, 0.1);
+}
+
+.date-display.active {
+  background: rgba(0, 212, 170, 0.15);
 }
 
 .date-label {
@@ -58,6 +71,26 @@
   display: block;
   font-size: 0.85rem;
   color: #888;
+}
+
+.date-picker-input {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.date-picker-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .today-btn {

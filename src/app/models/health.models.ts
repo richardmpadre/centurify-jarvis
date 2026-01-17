@@ -57,7 +57,8 @@ export interface PlannedExercise {
 export interface CardioWorkoutPlan {
   runType: string; // 'zone2', 'tempo', 'intervals', 'long_run', 'recovery', 'fartlek'
   targetType: 'time' | 'distance';
-  targetValue: number; // minutes or miles
+  targetValue: number; // minutes or miles/km
+  distanceUnit?: 'miles' | 'km'; // unit for distance-based targets
   targetPace?: string; // e.g., "9:00/mi"
   notes?: string;
 }

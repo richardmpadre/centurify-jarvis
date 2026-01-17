@@ -13,56 +13,97 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: #1a1a2e;
-  border-radius: 16px;
-  border: 1px solid #2a2a4a;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: visible; /* Changed from auto to visible to allow dropdown to extend */
   z-index: 101;
+  display: flex;
+  flex-direction: column;
 }
 
 .nutrition-modal {
-  max-width: 480px;
-  padding: 0 1.25rem 1.25rem 1.25rem;
+  max-width: 540px;
+  padding: 0;
+  overflow: visible;
 }
 
 .nutrition-modal .modal-header {
-  margin: 0 -1.25rem;
-  padding: 1rem 1.25rem;
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  border-radius: 20px 20px 0 0;
+}
+
+.modal-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+/* Add scrollbar styling for modal content */
+.modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 170, 0.3);
+  border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 170, 0.5);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid #2a2a4a;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(0, 212, 170, 0.15);
   position: sticky;
   top: 0;
-  background: #1a1a2e;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   z-index: 10;
+  border-radius: 20px 20px 0 0;
 }
 
 .modal-header h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.3rem;
+  font-weight: 600;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .close-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
   color: #888;
   font-size: 1.5rem;
   cursor: pointer;
-  padding: 0;
+  padding: 0.25rem 0.6rem;
   line-height: 1;
+  transition: all 0.2s;
 }
 
 .close-btn:hover {
-  color: #fff;
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  transform: scale(1.05);
 }
 
 .nutrition-totals {
@@ -100,6 +141,42 @@
   font-size: 0.85rem;
   color: #888;
   text-transform: uppercase;
+}
+
+.meal-list {
+  margin-bottom: 1.5rem;
+}
+
+.meal-type-group {
+  margin-bottom: 1.5rem;
+}
+
+.meal-type-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.1), rgba(138, 43, 226, 0.1));
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid var(--primary-color);
+}
+
+.meal-type-emoji {
+  font-size: 1.2rem;
+}
+
+.meal-type-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fff;
+  flex: 1;
+}
+
+.meal-type-summary {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-color);
 }
 
 .meal-item {
@@ -147,10 +224,13 @@
 }
 
 .quick-add-section {
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  margin-bottom: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(0, 212, 170, 0.15);
+  border-radius: 14px;
+  margin-bottom: 1.25rem;
+  position: relative;
+  z-index: 1;
 }
 
 .section-header {
@@ -193,50 +273,200 @@
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  margin-bottom: 1rem;
 }
 
 .meal-type-selector {
   display: flex;
   gap: 0.25rem;
+  flex: 1;
+  justify-content: center;
 }
 
 .type-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #3a3a5a;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .type-btn:hover {
   background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 170, 0.4);
+  transform: scale(1.05);
 }
 
 .type-btn.active {
   border-color: #00d4aa;
+  background: rgba(0, 212, 170, 0.2);
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+}
+
+/* Search Input */
+.search-wrapper {
+  margin-bottom: 0.75rem;
+}
+
+.meal-search-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid rgba(0, 212, 170, 0.25);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.meal-search-input::placeholder {
+  color: #888;
+}
+
+.meal-search-input:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 170, 0.4);
+}
+
+.meal-search-input:focus {
+  outline: none;
+  border-color: #00d4aa;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.meal-search-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Meals List */
+.meals-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 212, 170, 0.15);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.meals-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.meals-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.meals-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 170, 0.3);
+  border-radius: 3px;
+}
+
+.meals-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 170, 0.5);
+}
+
+.meal-list-item {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.meal-list-item:last-child {
+  border-bottom: none;
+}
+
+.meal-list-item:hover {
+  background: rgba(0, 212, 170, 0.1);
+}
+
+.meal-list-item:active {
   background: rgba(0, 212, 170, 0.15);
+  transform: scale(0.99);
+}
+
+.meal-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.375rem;
+}
+
+.meal-item-name {
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.meal-item-calories {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #00d4aa;
+  background: rgba(0, 212, 170, 0.15);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+}
+
+.meal-item-macros {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.no-results {
+  padding: 1.5rem;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.loading-meals {
+  padding: 1.5rem;
+  text-align: center;
+  color: #00d4aa;
+  font-size: 0.9rem;
 }
 
 .meal-dropdown {
   flex: 1;
-  padding: 0.75rem;
-  border: 1px solid #3a3a5a;
-  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  border: 1px solid rgba(0, 212, 170, 0.25);
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
   font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  z-index: 50;
+}
+
+.meal-dropdown:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 212, 170, 0.4);
 }
 
 .meal-dropdown:focus {
   outline: none;
   border-color: #00d4aa;
+  box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.1);
 }
 
 .meal-dropdown:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.meal-dropdown option {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 0.5rem;
 }
 
 .no-saved-meals {

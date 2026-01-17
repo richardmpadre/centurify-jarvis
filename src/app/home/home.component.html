@@ -2,9 +2,17 @@
   <!-- Date Navigation -->
   <div class="date-nav">
     <button class="nav-btn" (click)="prevDay()">‹</button>
-    <div class="date-display">
+    <div class="date-display" (click)="toggleDatePicker()" [class.active]="showDatePicker">
       <span class="date-label">{{ getFormattedDate() }}</span>
       <span class="date-full">{{ selectedDate }}</span>
+      <input 
+        type="date" 
+        class="date-picker-input" 
+        *ngIf="showDatePicker"
+        [(ngModel)]="selectedDate"
+        (ngModelChange)="onDateChange()"
+        (blur)="showDatePicker = false"
+        #datePicker>
     </div>
     <button class="nav-btn" (click)="nextDay()" [disabled]="isToday()">›</button>
     <button *ngIf="!isToday()" class="today-btn" (click)="goToToday()">Today</button>
