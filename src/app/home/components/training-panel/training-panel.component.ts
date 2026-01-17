@@ -83,4 +83,27 @@ export class TrainingPanelComponent {
     event.stopPropagation();
     this.mergeWorkout.emit(workout);
   }
+
+  // Calculate actual pace from duration and distance
+  getActualPace(): string | null {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return null;
+    
+    const cardio = (planned as any).cardio;
+    const actualDuration = (planned as any).actualDuration;
+    
+    // Need distance target and actual duration to calculate pace
+    if (!cardio || !actualDuration || cardio.targetType !== 'distance') return null;
+    
+    const distance = cardio.targetValue;
+    if (!distance || distance <= 0) return null;
+    
+    // Calculate pace in minutes per unit (mile or km)
+    const paceMinutes = actualDuration / distance;
+    const minutes = Math.floor(paceMinutes);
+    const seconds = Math.round((paceMinutes - minutes) * 60);
+    
+    const unit = cardio.distanceUnit === 'km' ? 'km' : 'mi';
+    return `${minutes}:${seconds.toString().padStart(2, '0')}/${unit}`;
+  }
 }

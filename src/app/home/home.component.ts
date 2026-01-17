@@ -316,15 +316,26 @@ export class HomeComponent implements OnInit {
     // 1. Start with saved order
     // 2. Filter out IDs that don't exist (e.g., removed meal types)
     // 3. Add any new actions that aren't in saved order (e.g., new meal types)
-    // 4. Ensure 'daily_insights' is always at the end
+    // 4. Ensure meal actions are always in correct order (breakfast, lunch, dinner, snack)
+    // 5. Ensure 'daily_insights' is always at the end
     const existingIds = new Set(savedOrder.filter(id => allActions[id]));
     const newIds = Object.keys(allActions).filter(id => !existingIds.has(id) && id !== 'daily_insights');
+    
+    // Separate meal actions from other new actions and sort them properly
+    const mealOrder = ['meal_breakfast', 'meal_lunch', 'meal_dinner', 'meal_snack'];
+    const newMealIds = newIds.filter(id => id.startsWith('meal_')).sort((a, b) => {
+      return mealOrder.indexOf(a) - mealOrder.indexOf(b);
+    });
+    const newNonMealIds = newIds.filter(id => !id.startsWith('meal_'));
     
     // Build order without daily_insights first
     let finalOrder = savedOrder.filter(id => allActions[id] && id !== 'daily_insights');
     
-    // Add new actions before daily_insights
-    finalOrder = [...finalOrder, ...newIds];
+    // Add new meal actions in correct order
+    finalOrder = [...finalOrder, ...newMealIds];
+    
+    // Add other new actions
+    finalOrder = [...finalOrder, ...newNonMealIds];
     
     // Always add daily_insights at the end
     if (allActions['daily_insights']) {

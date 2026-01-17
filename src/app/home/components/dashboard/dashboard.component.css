@@ -707,15 +707,43 @@
   border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 12px;
   padding: 1rem;
+}
+
+.planned-workout-card.has-whoop-data {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.planned-workout-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.planned-workout-card .activity-stats {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.2);
 }
 
 .workout-type {
   font-size: 1rem;
   font-weight: 600;
   color: #e0e0e0;
+}
+
+.workout-planned-duration {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.workout-planned-duration .duration-value {
+  color: #e0e0e0;
+  font-weight: 500;
 }
 
 .workout-duration {

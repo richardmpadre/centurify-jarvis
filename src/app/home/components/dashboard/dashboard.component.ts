@@ -27,8 +27,7 @@ export class DashboardComponent {
   @Output() openWhoopWorkout = new EventEmitter<WhoopWorkout>();
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
   @Output() openInsights = new EventEmitter<void>();
-
-  showActivities = false;
+  @Output() viewActivities = new EventEmitter<void>();
 
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
@@ -150,29 +149,7 @@ export class DashboardComponent {
   }
 
   onViewActivities(): void {
-    this.showActivities = true;
-  }
-
-  closeActivities(): void {
-    this.showActivities = false;
-  }
-
-  formatTime(isoString: string | undefined): string {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  }
-
-  formatDuration(seconds: number | undefined): string {
-    if (!seconds) return '0 min';
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${remainingMinutes}m`;
-    }
-    return `${minutes} min`;
+    this.viewActivities.emit();
   }
 
   // Daily comparison methods
@@ -219,12 +196,14 @@ export class DashboardComponent {
     switch (metric) {
       case 'recovery':
       case 'sleep':
-      case 'weight': // Assuming weight gain is good (could be adjusted based on goals)
       case 'calories':
       case 'protein':
       case 'carbs':
       case 'fats':
         isGood = isPositive; // Higher is better
+        break;
+      case 'weight':
+        isGood = !isPositive; // Lower weight is better (weight loss)
         break;
       case 'strain':
         isGood = isPositive; // Higher strain means more activity (context-dependent)
@@ -252,7 +231,14 @@ export class DashboardComponent {
     if (!comparison) return '';
     
     const sign = comparison.isPositive ? '+' : '-';
-    let value = comparison.value.toFixed(metric === 'strain' ? 1 : 0);
+    let value: string;
+    
+    // Format based on metric - weight and strain need decimals
+    if (metric === 'strain' || metric === 'weight') {
+      value = comparison.value.toFixed(1);
+    } else {
+      value = comparison.value.toFixed(0);
+    }
     
     // Add appropriate suffix
     switch (metric) {

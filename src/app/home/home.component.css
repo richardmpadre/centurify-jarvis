@@ -227,6 +227,11 @@
   color: #00d4aa;
 }
 
+.whoop-status.warning {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
 .whoop-status.expired {
   background: rgba(255, 107, 107, 0.1);
   color: #ff6b6b;

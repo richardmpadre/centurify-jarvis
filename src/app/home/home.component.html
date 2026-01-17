@@ -62,12 +62,13 @@
       (toggleWorkoutComplete)="toggleWorkoutCompleted()"
       (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
       (mergeWorkout)="promptMergeWithPlanned($event)"
-      (openInsights)="openInsightsPanel()">
+      (openInsights)="openInsightsPanel()"
+      (viewActivities)="openTrainingPanel()">
     </app-dashboard>
 
     <!-- Bottom sidebar with Whoop and History -->
     <aside class="sidebar-bottom">
-      <!-- Whoop Status -->
+      <!-- Whoop Status - Connected with Refresh Token -->
       <div class="whoop-status success" *ngIf="whoopConnected && whoopHasRefreshToken">
         <span class="status-icon">✓</span>
         <span class="status-text">Whoop</span>
@@ -75,11 +76,22 @@
           {{ whoopSyncing ? '⟳' : '↻' }}
         </button>
       </div>
+      
+      <!-- Whoop Status - Connected WITHOUT Refresh Token (needs reconnect) -->
+      <div class="whoop-status warning" *ngIf="whoopConnected && !whoopHasRefreshToken">
+        <span class="status-icon">⚠️</span>
+        <span class="status-text">Whoop (reconnect needed)</span>
+        <button class="reconnect-btn" (click)="reconnectWhoop()" title="Reconnect for long-term access">↻</button>
+      </div>
+      
+      <!-- Whoop Status - Expired -->
       <div class="whoop-status expired" *ngIf="whoopExpired && !whoopConnected">
         <span class="status-icon">⚠️</span>
-        <span class="status-text">Whoop</span>
+        <span class="status-text">Whoop Expired</span>
         <button class="reconnect-btn" (click)="reconnectWhoop()">↻</button>
       </div>
+      
+      <!-- Connect Whoop Link -->
       <a *ngIf="!whoopConnected && !whoopExpired" routerLink="/integrations" class="connect-link">
         Connect Whoop
       </a>

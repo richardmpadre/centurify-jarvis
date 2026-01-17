@@ -45,6 +45,10 @@
         <span class="training-stat-value">{{ $any(planned).actualDuration }}m</span>
         <span class="training-stat-label">Duration</span>
       </div>
+      <div class="training-stat" *ngIf="getActualPace()">
+        <span class="training-stat-value">{{ getActualPace() }}</span>
+        <span class="training-stat-label">Pace</span>
+      </div>
       <div class="training-stat">
         <span class="training-stat-value">{{ $any(planned).actualCalories }}</span>
         <span class="training-stat-label">Calories</span>
