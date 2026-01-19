@@ -23,9 +23,11 @@ export class GoalPriorityPanelComponent implements OnInit, OnChanges {
   
   @Output() close = new EventEmitter<void>();
   @Output() selectGoal = new EventEmitter<DailyGoalSelection>();
+  @Output() goalCompleted = new EventEmitter<string>(); // Emits the completed goal ID
 
   adHocGoals: Goal[] = [];
   isLoading = false;
+  isCompleting = false;
 
   constructor(private goalService: GoalService) {}
 
@@ -71,6 +73,30 @@ export class GoalPriorityPanelComponent implements OnInit, OnChanges {
       selectedGoalId: goal.id,
       selectedGoalTitle: goal.title
     });
+  }
+
+  async onMarkComplete(goal: Goal, event: Event): Promise<void> {
+    event.stopPropagation(); // Prevent selecting the goal when marking complete
+    
+    if (!confirm(`Mark "${goal.title}" as complete?`)) {
+      return;
+    }
+    
+    this.isCompleting = true;
+    try {
+      await this.goalService.updateProgress(goal.id, 100);
+      await this.loadAdHocGoals(); // Reload to show updated status
+      this.goalCompleted.emit(goal.id); // Notify parent with the goal ID
+    } catch (error) {
+      console.error('Error completing goal:', error);
+      alert('Failed to mark goal as complete. Please try again.');
+    } finally {
+      this.isCompleting = false;
+    }
+  }
+
+  isGoalCompleted(goal: Goal): boolean {
+    return goal.status === 'completed';
   }
 
   onClose(): void {

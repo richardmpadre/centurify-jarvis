@@ -186,6 +186,12 @@
         📋 Manage Meals Library
       </a>
       <button 
+        class="mark-failed-btn" 
+        (click)="onMarkTrackingFailed()"
+        title="Mark this day as failed to track nutrition">
+        ⚠️ Didn't Track
+      </button>
+      <button 
         class="save-plan-btn" 
         (click)="onSavePlan()"
         [disabled]="mealEntries.length === 0">

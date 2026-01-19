@@ -31,6 +31,7 @@
         class="goal-item" 
         *ngFor="let goal of adHocGoals"
         [class.selected]="isSelected(goal)"
+        [class.completed]="isGoalCompleted(goal)"
         (click)="onSelectGoal(goal)">
         
         <div class="goal-check">
@@ -50,9 +51,19 @@
           </div>
         </div>
         
-        <div class="goal-select-icon">
-          <span *ngIf="!isSelected(goal)">→</span>
-          <span *ngIf="isSelected(goal)" class="selected-icon">★</span>
+        <div class="goal-actions">
+          <button 
+            *ngIf="!isGoalCompleted(goal)"
+            class="mark-complete-btn"
+            (click)="onMarkComplete(goal, $event)"
+            [disabled]="isCompleting"
+            title="Mark as complete">
+            ✓
+          </button>
+          <div class="goal-select-icon">
+            <span *ngIf="!isSelected(goal)">→</span>
+            <span *ngIf="isSelected(goal)" class="selected-icon">★</span>
+          </div>
         </div>
       </div>
     </div>

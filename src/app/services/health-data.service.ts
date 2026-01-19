@@ -28,6 +28,7 @@ export class HealthDataService {
     totalProtein?: number;
     totalCarbs?: number;
     totalFats?: number;
+    nutritionTrackingFailed?: boolean;
     actionOrder?: string;
     dailyInsights?: string;
     insightsGeneratedAt?: string;
@@ -71,6 +72,7 @@ export class HealthDataService {
     totalProtein?: number;
     totalCarbs?: number;
     totalFats?: number;
+    nutritionTrackingFailed?: boolean;
     actionOrder?: string;
     dailyInsights?: string;
     insightsGeneratedAt?: string;

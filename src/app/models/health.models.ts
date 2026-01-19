@@ -18,6 +18,7 @@ export interface HealthEntry {
   totalProtein?: number | null;
   totalCarbs?: number | null;
   totalFats?: number | null;
+  nutritionTrackingFailed?: boolean | null; // Mark days where nutrition tracking was not done
   // User preferences
   actionOrder?: string | null; // JSON array of action IDs
   // AI-generated insights

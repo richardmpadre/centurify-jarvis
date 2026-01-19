@@ -243,7 +243,8 @@
     [allEntries]="entries"
     (close)="closeNutritionPanel()"
     (mealEntriesChanged)="onMealEntriesChanged($event)"
-    (planSaved)="onNutritionPlanSaved()">
+    (planSaved)="onNutritionPlanSaved()"
+    (trackingFailed)="onNutritionTrackingFailed()">
   </app-nutrition-panel>
 
   <!-- Meal Detail Panel -->
@@ -306,7 +307,8 @@
     [yearlyGoal]="currentPriorityGoal"
     [selectedGoalId]="currentPriorityGoal ? getSelectedGoalId(currentPriorityGoal.id) : null"
     (close)="closeGoalPriorityPanel()"
-    (selectGoal)="onGoalSelected($event)">
+    (selectGoal)="onGoalSelected($event)"
+    (goalCompleted)="onGoalCompletedFromPriority($event)">
   </app-goal-priority-panel>
 
   <!-- Goal Detail Panel -->

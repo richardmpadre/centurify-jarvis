@@ -20,6 +20,7 @@ export class NutritionPanelComponent implements OnChanges {
   @Output() close = new EventEmitter<void>();
   @Output() mealEntriesChanged = new EventEmitter<MealEntry[]>();
   @Output() planSaved = new EventEmitter<void>();
+  @Output() trackingFailed = new EventEmitter<void>();
   
   savedMeals: Meal[] = [];
   filteredMeals: Meal[] = [];
@@ -211,6 +212,12 @@ export class NutritionPanelComponent implements OnChanges {
 
   onSavePlan(): void {
     this.planSaved.emit();
+  }
+
+  onMarkTrackingFailed(): void {
+    if (confirm('Mark this day as failed to track nutrition? This will help you stay accountable.')) {
+      this.trackingFailed.emit();
+    }
   }
 
   onClose(): void {

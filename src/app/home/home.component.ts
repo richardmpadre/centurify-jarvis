@@ -202,6 +202,8 @@ export class HomeComponent implements OnInit {
     const hasWorkoutPlan = this.getPlannedWorkout() !== null;
     const workoutCompleted = this.currentEntry?.workoutCompleted === true;
     const hasMeals = this.mealEntries.length > 0;
+    const nutritionTrackingFailed = this.currentEntry?.nutritionTrackingFailed === true;
+    const nutritionCompleted = hasMeals || nutritionTrackingFailed;
     
     // Define all actions
     const allActions: { [id: string]: ActionItem } = {
@@ -229,9 +231,9 @@ export class HomeComponent implements OnInit {
       'nutrition': {
         id: 'nutrition',
         title: 'Plan Nutrition',
-        description: hasMeals ? 'Meals planned for the day' : 'Plan your meals',
+        description: nutritionTrackingFailed ? '❌ Tracking failed' : (hasMeals ? 'Meals planned for the day' : 'Plan your meals'),
         icon: '🥗',
-        status: hasMeals ? 'completed' : 'pending',
+        status: nutritionCompleted ? 'completed' : 'pending',
         type: 'nutrition',
         reopenOnComplete: true // Status derived from data - reopen panel when clicked
       },
@@ -296,12 +298,22 @@ export class HomeComponent implements OnInit {
       // If a goal is selected, add it as a workable action
       if (selectedGoal) {
         const goalActionId = `goal_work_${selectedGoal.goalId}`;
+        
+        // Check if the selected goal is completed by looking at morningChecklist
+        let isGoalCompleted = false;
+        if (this.currentEntry?.morningChecklist) {
+          try {
+            const saved = JSON.parse(this.currentEntry.morningChecklist);
+            isGoalCompleted = saved[goalActionId] === true;
+          } catch { /* ignore */ }
+        }
+        
         allActions[goalActionId] = {
           id: goalActionId,
           title: selectedGoal.goalTitle,
           description: `Work on: ${yearlyGoal.title}`,
           icon: '📌',
-          status: 'pending',
+          status: isGoalCompleted ? 'completed' : 'pending',
           type: 'custom',
           dependsOn: [actionId],
           reopenOnComplete: false // Allow toggling completion
@@ -467,6 +479,9 @@ export class HomeComponent implements OnInit {
         // Skip meal actions - their status comes from MealEntry.completed
         if (action.type === 'meal') return;
         
+        // Skip goal_priority actions - their status is derived from whether a goal is selected
+        if (action.type === 'goal_priority') return;
+        
         // Skip actions that derive status from database fields
         if (autoStatusActions.includes(action.id)) return;
         
@@ -574,6 +589,9 @@ export class HomeComponent implements OnInit {
     this.dailyActions.forEach(action => {
       // Skip meal actions - their completion is stored in MealEntry.completed
       if (action.type === 'meal') return;
+      
+      // Skip goal_priority actions - their status is derived from whether a goal is selected
+      if (action.type === 'goal_priority') return;
       
       // Skip actions that derive status from database fields
       if (autoStatusActions.includes(action.id)) return;
@@ -765,6 +783,16 @@ export class HomeComponent implements OnInit {
     
     this.buildDailyActions();
     this.closeGoalPriorityPanel();
+  }
+
+  async onGoalCompletedFromPriority(completedGoalId: string): Promise<void> {
+    // Mark the corresponding daily action as complete
+    const actionId = `goal_work_${completedGoalId}`;
+    await this.markActionComplete(actionId);
+    
+    // Reload goals and refresh actions
+    await this.loadGoalsRequiringDailyAction();
+    this.buildDailyActions();
   }
   
   private async saveSelectedDailyGoals(): Promise<void> {
@@ -1378,6 +1406,35 @@ export class HomeComponent implements OnInit {
     await this.markActionComplete('nutrition');
     this.buildDailyActions();
     this.closeNutritionPanel();
+  }
+
+  async onNutritionTrackingFailed(): Promise<void> {
+    try {
+      const payload = {
+        date: this.selectedDate,
+        nutritionTrackingFailed: true,
+        totalCalories: 0,
+        totalProtein: 0,
+        totalCarbs: 0,
+        totalFats: 0
+      };
+      
+      if (this.currentEntry?.id) {
+        await this.healthDataService.updateEntry({ id: this.currentEntry.id, ...payload });
+      } else {
+        await this.healthDataService.saveEntry(payload);
+      }
+      
+      await this.loadEntries();
+      this.currentEntry = this.entries.find(e => e.date === this.selectedDate) || null;
+      
+      // Mark nutrition as "completed" but as a failure
+      await this.markActionComplete('nutrition');
+      this.buildDailyActions();
+      this.closeNutritionPanel();
+    } catch (error) {
+      console.error('Error marking tracking failed:', error);
+    }
   }
   
   async loadMealEntries(): Promise<void> {

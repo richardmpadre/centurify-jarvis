@@ -25,6 +25,7 @@ const schema = a.schema({
     totalProtein: a.integer(),
     totalCarbs: a.integer(),
     totalFats: a.integer(),
+    nutritionTrackingFailed: a.boolean(), // Mark days where nutrition tracking was not done
     // Action order preference
     actionOrder: a.string(), // JSON array of action IDs
     // AI-generated daily insights
