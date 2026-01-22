@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MealService, Meal } from '../../../services/meal.service';
 import { MealEntryService, MealEntry } from '../../../services/meal-entry.service';
+import { NutritionGoalMetadata } from '../../../models/goal.models';
 
 @Component({
   selector: 'app-nutrition-panel',
@@ -16,6 +17,7 @@ export class NutritionPanelComponent implements OnChanges {
   @Input() selectedDate = '';
   @Input() mealEntries: MealEntry[] = [];
   @Input() allEntries: any[] = []; // All entries for finding yesterday's meals
+  @Input() nutritionTargets: NutritionGoalMetadata | null = null;
   
   @Output() close = new EventEmitter<void>();
   @Output() mealEntriesChanged = new EventEmitter<MealEntry[]>();
@@ -243,6 +245,44 @@ export class NutritionPanelComponent implements OnChanges {
 
   roundToTwo(value: number): number {
     return Math.round(value * 100) / 100;
+  }
+
+  // Target progress methods
+  hasTargets(): boolean {
+    return this.nutritionTargets !== null;
+  }
+
+  getCaloriesProgress(): number {
+    if (!this.nutritionTargets?.targetCalories) return 0;
+    const totals = this.getNutritionTotals();
+    return Math.min(100, Math.round((totals.calories / this.nutritionTargets.targetCalories) * 100));
+  }
+
+  getProteinProgress(): number {
+    if (!this.nutritionTargets?.targetProtein) return 0;
+    const totals = this.getNutritionTotals();
+    return Math.min(100, Math.round((totals.protein / this.nutritionTargets.targetProtein) * 100));
+  }
+
+  getCaloriesRemaining(): number {
+    if (!this.nutritionTargets?.targetCalories) return 0;
+    const totals = this.getNutritionTotals();
+    return Math.max(0, this.nutritionTargets.targetCalories - totals.calories);
+  }
+
+  getProteinRemaining(): number {
+    if (!this.nutritionTargets?.targetProtein) return 0;
+    const totals = this.getNutritionTotals();
+    return Math.max(0, this.nutritionTargets.targetProtein - totals.protein);
+  }
+
+  isOverTarget(type: 'calories' | 'protein'): boolean {
+    if (!this.nutritionTargets) return false;
+    const totals = this.getNutritionTotals();
+    if (type === 'calories') {
+      return totals.calories > (this.nutritionTargets.targetCalories || 0);
+    }
+    return totals.protein > (this.nutritionTargets.targetProtein || 0);
   }
 
   onSavePlan(): void {

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
-import { Goal, GoalType, GoalStatus, Milestone } from '../models/goal.models';
+import { Goal, GoalType, GoalStatus, GoalCategory, GoalMetadata, Milestone } from '../models/goal.models';
 
 const client = generateClient<Schema>();
 
@@ -144,7 +144,12 @@ export class GoalService {
         sortOrder: goal.sortOrder ?? (maxOrder + 1),
         milestones: goal.milestones ? JSON.stringify(goal.milestones) : undefined,
         notes: goal.notes || undefined,
-        requiresDailyAction: goal.requiresDailyAction || undefined
+        requiresDailyAction: goal.requiresDailyAction || undefined,
+        // Recurring goal fields
+        isRecurring: goal.isRecurring || undefined,
+        recurrenceType: goal.recurrenceType || undefined,
+        goalCategory: goal.goalCategory || undefined,
+        metadata: goal.metadata ? JSON.stringify(goal.metadata) : undefined
       });
       
       if (errors) {
@@ -183,6 +188,13 @@ export class GoalService {
       }
       if (updates.notes !== undefined) updateData.notes = updates.notes || null;
       if (updates.requiresDailyAction !== undefined) updateData.requiresDailyAction = updates.requiresDailyAction;
+      // Recurring goal fields
+      if (updates.isRecurring !== undefined) updateData.isRecurring = updates.isRecurring;
+      if (updates.recurrenceType !== undefined) updateData.recurrenceType = updates.recurrenceType || null;
+      if (updates.goalCategory !== undefined) updateData.goalCategory = updates.goalCategory || null;
+      if (updates.metadata !== undefined) {
+        updateData.metadata = updates.metadata ? JSON.stringify(updates.metadata) : null;
+      }
       
       const { data: record, errors } = await client.models.Goal.update(updateData);
       
@@ -346,6 +358,56 @@ export class GoalService {
     }
   }
 
+  /**
+   * Get all active recurring goals
+   */
+  async getRecurringGoals(): Promise<Goal[]> {
+    try {
+      const { data: records } = await client.models.Goal.list({
+        filter: {
+          isRecurring: { eq: true }
+        }
+      });
+      
+      return records
+        .map(record => this.mapRecordToGoal(record))
+        .filter(g => g.status !== 'completed' && g.status !== 'abandoned')
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch (error) {
+      console.error('Error fetching recurring goals:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get recurring goals by category
+   */
+  async getRecurringGoalsByCategory(category: GoalCategory): Promise<Goal[]> {
+    try {
+      const { data: records } = await client.models.Goal.list({
+        filter: {
+          isRecurring: { eq: true },
+          goalCategory: { eq: category }
+        }
+      });
+      
+      return records
+        .map(record => this.mapRecordToGoal(record))
+        .filter(g => g.status !== 'completed' && g.status !== 'abandoned')
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch (error) {
+      console.error('Error fetching recurring goals by category:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get nutrition recurring goals with parsed metadata
+   */
+  async getNutritionGoals(): Promise<Goal[]> {
+    return this.getRecurringGoalsByCategory('nutrition');
+  }
+
   private mapRecordToGoal(record: any): Goal {
     let milestones: Milestone[] | undefined;
     if (record.milestones) {
@@ -353,6 +415,15 @@ export class GoalService {
         milestones = JSON.parse(record.milestones);
       } catch {
         milestones = undefined;
+      }
+    }
+    
+    let metadata: GoalMetadata | undefined;
+    if (record.metadata) {
+      try {
+        metadata = JSON.parse(record.metadata);
+      } catch {
+        metadata = undefined;
       }
     }
     
@@ -371,6 +442,11 @@ export class GoalService {
       milestones,
       notes: record.notes ?? undefined,
       requiresDailyAction: record.requiresDailyAction ?? undefined,
+      // Recurring goal fields
+      isRecurring: record.isRecurring ?? undefined,
+      recurrenceType: record.recurrenceType ?? undefined,
+      goalCategory: record.goalCategory as GoalCategory ?? undefined,
+      metadata,
       createdAt: record.createdAt ?? undefined,
       updatedAt: record.updatedAt ?? undefined
     };

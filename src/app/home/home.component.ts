@@ -7,6 +7,7 @@ import { WhoopService } from '../services/whoop.service';
 import { MealService } from '../services/meal.service';
 import { MealEntryService, MealEntry } from '../services/meal-entry.service';
 import { GoalService } from '../services/goal.service';
+import { RecurringGoalService } from '../services/recurring-goal.service';
 import { ActionListComponent, ActionItem } from './components/action-list/action-list.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { InsightsPanelComponent } from './components/insights-panel/insights-panel.component';
@@ -24,7 +25,7 @@ import {
   PlannedMeal,
   WhoopWorkout 
 } from '../models/health.models';
-import { Goal } from '../models/goal.models';
+import { Goal, NutritionGoalMetadata, RecurringGoalCompletion } from '../models/goal.models';
 import { 
   getLocalDateString, 
   getFormattedDisplayDate, 
@@ -109,6 +110,11 @@ export class HomeComponent implements OnInit {
   showNutritionPanel = false;
   mealEntries: MealEntry[] = [];
   
+  // Recurring nutrition goals
+  nutritionGoals: Goal[] = [];
+  nutritionGoalCompletions: Map<string, RecurringGoalCompletion> = new Map();
+  currentNutritionTargets: NutritionGoalMetadata | null = null;
+  
   // Goals
   activeGoals: Goal[] = [];
 
@@ -139,7 +145,8 @@ export class HomeComponent implements OnInit {
     private whoopService: WhoopService,
     private mealService: MealService,
     private mealEntryService: MealEntryService,
-    private goalService: GoalService
+    private goalService: GoalService,
+    private recurringGoalService: RecurringGoalService
   ) {
     this.healthForm = this.fb.group({
       date: [this.selectedDate, Validators.required],
@@ -159,6 +166,7 @@ export class HomeComponent implements OnInit {
     await this.loadDashboard();
     await this.loadActiveGoals();
     await this.loadGoalsRequiringDailyAction();
+    await this.loadNutritionGoals();
     this.buildDailyActions();
   }
 
@@ -178,6 +186,33 @@ export class HomeComponent implements OnInit {
     } catch (error) {
       console.error('Error loading goals requiring daily action:', error);
       this.goalsRequiringDailyAction = [];
+    }
+  }
+
+  async loadNutritionGoals(): Promise<void> {
+    try {
+      // Load recurring nutrition goals
+      this.nutritionGoals = await this.goalService.getNutritionGoals();
+      
+      // Load completion status for each nutrition goal for today
+      this.nutritionGoalCompletions.clear();
+      for (const goal of this.nutritionGoals) {
+        const completion = await this.recurringGoalService.getCompletionForDate(goal.id, this.selectedDate);
+        if (completion) {
+          this.nutritionGoalCompletions.set(goal.id, completion);
+        }
+      }
+      
+      // Set current nutrition targets from the first nutrition goal (if any)
+      if (this.nutritionGoals.length > 0 && this.nutritionGoals[0].metadata) {
+        this.currentNutritionTargets = this.nutritionGoals[0].metadata as NutritionGoalMetadata;
+      } else {
+        this.currentNutritionTargets = null;
+      }
+    } catch (error) {
+      console.error('Error loading nutrition goals:', error);
+      this.nutritionGoals = [];
+      this.currentNutritionTargets = null;
     }
   }
 
@@ -228,15 +263,6 @@ export class HomeComponent implements OnInit {
         createsEntry: 'workout',
         reopenOnComplete: true // Status derived from data - reopen planner when clicked
       },
-      'nutrition': {
-        id: 'nutrition',
-        title: 'Plan Nutrition',
-        description: nutritionTrackingFailed ? '❌ Tracking failed' : (hasMeals ? 'Meals planned for the day' : 'Plan your meals'),
-        icon: '🥗',
-        status: nutritionCompleted ? 'completed' : 'pending',
-        type: 'nutrition',
-        reopenOnComplete: true // Status derived from data - reopen panel when clicked
-      },
       'complete_workout': {
         id: 'complete_workout',
         title: 'Complete Workout',
@@ -266,6 +292,46 @@ export class HomeComponent implements OnInit {
         reopenOnComplete: true // Status derived from data - reopen panel when clicked
       }
     };
+    
+    // Add nutrition action - either from recurring goal or fallback to hard-coded
+    if (this.nutritionGoals.length > 0) {
+      // Use recurring nutrition goals
+      this.nutritionGoals.forEach(goal => {
+        const actionId = `nutrition_goal_${goal.id}`;
+        const completion = this.nutritionGoalCompletions.get(goal.id);
+        const isCompleted = completion?.completed === true;
+        const metadata = goal.metadata as NutritionGoalMetadata | undefined;
+        
+        let description = goal.description || 'Track your daily nutrition';
+        if (metadata) {
+          description = `${metadata.targetCalories} cal / ${metadata.targetProtein}g protein`;
+        }
+        if (nutritionTrackingFailed) {
+          description = '❌ Tracking failed';
+        }
+        
+        allActions[actionId] = {
+          id: actionId,
+          title: goal.title,
+          description: description,
+          icon: '🥗',
+          status: isCompleted || nutritionTrackingFailed ? 'completed' : (hasMeals ? 'in_progress' : 'pending'),
+          type: 'nutrition',
+          reopenOnComplete: true
+        };
+      });
+    } else {
+      // Fallback to hard-coded nutrition action (backward compatible)
+      allActions['nutrition'] = {
+        id: 'nutrition',
+        title: 'Plan Nutrition',
+        description: nutritionTrackingFailed ? '❌ Tracking failed' : (hasMeals ? 'Meals planned for the day' : 'Plan your meals'),
+        icon: '🥗',
+        status: nutritionCompleted ? 'completed' : 'pending',
+        type: 'nutrition',
+        reopenOnComplete: true
+      };
+    }
     
     // Add meal actions to the actions map if nutrition is planned
     if (hasMeals) {
@@ -1059,6 +1125,9 @@ export class HomeComponent implements OnInit {
       // Load meal entries from database
       await this.loadMealEntries();
       
+      // Reload nutrition goal completions for the selected date
+      await this.loadNutritionGoals();
+      
       this.buildDailyActions();
       
       if (this.whoopConnected) {
@@ -1423,9 +1492,42 @@ export class HomeComponent implements OnInit {
   
   async onNutritionPlanSaved(): Promise<void> {
     await this.updateNutritionTotals();
-    await this.markActionComplete('nutrition');
+    
+    // If using recurring nutrition goals, mark them as complete
+    if (this.nutritionGoals.length > 0) {
+      for (const goal of this.nutritionGoals) {
+        await this.markNutritionGoalComplete(goal.id);
+      }
+    } else {
+      await this.markActionComplete('nutrition');
+    }
+    
     this.buildDailyActions();
     this.closeNutritionPanel();
+  }
+
+  async markNutritionGoalComplete(goalId: string): Promise<void> {
+    try {
+      const completion = await this.recurringGoalService.markComplete(goalId, this.selectedDate);
+      if (completion) {
+        this.nutritionGoalCompletions.set(goalId, completion);
+      }
+    } catch (error) {
+      console.error('Error marking nutrition goal complete:', error);
+    }
+  }
+
+  async markNutritionGoalIncomplete(goalId: string): Promise<void> {
+    try {
+      const completion = await this.recurringGoalService.markIncomplete(goalId, this.selectedDate);
+      if (completion) {
+        this.nutritionGoalCompletions.set(goalId, completion);
+      } else {
+        this.nutritionGoalCompletions.delete(goalId);
+      }
+    } catch (error) {
+      console.error('Error marking nutrition goal incomplete:', error);
+    }
   }
 
   async onNutritionTrackingFailed(): Promise<void> {

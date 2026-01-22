@@ -6,13 +6,60 @@
   </div>
   
   <div class="modal-content">
-    <!-- Daily Totals -->
+    <!-- Target Progress (when nutrition targets are set) -->
+    <div class="target-progress" *ngIf="hasTargets()">
+      <div class="target-item">
+        <div class="target-header">
+          <span class="target-label">Calories</span>
+          <span class="target-values" [class.over-target]="isOverTarget('calories')">
+            {{ getNutritionTotals().calories }} / {{ nutritionTargets?.targetCalories }}
+          </span>
+        </div>
+        <div class="progress-bar-container">
+          <div 
+            class="progress-bar calories-bar" 
+            [class.over-target]="isOverTarget('calories')"
+            [style.width.%]="getCaloriesProgress()">
+          </div>
+        </div>
+        <span class="remaining-text" *ngIf="!isOverTarget('calories')">
+          {{ getCaloriesRemaining() }} remaining
+        </span>
+        <span class="remaining-text over" *ngIf="isOverTarget('calories')">
+          {{ getNutritionTotals().calories - (nutritionTargets?.targetCalories || 0) }} over target
+        </span>
+      </div>
+      
+      <div class="target-item">
+        <div class="target-header">
+          <span class="target-label">Protein</span>
+          <span class="target-values" [class.over-target]="isOverTarget('protein')">
+            {{ getNutritionTotals().protein }}g / {{ nutritionTargets?.targetProtein }}g
+          </span>
+        </div>
+        <div class="progress-bar-container">
+          <div 
+            class="progress-bar protein-bar" 
+            [class.over-target]="isOverTarget('protein')"
+            [style.width.%]="getProteinProgress()">
+          </div>
+        </div>
+        <span class="remaining-text" *ngIf="!isOverTarget('protein')">
+          {{ getProteinRemaining() }}g remaining
+        </span>
+        <span class="remaining-text over" *ngIf="isOverTarget('protein')">
+          {{ getNutritionTotals().protein - (nutritionTargets?.targetProtein || 0) }}g over target
+        </span>
+      </div>
+    </div>
+
+    <!-- Daily Totals (when no targets or showing additional macros) -->
     <div class="nutrition-totals" *ngIf="mealEntries.length > 0">
-      <div class="total-item">
+      <div class="total-item" *ngIf="!hasTargets()">
         <span class="total-value">{{ getNutritionTotals().calories }}</span>
         <span class="total-label">Calories</span>
       </div>
-      <div class="total-item">
+      <div class="total-item" *ngIf="!hasTargets()">
         <span class="total-value">{{ getNutritionTotals().protein }}g</span>
         <span class="total-label">Protein</span>
       </div>

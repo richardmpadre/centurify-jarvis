@@ -97,6 +97,19 @@ const schema = a.schema({
     milestones: a.string(), // JSON array of milestone objects
     notes: a.string(),
     requiresDailyAction: a.boolean(), // For yearly goals - generates daily action prompt
+    // Recurring goal fields
+    isRecurring: a.boolean(), // Whether this is a recurring goal
+    recurrenceType: a.string(), // 'daily' (more types can be added later)
+    goalCategory: a.string(), // 'nutrition', 'training', 'general' - determines which panel to use
+    metadata: a.string(), // JSON for category-specific data (e.g., { targetCalories: 1450, targetProtein: 120 })
+  }).authorization(allow => [allow.owner()]),
+  
+  // Track daily completion of recurring goals
+  RecurringGoalCompletion: a.model({
+    goalId: a.string().required(), // Reference to the recurring goal
+    date: a.date().required(), // The date this completion is for
+    completed: a.boolean().required(), // Whether the goal was completed on this day
+    notes: a.string(), // Optional notes about completion
   }).authorization(allow => [allow.owner()]),
 });
 
