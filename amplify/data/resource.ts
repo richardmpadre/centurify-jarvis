@@ -54,6 +54,8 @@ const schema = a.schema({
     protein: a.float(),
     carbs: a.float(),
     fats: a.float(),
+    defaultPortion: a.float(), // Default portion size (e.g., 1, 0.5, 2)
+    defaultPortionUnit: a.string(), // Unit for portion (e.g., "serving", "oz", "cup", "piece")
   }).authorization(allow => [allow.owner()]),
   
   // Workout library - saved workout templates for reuse

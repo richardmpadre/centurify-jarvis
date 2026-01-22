@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HealthEntry, PlannedWorkout, PlannedExercise, WhoopWorkout } from '../../../models/health.models';
+import { HealthEntry, PlannedWorkout, WhoopWorkout } from '../../../models/health.models';
+import { copyWorkoutToClipboard, getRunTypeLabel } from '../../../utils/workout-utils';
 
 @Component({
   selector: 'app-training-panel',
@@ -20,17 +21,7 @@ export class TrainingPanelComponent {
   @Output() openWhoopWorkout = new EventEmitter<WhoopWorkout>();
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
 
-  // Run types for display
-  private runTypes: { [key: string]: string } = {
-    'zone2': 'Zone 2 (Easy/Aerobic)',
-    'tempo': 'Tempo Run',
-    'intervals': 'Intervals',
-    'long_run': 'Long Run',
-    'recovery': 'Recovery Run',
-    'fartlek': 'Fartlek',
-    'race_pace': 'Race Pace',
-    'hill_repeats': 'Hill Repeats'
-  };
+  copySuccess = false;
 
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
@@ -45,8 +36,8 @@ export class TrainingPanelComponent {
     return this.getPlannedWorkout() !== null && !this.currentEntry?.workoutCompleted;
   }
 
-  getRunTypeLabel(value: string): string {
-    return this.runTypes[value] || value;
+  getRunTypeLabelForDisplay(value: string): string {
+    return getRunTypeLabel(value);
   }
 
   getWorkoutIcon(type: string): string {
@@ -105,5 +96,17 @@ export class TrainingPanelComponent {
     
     const unit = cardio.distanceUnit === 'km' ? 'km' : 'mi';
     return `${minutes}:${seconds.toString().padStart(2, '0')}/${unit}`;
+  }
+
+  copyToClipboard(): void {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return;
+
+    copyWorkoutToClipboard(planned, () => {
+      this.copySuccess = true;
+      setTimeout(() => {
+        this.copySuccess = false;
+      }, 2000);
+    });
   }
 }

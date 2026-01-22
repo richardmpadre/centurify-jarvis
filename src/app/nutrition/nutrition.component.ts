@@ -29,7 +29,9 @@ export class NutritionComponent implements OnInit {
       calories: [0, [Validators.required, Validators.min(0)]],
       protein: [0, [Validators.min(0)]],
       fats: [0, [Validators.min(0)]],
-      carbs: [0, [Validators.min(0)]]
+      carbs: [0, [Validators.min(0)]],
+      defaultPortion: [1, [Validators.min(0.1)]],
+      defaultPortionUnit: ['serving']
     });
   }
 
@@ -61,7 +63,9 @@ export class NutritionComponent implements OnInit {
       calories: 0,
       protein: 0,
       fats: 0,
-      carbs: 0
+      carbs: 0,
+      defaultPortion: 1,
+      defaultPortionUnit: 'serving'
     });
     this.showForm = true;
   }
@@ -73,7 +77,9 @@ export class NutritionComponent implements OnInit {
       calories: meal.calories,
       protein: meal.protein || 0,
       fats: meal.fats || 0,
-      carbs: meal.carbs || 0
+      carbs: meal.carbs || 0,
+      defaultPortion: meal.defaultPortion || 1,
+      defaultPortionUnit: meal.defaultPortionUnit || 'serving'
     });
     this.showForm = true;
   }
@@ -107,7 +113,9 @@ export class NutritionComponent implements OnInit {
           calories: formValue.calories || 0,
           protein: formValue.protein || 0,
           fats: formValue.fats || 0,
-          carbs: formValue.carbs || 0
+          carbs: formValue.carbs || 0,
+          defaultPortion: formValue.defaultPortion || 1,
+          defaultPortionUnit: formValue.defaultPortionUnit || 'serving'
         });
         
         console.log('Update result:', updated);
@@ -126,7 +134,9 @@ export class NutritionComponent implements OnInit {
           calories: formValue.calories || 0,
           protein: formValue.protein || 0,
           fats: formValue.fats || 0,
-          carbs: formValue.carbs || 0
+          carbs: formValue.carbs || 0,
+          defaultPortion: formValue.defaultPortion || 1,
+          defaultPortionUnit: formValue.defaultPortionUnit || 'serving'
         });
         
         console.log('Create result:', created);
@@ -161,7 +171,9 @@ export class NutritionComponent implements OnInit {
       calories: meal.calories,
       protein: meal.protein,
       fats: meal.fats,
-      carbs: meal.carbs
+      carbs: meal.carbs,
+      defaultPortion: meal.defaultPortion,
+      defaultPortionUnit: meal.defaultPortionUnit
     });
     
     if (created) {
@@ -179,24 +191,6 @@ export class NutritionComponent implements OnInit {
     }
 
     return result;
-  }
-
-  getAverageCalories(): number {
-    if (this.meals.length === 0) return 0;
-    const total = this.meals.reduce((sum, m) => sum + (m.calories || 0), 0);
-    return Math.round(total / this.meals.length);
-  }
-
-  getTotalProtein(): number {
-    return this.meals.reduce((sum, m) => sum + (m.protein || 0), 0);
-  }
-
-  getTotalCarbs(): number {
-    return this.meals.reduce((sum, m) => sum + (m.carbs || 0), 0);
-  }
-
-  getTotalFats(): number {
-    return this.meals.reduce((sum, m) => sum + (m.fats || 0), 0);
   }
 
   onSearchChange(event: Event): void {

@@ -9,7 +9,12 @@
   <div class="training-plan" *ngIf="getPlannedWorkout() as planned">
     <div class="training-plan-header">
       <span class="training-type">{{ getWorkoutIcon(planned.type) }} {{ planned.type }}</span>
-      <span class="training-duration">{{ planned.targetDuration }} min target</span>
+      <div class="header-right">
+        <button type="button" class="copy-btn" (click)="copyToClipboard()" title="Copy workout to clipboard">
+          {{ copySuccess ? '✓ Copied!' : '📋' }}
+        </button>
+        <span class="training-duration">{{ planned.targetDuration }} min target</span>
+      </div>
     </div>
     
     <!-- Cardio Workout Details -->
@@ -17,7 +22,7 @@
       <div class="cardio-details">
         <div class="cardio-detail">
           <span class="cardio-label">Type</span>
-          <span class="cardio-value">{{ getRunTypeLabel(cardio.runType) }}</span>
+          <span class="cardio-value">{{ getRunTypeLabelForDisplay(cardio.runType) }}</span>
         </div>
         <div class="cardio-detail">
           <span class="cardio-label">Target</span>

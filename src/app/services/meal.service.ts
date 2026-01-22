@@ -9,6 +9,8 @@ export interface Meal {
   protein: number | null;
   carbs: number | null;
   fats: number | null;
+  defaultPortion: number | null;
+  defaultPortionUnit: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -29,6 +31,8 @@ export class MealService {
         protein: m.protein ?? null,
         carbs: m.carbs ?? null,
         fats: m.fats ?? null,
+        defaultPortion: m.defaultPortion ?? null,
+        defaultPortionUnit: m.defaultPortionUnit ?? null,
         createdAt: m.createdAt,
         updatedAt: m.updatedAt
       }));
@@ -44,10 +48,12 @@ export class MealService {
       
       const response = await this.client.models.Meal.create({
         name: meal.name,
-        calories: meal.calories,
+        calories: Math.round(meal.calories), // Must be integer
         protein: meal.protein,
         carbs: meal.carbs,
-        fats: meal.fats
+        fats: meal.fats,
+        defaultPortion: meal.defaultPortion,
+        defaultPortionUnit: meal.defaultPortionUnit
       });
       
       console.log('MealService: Create response:', response);
@@ -74,6 +80,8 @@ export class MealService {
           protein: response.data.protein ?? null,
           carbs: response.data.carbs ?? null,
           fats: response.data.fats ?? null,
+          defaultPortion: response.data.defaultPortion ?? null,
+          defaultPortionUnit: response.data.defaultPortionUnit ?? null,
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt
         };
@@ -91,9 +99,14 @@ export class MealService {
 
   async updateMeal(id: string, meal: Partial<Omit<Meal, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Meal | null> {
     try {
+      const updateData = { ...meal };
+      if (updateData.calories !== undefined) {
+        updateData.calories = Math.round(updateData.calories); // Must be integer
+      }
+      
       const response = await this.client.models.Meal.update({
         id,
-        ...meal
+        ...updateData
       });
       
       if (response.data) {
@@ -104,6 +117,8 @@ export class MealService {
           protein: response.data.protein ?? null,
           carbs: response.data.carbs ?? null,
           fats: response.data.fats ?? null,
+          defaultPortion: response.data.defaultPortion ?? null,
+          defaultPortionUnit: response.data.defaultPortionUnit ?? null,
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt
         };

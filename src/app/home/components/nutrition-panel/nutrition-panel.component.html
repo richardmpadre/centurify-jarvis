@@ -150,18 +150,64 @@
           [disabled]="isLoadingMeals">
       </div>
       
+      <!-- Portion Selection Panel -->
+      <div class="portion-selection-panel" *ngIf="selectedMealForAdd">
+        <div class="portion-panel-header">
+          <span class="portion-meal-name">{{ selectedMealForAdd.name }}</span>
+          <button class="cancel-selection-btn" (click)="cancelMealSelection()">×</button>
+        </div>
+        <div class="portion-inputs">
+          <div class="portion-input-group">
+            <label>Portion</label>
+            <input 
+              type="number" 
+              [(ngModel)]="portionAmount" 
+              min="0.1" 
+              step="0.1"
+              class="portion-number-input">
+          </div>
+          <div class="portion-input-group">
+            <label>Unit</label>
+            <select [(ngModel)]="portionUnit" class="portion-unit-select">
+              <option value="serving">serving</option>
+              <option value="oz">oz</option>
+              <option value="g">g</option>
+              <option value="cup">cup</option>
+              <option value="piece">piece</option>
+              <option value="tbsp">tbsp</option>
+              <option value="tsp">tsp</option>
+            </select>
+          </div>
+        </div>
+        <div class="portion-preview">
+          <span class="preview-label">Nutrition for {{ portionAmount }} {{ portionUnit }}:</span>
+          <span class="preview-macros">
+            {{ roundToTwo(selectedMealForAdd.calories * portionAmount) }} cal • 
+            {{ roundToTwo((selectedMealForAdd.protein || 0) * portionAmount) }}p / 
+            {{ roundToTwo((selectedMealForAdd.carbs || 0) * portionAmount) }}c / 
+            {{ roundToTwo((selectedMealForAdd.fats || 0) * portionAmount) }}f
+          </span>
+        </div>
+        <button class="confirm-add-btn" (click)="confirmAddMeal()">
+          + Add to {{ getMealTypeLabel(selectedMealType) }}
+        </button>
+      </div>
+
       <!-- Filtered Meals List -->
-      <div class="meals-list" *ngIf="!isLoadingMeals && filteredMeals.length > 0">
+      <div class="meals-list" *ngIf="!isLoadingMeals && filteredMeals.length > 0 && !selectedMealForAdd">
         <div 
           *ngFor="let meal of filteredMeals" 
           class="meal-list-item"
-          (click)="addMealToType(meal.id)">
+          (click)="selectMealForAdd(meal)">
           <div class="meal-item-header">
             <span class="meal-item-name">{{ meal.name }}</span>
             <span class="meal-item-calories">{{ meal.calories }} cal</span>
           </div>
           <div class="meal-item-macros">
             {{ meal.protein }}g protein • {{ meal.carbs }}g carbs • {{ meal.fats }}g fats
+          </div>
+          <div class="meal-item-portion" *ngIf="meal.defaultPortion && meal.defaultPortionUnit">
+            Default: {{ meal.defaultPortion }} {{ meal.defaultPortionUnit }}
           </div>
         </div>
       </div>

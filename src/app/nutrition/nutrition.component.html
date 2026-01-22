@@ -10,26 +10,6 @@
     </button>
   </header>
 
-  <!-- Stats Summary -->
-  <div class="stats-summary" *ngIf="meals.length > 0 && !isLoading">
-    <div class="stat-box">
-      <span class="stat-number">{{ meals.length }}</span>
-      <span class="stat-label">Meals Saved</span>
-    </div>
-    <div class="stat-box calories">
-      <span class="stat-number">{{ getAverageCalories() }}</span>
-      <span class="stat-label">Avg Cal/Meal</span>
-    </div>
-    <div class="stat-box protein">
-      <span class="stat-number">{{ getTotalProtein() }}g</span>
-      <span class="stat-label">Total Protein</span>
-    </div>
-    <div class="stat-box carbs">
-      <span class="stat-number">{{ getTotalCarbs() }}g</span>
-      <span class="stat-label">Total Carbs</span>
-    </div>
-  </div>
-
   <!-- Search -->
   <div class="controls">
     <div class="search-box">
@@ -124,6 +104,28 @@
         <div class="form-group">
           <label>Fats (g)</label>
           <input type="number" formControlName="fats" min="0">
+        </div>
+      </div>
+      
+      <div class="portion-section">
+        <label class="section-label">Default Portion</label>
+        <div class="portion-grid">
+          <div class="form-group">
+            <label>Amount</label>
+            <input type="number" formControlName="defaultPortion" min="0.1" step="0.1">
+          </div>
+          <div class="form-group">
+            <label>Unit</label>
+            <select formControlName="defaultPortionUnit">
+              <option value="serving">serving</option>
+              <option value="oz">oz</option>
+              <option value="g">g</option>
+              <option value="cup">cup</option>
+              <option value="piece">piece</option>
+              <option value="tbsp">tbsp</option>
+              <option value="tsp">tsp</option>
+            </select>
+          </div>
         </div>
       </div>
       

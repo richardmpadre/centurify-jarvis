@@ -28,6 +28,11 @@ export class NutritionPanelComponent implements OnChanges {
   selectedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
   isLoadingMeals = false;
   isCopyingYesterday = false;
+  
+  // Portion editing when adding a meal
+  selectedMealForAdd: Meal | null = null;
+  portionAmount: number = 1;
+  portionUnit: string = 'serving';
 
   constructor(
     private mealService: MealService,
@@ -70,14 +75,23 @@ export class NutritionPanelComponent implements OnChanges {
     this.selectedMealType = type;
   }
 
-  async addMealToType(mealId: string): Promise<void> {
-    if (!mealId) return;
+  selectMealForAdd(meal: Meal): void {
+    this.selectedMealForAdd = meal;
+    // Pre-populate with meal's default portion, or fallback to 1 serving
+    this.portionAmount = meal.defaultPortion || 1;
+    this.portionUnit = meal.defaultPortionUnit || 'serving';
+  }
+
+  cancelMealSelection(): void {
+    this.selectedMealForAdd = null;
+    this.portionAmount = 1;
+    this.portionUnit = 'serving';
+  }
+
+  async confirmAddMeal(): Promise<void> {
+    if (!this.selectedMealForAdd) return;
     
-    const savedMeal = this.savedMeals.find(m => m.id === mealId);
-    if (!savedMeal) {
-      console.error('Saved meal not found:', mealId);
-      return;
-    }
+    const savedMeal = this.selectedMealForAdd;
     
     try {
       const created = await this.mealEntryService.createMealEntry({
@@ -90,7 +104,7 @@ export class NutritionPanelComponent implements OnChanges {
         fats: savedMeal.fats,
         completed: false,
         mealId: savedMeal.id,
-        portion: 1
+        portion: this.portionAmount
       });
       
       if (created) {
@@ -98,10 +112,24 @@ export class NutritionPanelComponent implements OnChanges {
         this.mealEntriesChanged.emit(newEntries);
         this.searchQuery = '';
         this.filteredMeals = [...this.savedMeals];
+        this.cancelMealSelection();
       }
     } catch (error) {
       console.error('Error adding meal:', error);
     }
+  }
+
+  async addMealToType(mealId: string): Promise<void> {
+    if (!mealId) return;
+    
+    const savedMeal = this.savedMeals.find(m => m.id === mealId);
+    if (!savedMeal) {
+      console.error('Saved meal not found:', mealId);
+      return;
+    }
+    
+    // Select the meal for adding with portion input
+    this.selectMealForAdd(savedMeal);
   }
 
   async onMealDropdownChange(event: Event): Promise<void> {
@@ -166,12 +194,19 @@ export class NutritionPanelComponent implements OnChanges {
   }
 
   getNutritionTotals(): { calories: number; protein: number; fats: number; carbs: number } {
-    return this.mealEntries.reduce((totals, meal) => ({
+    const totals = this.mealEntries.reduce((totals, meal) => ({
       calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
       protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
       fats: totals.fats + (meal.fats || 0) * (meal.portion || 1),
       carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
+    
+    return {
+      calories: Math.round(totals.calories),
+      protein: Math.round(totals.protein),
+      fats: Math.round(totals.fats),
+      carbs: Math.round(totals.carbs)
+    };
   }
 
   getMealTypeIcon(type: string): string {

@@ -538,3 +538,147 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Portion Selection Panel */
+.portion-selection-panel {
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.1), rgba(138, 43, 226, 0.05));
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 12px;
+  margin-bottom: 0.75rem;
+}
+
+.portion-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.portion-meal-name {
+  font-weight: 600;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.cancel-selection-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #888;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.125rem 0.4rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.cancel-selection-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.portion-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.portion-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.portion-input-group label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.portion-number-input {
+  padding: 0.625rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.portion-number-input:focus {
+  outline: none;
+  border-color: #00d4aa;
+  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1);
+}
+
+.portion-unit-select {
+  padding: 0.625rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.portion-unit-select:focus {
+  outline: none;
+  border-color: #00d4aa;
+  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1);
+}
+
+.portion-unit-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.portion-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.625rem 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.preview-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.preview-macros {
+  font-size: 0.9rem;
+  color: #00d4aa;
+  font-weight: 500;
+}
+
+.confirm-add-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm-add-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+}
+
+.meal-item-portion {
+  font-size: 0.75rem;
+  color: #a0a0b0;
+  margin-top: 0.25rem;
+  font-style: italic;
+}

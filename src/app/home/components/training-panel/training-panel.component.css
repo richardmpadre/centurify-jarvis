@@ -86,6 +86,29 @@
   font-size: 1.1rem;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.copy-btn {
+  padding: 0.375rem 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: #888;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #00d4aa;
+  border-color: #00d4aa;
+}
+
 .training-duration {
   color: #888;
   font-size: 0.9rem;
