@@ -1,4 +1,4 @@
- import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { HealthDataService } from '../../../services/health-data.service';
 import { ChatService } from '../../../services/chat.service';
 import { WorkoutService, Workout } from '../../../services/workout.service';
 import { HealthEntry, PlannedExercise, PlannedWorkout, CardioWorkoutPlan } from '../../../models/health.models';
+import { ExerciseEditorComponent } from '../exercise-editor/exercise-editor.component';
 
 // Workout types that use cardio-style planning
 const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming', 'Cardio'];
@@ -13,7 +14,7 @@ const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming', 'Cardio'];
 @Component({
   selector: 'app-workout-planner',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, ExerciseEditorComponent],
   templateUrl: './workout-planner.component.html',
   styleUrl: './workout-planner.component.css'
 })
@@ -196,6 +197,10 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
 
   removeExercise(index: number): void {
     this.exercises.splice(index, 1);
+  }
+
+  onExercisesChanged(exercises: PlannedExercise[]): void {
+    this.exercises = exercises;
   }
 
   // ===== Copy Last Workout =====

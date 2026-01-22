@@ -267,7 +267,8 @@
     (editPlan)="openWorkoutPlanner()"
     (markComplete)="markWorkoutCompleteAndClose()"
     (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
-    (mergeWorkout)="promptMergeWithPlanned($event)">
+    (mergeWorkout)="promptMergeWithPlanned($event)"
+    (workoutUpdated)="onWorkoutUpdated($event)">
   </app-training-panel>
 
   <!-- Merge Confirmation Modal -->

@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HealthEntry, PlannedWorkout, WhoopWorkout } from '../../../models/health.models';
+import { HealthEntry, PlannedWorkout, PlannedExercise, WhoopWorkout } from '../../../models/health.models';
 import { copyWorkoutToClipboard, getRunTypeLabel } from '../../../utils/workout-utils';
+import { ExerciseEditorComponent } from '../exercise-editor/exercise-editor.component';
 
 @Component({
   selector: 'app-training-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ExerciseEditorComponent],
   templateUrl: './training-panel.component.html',
   styleUrl: './training-panel.component.css'
 })
@@ -20,8 +21,11 @@ export class TrainingPanelComponent {
   @Output() markComplete = new EventEmitter<void>();
   @Output() openWhoopWorkout = new EventEmitter<WhoopWorkout>();
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
+  @Output() workoutUpdated = new EventEmitter<PlannedWorkout>();
 
   copySuccess = false;
+  isEditingExercises = false;
+  editableExercises: PlannedExercise[] = [];
 
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
@@ -53,6 +57,7 @@ export class TrainingPanelComponent {
   }
 
   onClose(): void {
+    this.isEditingExercises = false;
     this.close.emit();
   }
 
@@ -108,5 +113,36 @@ export class TrainingPanelComponent {
         this.copySuccess = false;
       }, 2000);
     });
+  }
+
+  // Exercise editing
+  startEditingExercises(): void {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return;
+    
+    this.editableExercises = planned.exercises?.map(e => ({ ...e })) || [];
+    this.isEditingExercises = true;
+  }
+
+  onExercisesChanged(exercises: PlannedExercise[]): void {
+    this.editableExercises = exercises;
+  }
+
+  saveExercises(): void {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return;
+    
+    const updatedWorkout: PlannedWorkout = {
+      ...planned,
+      exercises: this.editableExercises
+    };
+    
+    this.workoutUpdated.emit(updatedWorkout);
+    this.isEditingExercises = false;
+  }
+
+  cancelEditingExercises(): void {
+    this.isEditingExercises = false;
+    this.editableExercises = [];
   }
 }

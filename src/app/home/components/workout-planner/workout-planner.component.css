@@ -223,6 +223,11 @@
   margin-bottom: 1rem;
 }
 
+.exercise-section {
+  margin-bottom: 1rem;
+}
+
+.exercise-section-header,
 .exercise-list-header {
   display: flex;
   justify-content: space-between;
@@ -230,6 +235,7 @@
   margin-bottom: 0.75rem;
 }
 
+.exercise-section-header h4,
 .exercise-list h4,
 .exercise-list-header h4 {
   margin: 0;

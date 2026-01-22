@@ -170,6 +170,33 @@
   font-size: 0.9rem;
 }
 
+/* Clickable exercises */
+.training-exercises.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.training-exercises.clickable:hover {
+  background: rgba(0, 212, 170, 0.08);
+  border-radius: 8px;
+  margin: -0.5rem;
+  padding: 0.5rem;
+}
+
+.training-exercises.clickable:hover .edit-hint {
+  opacity: 1;
+}
+
+.edit-hint {
+  text-align: center;
+  color: #00d4aa;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
 .no-workout-plan {
   padding: 2rem;
   text-align: center;
@@ -344,4 +371,87 @@
   border-radius: 6px;
   font-size: 0.85rem;
   color: #a0a0a0;
+}
+
+/* Exercise editing styles */
+.exercises-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.exercises-count {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.inline-edit-btn {
+  padding: 0.375rem 0.75rem;
+  background: rgba(0, 212, 170, 0.1);
+  color: #00d4aa;
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.inline-edit-btn:hover {
+  background: rgba(0, 212, 170, 0.2);
+}
+
+.training-exercises-edit {
+  margin-top: 0.5rem;
+}
+
+.exercises-edit-header {
+  font-weight: 600;
+  color: #00d4aa;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 212, 170, 0.2);
+}
+
+.edit-exercise-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cancel-edit-btn {
+  padding: 0.625rem 1rem;
+  background: transparent;
+  color: #888;
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.cancel-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.save-edit-btn {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  background: #00d4aa;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.save-edit-btn:hover {
+  background: #00e6bb;
 }

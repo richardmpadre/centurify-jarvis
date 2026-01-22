@@ -64,11 +64,32 @@
       </div>
     </div>
     
-    <!-- Strength Training Exercises -->
-    <div class="training-exercises" *ngIf="planned.exercises?.length">
+    <!-- Strength Training Exercises - View Mode -->
+    <div class="training-exercises" *ngIf="planned.exercises?.length && !isEditingExercises">
+      <div class="exercises-header">
+        <span class="exercises-count">{{ planned.exercises.length }} exercises</span>
+        <button type="button" class="inline-edit-btn" (click)="startEditingExercises()">✎ Edit</button>
+      </div>
       <div class="training-exercise" *ngFor="let ex of planned.exercises">
         <span class="exercise-name">{{ ex.name }}</span>
         <span class="exercise-details">{{ ex.sets }} × {{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
+      </div>
+    </div>
+    
+    <!-- Strength Training Exercises - Edit Mode -->
+    <div class="training-exercises-edit" *ngIf="isEditingExercises">
+      <div class="exercises-edit-header">
+        <span>Edit Exercises</span>
+      </div>
+      <app-exercise-editor
+        [exercises]="editableExercises"
+        [showAddForm]="true"
+        [compactMode]="false"
+        (exercisesChange)="onExercisesChanged($event)">
+      </app-exercise-editor>
+      <div class="edit-exercise-actions">
+        <button type="button" class="cancel-edit-btn" (click)="cancelEditingExercises()">Cancel</button>
+        <button type="button" class="save-edit-btn" (click)="saveExercises()">💾 Save Changes</button>
       </div>
     </div>
   </div>
@@ -102,9 +123,9 @@
   </div>
   
   <!-- Actions -->
-  <div class="training-actions">
+  <div class="training-actions" *ngIf="!isEditingExercises">
     <button class="edit-plan-btn" (click)="onEditPlan()" *ngIf="getPlannedWorkout()">
-      ✎ Edit Plan
+      📋 Full Planner
     </button>
     <button 
       class="complete-workout-btn" 

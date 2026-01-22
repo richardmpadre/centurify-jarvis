@@ -126,37 +126,20 @@
       </div>
     </div>
     
-    <!-- Exercise Input (for Strength Training, HIIT, Yoga, Other) -->
-    <div class="exercise-input" *ngIf="!isCardioWorkout() && !isRestDay()">
-      <h4>Add Exercises</h4>
-      <div class="form-row">
-        <input type="text" formControlName="exerciseName" placeholder="Exercise name">
-        <input type="number" formControlName="exerciseSets" placeholder="Sets" min="1" style="width: 70px">
-        <input type="text" formControlName="exerciseReps" placeholder="Reps" style="width: 80px">
-      </div>
-      <div class="form-row">
-        <input type="text" formControlName="exerciseWeight" placeholder="Weight (optional)">
-        <input type="text" formControlName="exerciseNotes" placeholder="Notes (optional)">
-        <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
-      </div>
-    </div>
-    
-    <!-- Exercise List (for strength training) -->
-    <div class="exercise-list" *ngIf="!isCardioWorkout() && !isRestDay() && exercises.length > 0">
-      <div class="exercise-list-header">
+    <!-- Exercise Editor (for Strength Training, HIIT, Yoga, Other) -->
+    <div class="exercise-section" *ngIf="!isCardioWorkout() && !isRestDay()">
+      <div class="exercise-section-header" *ngIf="exercises.length > 0">
         <h4>Planned Exercises</h4>
         <button type="button" class="copy-clipboard-btn" (click)="copyToClipboard()" title="Copy to clipboard">
           {{ copySuccess ? '✓ Copied!' : '📋 Copy' }}
         </button>
       </div>
-      <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
-        <div class="ex-info">
-          <span class="ex-name">{{ ex.name }}</span>
-          <span class="ex-details">{{ ex.sets }} × {{ ex.reps }} <span *ngIf="ex.weight">&#64; {{ ex.weight }}</span></span>
-          <span class="ex-notes" *ngIf="ex.notes">{{ ex.notes }}</span>
-        </div>
-        <button type="button" class="remove-ex-btn" (click)="removeExercise(i)">×</button>
-      </div>
+      <app-exercise-editor
+        [exercises]="exercises"
+        [showAddForm]="true"
+        [compactMode]="false"
+        (exercisesChange)="onExercisesChanged($event)">
+      </app-exercise-editor>
     </div>
     
     <!-- Cardio Plan Summary -->

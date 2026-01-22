@@ -738,6 +738,26 @@ export class HomeComponent implements OnInit {
     await this.toggleWorkoutCompleted();
     this.closeTrainingPanel();
   }
+
+  async onWorkoutUpdated(workout: PlannedWorkout): Promise<void> {
+    try {
+      const payload = {
+        date: this.selectedDate,
+        plannedWorkout: JSON.stringify(workout)
+      };
+      
+      if (this.currentEntry?.id) {
+        await this.healthDataService.updateEntry({ id: this.currentEntry.id, ...payload });
+      } else {
+        await this.healthDataService.saveEntry(payload);
+      }
+      
+      await this.loadEntries();
+      await this.loadDashboard();
+    } catch (error) {
+      console.error('Error updating workout:', error);
+    }
+  }
   
   // ==================== DAILY INSIGHTS PANEL ====================
   

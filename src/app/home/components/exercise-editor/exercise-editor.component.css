@@ -1,0 +1,256 @@
+/* Add Exercise Form */
+.exercise-input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #3a3a5a;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.exercise-input h4 {
+  margin: 0 0 0.75rem;
+  color: #e0e0e0;
+  font-size: 0.95rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
+}
+
+.form-row input {
+  flex: 1;
+  padding: 0.625rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #3a3a5a;
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.form-row input:focus {
+  outline: none;
+  border-color: #00d4aa;
+}
+
+.form-row input::placeholder {
+  color: #666;
+}
+
+.small-input {
+  width: 70px !important;
+  flex: 0 0 70px !important;
+}
+
+.add-exercise-btn {
+  padding: 0.625rem 1rem;
+  background: #00d4aa;
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.add-exercise-btn:hover {
+  background: #00e6bb;
+}
+
+/* Exercise List */
+.exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exercise-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.exercise-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(0, 212, 170, 0.3);
+}
+
+.ex-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.ex-name {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.ex-details {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.ex-notes {
+  color: #666;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.ex-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-ex-btn,
+.remove-ex-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.edit-ex-btn {
+  background: rgba(0, 212, 170, 0.1);
+  color: #00d4aa;
+}
+
+.edit-ex-btn:hover {
+  background: rgba(0, 212, 170, 0.2);
+}
+
+.remove-ex-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.remove-ex-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Edit Mode */
+.ex-edit-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.edit-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit-row input {
+  padding: 0.5rem 0.625rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #00d4aa;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.edit-row input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);
+}
+
+.edit-name {
+  flex: 1;
+}
+
+.edit-small {
+  width: 60px;
+}
+
+.edit-weight {
+  width: 80px;
+}
+
+.edit-separator {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.save-edit-btn {
+  padding: 0.5rem 1rem;
+  background: #00d4aa;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.save-edit-btn:hover {
+  background: #00e6bb;
+}
+
+.cancel-edit-btn {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: #888;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.cancel-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+/* Compact Mode */
+.exercise-list.compact .exercise-item {
+  padding: 0.5rem 0.75rem;
+}
+
+.exercise-list.compact .ex-info {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.exercise-list.compact .ex-name {
+  font-size: 0.9rem;
+}
+
+.exercise-list.compact .ex-details {
+  font-size: 0.85rem;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 1.5rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+}

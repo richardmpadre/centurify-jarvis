@@ -1,0 +1,55 @@
+<!-- Add Exercise Form -->
+<div class="exercise-input" *ngIf="showAddForm">
+  <h4>Add Exercises</h4>
+  <div class="form-row">
+    <input type="text" [(ngModel)]="exerciseName" placeholder="Exercise name">
+    <input type="number" [(ngModel)]="exerciseSets" placeholder="Sets" min="1" class="small-input">
+    <input type="text" [(ngModel)]="exerciseReps" placeholder="Reps" class="small-input">
+  </div>
+  <div class="form-row">
+    <input type="text" [(ngModel)]="exerciseWeight" placeholder="Weight (optional)">
+    <input type="text" [(ngModel)]="exerciseNotes" placeholder="Notes (optional)">
+    <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add</button>
+  </div>
+</div>
+
+<!-- Exercise List -->
+<div class="exercise-list" [class.compact]="compactMode" *ngIf="exercises.length > 0">
+  <div class="exercise-item" *ngFor="let ex of exercises; let i = index">
+    <!-- View Mode -->
+    <ng-container *ngIf="editingIndex !== i">
+      <div class="ex-info" (click)="startEdit(i)">
+        <span class="ex-name">{{ ex.name }}</span>
+        <span class="ex-details">{{ ex.sets }} × {{ ex.reps }}<span *ngIf="ex.weight"> &#64; {{ ex.weight }}</span></span>
+        <span class="ex-notes" *ngIf="ex.notes && !compactMode">{{ ex.notes }}</span>
+      </div>
+      <div class="ex-actions">
+        <button type="button" class="edit-ex-btn" (click)="startEdit(i)" title="Edit">✎</button>
+        <button type="button" class="remove-ex-btn" (click)="removeExercise(i)" title="Remove">×</button>
+      </div>
+    </ng-container>
+    
+    <!-- Edit Mode -->
+    <div class="ex-edit-form" *ngIf="editingIndex === i && editExercise">
+      <div class="edit-row">
+        <input type="text" [(ngModel)]="editExercise.name" placeholder="Exercise name" class="edit-name">
+      </div>
+      <div class="edit-row">
+        <input type="number" [(ngModel)]="editExercise.sets" placeholder="Sets" min="1" class="edit-small">
+        <span class="edit-separator">×</span>
+        <input type="text" [(ngModel)]="editExercise.reps" placeholder="Reps" class="edit-small">
+        <span class="edit-separator">&#64;</span>
+        <input type="text" [(ngModel)]="editExercise.weight" placeholder="Weight" class="edit-weight">
+      </div>
+      <div class="edit-actions">
+        <button type="button" class="save-edit-btn" (click)="saveEdit()">✓ Save</button>
+        <button type="button" class="cancel-edit-btn" (click)="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div class="empty-state" *ngIf="exercises.length === 0 && !showAddForm">
+  <span>No exercises added yet</span>
+</div>
