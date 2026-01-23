@@ -206,6 +206,7 @@
     <div class="whoop-summary">
       <div class="summary-stat"><span>{{ editingWhoopWorkout.strain }}</span> Strain</div>
       <div class="summary-stat"><span>{{ editingWhoopWorkout.duration }}m</span> Duration</div>
+      <div class="summary-stat" *ngIf="editingWhoopWorkout.distance"><span>{{ editingWhoopWorkout.distance }} mi</span> Distance</div>
       <div class="summary-stat"><span>{{ editingWhoopWorkout.calories }}</span> Calories</div>
       <div class="summary-stat"><span>{{ editingWhoopWorkout.avgHR }}/{{ editingWhoopWorkout.maxHR }}</span> HR</div>
     </div>

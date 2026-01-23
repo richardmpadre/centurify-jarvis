@@ -116,6 +116,7 @@
       <div class="whoop-stats">
         <span>{{ w.strain }} strain</span>
         <span>{{ w.duration }}m</span>
+        <span *ngIf="w.distance">{{ w.distance }} mi</span>
         <span>{{ w.calories }} cal</span>
         <span>{{ w.avgHR }}/{{ w.maxHR }} HR</span>
       </div>

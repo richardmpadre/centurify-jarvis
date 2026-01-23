@@ -99,5 +99,6 @@ export interface WhoopWorkout {
   avgHR: number;
   maxHR: number;
   startTime: string;
+  distance?: number; // Distance in miles (for running activities)
 }
 

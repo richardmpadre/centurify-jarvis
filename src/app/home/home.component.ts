@@ -293,45 +293,31 @@ export class HomeComponent implements OnInit {
       }
     };
     
-    // Add nutrition action - either from recurring goal or fallback to hard-coded
-    if (this.nutritionGoals.length > 0) {
-      // Use recurring nutrition goals
-      this.nutritionGoals.forEach(goal => {
-        const actionId = `nutrition_goal_${goal.id}`;
-        const completion = this.nutritionGoalCompletions.get(goal.id);
-        const isCompleted = completion?.completed === true;
-        const metadata = goal.metadata as NutritionGoalMetadata | undefined;
-        
-        let description = goal.description || 'Track your daily nutrition';
-        if (metadata) {
-          description = `${metadata.targetCalories} cal / ${metadata.targetProtein}g protein`;
-        }
-        if (nutritionTrackingFailed) {
-          description = '❌ Tracking failed';
-        }
-        
-        allActions[actionId] = {
-          id: actionId,
-          title: goal.title,
-          description: description,
-          icon: '🥗',
-          status: isCompleted || nutritionTrackingFailed ? 'completed' : (hasMeals ? 'in_progress' : 'pending'),
-          type: 'nutrition',
-          reopenOnComplete: true
-        };
-      });
-    } else {
-      // Fallback to hard-coded nutrition action (backward compatible)
-      allActions['nutrition'] = {
-        id: 'nutrition',
-        title: 'Plan Nutrition',
-        description: nutritionTrackingFailed ? '❌ Tracking failed' : (hasMeals ? 'Meals planned for the day' : 'Plan your meals'),
+    // Add nutrition actions from recurring nutrition goals
+    this.nutritionGoals.forEach(goal => {
+      const actionId = `nutrition_goal_${goal.id}`;
+      const completion = this.nutritionGoalCompletions.get(goal.id);
+      const isCompleted = completion?.completed === true;
+      const metadata = goal.metadata as NutritionGoalMetadata | undefined;
+      
+      let description = goal.description || 'Track your daily nutrition';
+      if (metadata) {
+        description = `${metadata.targetCalories} cal / ${metadata.targetProtein}g protein`;
+      }
+      if (nutritionTrackingFailed) {
+        description = '❌ Tracking failed';
+      }
+      
+      allActions[actionId] = {
+        id: actionId,
+        title: goal.title,
+        description: description,
         icon: '🥗',
-        status: nutritionCompleted ? 'completed' : 'pending',
+        status: isCompleted || nutritionTrackingFailed ? 'completed' : (hasMeals ? 'in_progress' : 'pending'),
         type: 'nutrition',
         reopenOnComplete: true
       };
-    }
+    });
     
     // Add meal actions to the actions map if nutrition is planned
     if (hasMeals) {
@@ -1165,6 +1151,13 @@ export class HomeComponent implements OnInit {
       .replace(/_/g, ' ')
       .replace(/\b\w/g, (c: string) => c.toUpperCase());
     
+    // Extract distance for running/cycling activities (convert meters to miles)
+    // Note: distance_meter may be null if GPS wasn't used during the activity
+    const hasDistance = w.score?.distance_meter && w.score.distance_meter > 0;
+    const distanceMiles = hasDistance
+      ? Math.round((w.score.distance_meter / 1609.344) * 100) / 100 
+      : undefined;
+    
     return {
       sport: sportName,
       strain: w.score?.strain ? Math.round(w.score.strain * 10) / 10 : 0,
@@ -1172,7 +1165,8 @@ export class HomeComponent implements OnInit {
       calories,
       avgHR: w.score?.average_heart_rate || 0,
       maxHR: w.score?.max_heart_rate || 0,
-      startTime: w.start ? new Date(w.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+      startTime: w.start ? new Date(w.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+      distance: distanceMiles
     };
   }
 
