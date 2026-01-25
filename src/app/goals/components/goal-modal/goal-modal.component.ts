@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { Goal, GoalType, GoalStatus, GOAL_TYPE_CONFIG, GOAL_STATUS_CONFIG, Milestone } from '../../../models/goal.models';
+import { Goal, GoalType, GoalStatus, GoalCategory, GOAL_TYPE_CONFIG, GOAL_STATUS_CONFIG, GOAL_CATEGORY_CONFIG, Milestone, NutritionGoalMetadata } from '../../../models/goal.models';
 
 @Component({
   selector: 'app-goal-modal',
@@ -19,6 +19,7 @@ export class GoalModalComponent implements OnInit {
 
   goalForm: FormGroup;
   availableTypes: GoalType[] = [];
+  categoryOptions: GoalCategory[] = ['nutrition', 'training', 'general'];
 
   constructor(private fb: FormBuilder) {
     this.goalForm = this.fb.group({
@@ -28,7 +29,15 @@ export class GoalModalComponent implements OnInit {
       status: ['not_started'],
       progress: [0],
       targetDate: [''],
-      requiresDailyAction: [false]
+      requiresDailyAction: [false],
+      // Recurring goal fields
+      isRecurring: [false],
+      goalCategory: ['general'],
+      // Nutrition metadata
+      targetCalories: [2000],
+      targetProtein: [150],
+      targetCarbs: [200],
+      targetFats: [65]
     });
   }
 
@@ -40,6 +49,8 @@ export class GoalModalComponent implements OnInit {
   private initializeForm(): void {
     if (this.editingGoal) {
       // Edit mode - populate form
+      const nutritionMetadata = this.editingGoal.metadata as NutritionGoalMetadata | undefined;
+      
       this.goalForm.patchValue({
         title: this.editingGoal.title,
         description: this.editingGoal.description || '',
@@ -47,7 +58,15 @@ export class GoalModalComponent implements OnInit {
         status: this.editingGoal.status,
         progress: this.editingGoal.progress,
         targetDate: this.editingGoal.targetDate || '',
-        requiresDailyAction: this.editingGoal.requiresDailyAction || false
+        requiresDailyAction: this.editingGoal.requiresDailyAction || false,
+        // Recurring goal fields
+        isRecurring: this.editingGoal.isRecurring || false,
+        goalCategory: this.editingGoal.goalCategory || 'general',
+        // Nutrition metadata
+        targetCalories: nutritionMetadata?.targetCalories || 2000,
+        targetProtein: nutritionMetadata?.targetProtein || 150,
+        targetCarbs: nutritionMetadata?.targetCarbs || 200,
+        targetFats: nutritionMetadata?.targetFats || 65
       });
       this.milestones = this.editingGoal.milestones ? [...this.editingGoal.milestones] : [];
     } else if (this.parentGoal) {
@@ -150,6 +169,35 @@ export class GoalModalComponent implements OnInit {
       goalData.requiresDailyAction = formValue.requiresDailyAction || false;
     }
 
+    // Include recurring goal fields
+    if (formValue.isRecurring) {
+      goalData.isRecurring = true;
+      goalData.recurrenceType = 'daily';
+      goalData.goalCategory = formValue.goalCategory;
+      
+      // Include nutrition metadata if category is nutrition
+      if (formValue.goalCategory === 'nutrition') {
+        goalData.metadata = {
+          targetCalories: formValue.targetCalories,
+          targetProtein: formValue.targetProtein,
+          targetCarbs: formValue.targetCarbs,
+          targetFats: formValue.targetFats
+        };
+      }
+    }
+
     this.save.emit(goalData);
+  }
+
+  getCategoryConfig(category: GoalCategory) {
+    return GOAL_CATEGORY_CONFIG[category];
+  }
+
+  isRecurringGoal(): boolean {
+    return this.goalForm.value.isRecurring === true;
+  }
+
+  isNutritionCategory(): boolean {
+    return this.goalForm.value.goalCategory === 'nutrition';
   }
 }

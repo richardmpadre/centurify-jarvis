@@ -14,6 +14,8 @@ export type GoalCategory = 'nutrition' | 'training' | 'general';
 export interface NutritionGoalMetadata {
   targetCalories: number;
   targetProtein: number;
+  targetCarbs: number;
+  targetFats: number;
 }
 
 // Generic metadata type (can be extended for other categories)

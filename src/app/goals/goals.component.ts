@@ -130,7 +130,12 @@ export class GoalsComponent implements OnInit {
           sortOrder: 0,
           milestones: goalData.milestones,
           notes: goalData.notes,
-          requiresDailyAction: goalData.requiresDailyAction
+          requiresDailyAction: goalData.requiresDailyAction,
+          // Recurring goal fields
+          isRecurring: goalData.isRecurring,
+          recurrenceType: goalData.recurrenceType,
+          goalCategory: goalData.goalCategory,
+          metadata: goalData.metadata
         };
         await this.goalService.createGoal(newGoal);
       }

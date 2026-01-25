@@ -70,6 +70,66 @@
       <p class="field-hint">When enabled, you'll be prompted daily to select an ad-hoc goal to prioritize.</p>
     </div>
 
+    <!-- Recurring Goal Toggle (for ad-hoc goals) -->
+    <div class="form-group checkbox-group" *ngIf="goalForm.value.goalType === 'ad_hoc'">
+      <label class="checkbox-label">
+        <input type="checkbox" formControlName="isRecurring">
+        <span class="checkbox-text">Daily recurring goal</span>
+      </label>
+      <p class="field-hint">Creates a daily action that repeats every day (e.g., track nutrition, exercise).</p>
+    </div>
+
+    <!-- Goal Category (only for recurring goals) -->
+    <div class="form-group" *ngIf="isRecurringGoal()">
+      <label>Category</label>
+      <select formControlName="goalCategory">
+        <option *ngFor="let category of categoryOptions" [value]="category">
+          {{ getCategoryConfig(category).icon }} {{ getCategoryConfig(category).label }}
+        </option>
+      </select>
+      <p class="field-hint">Determines which panel opens when you click this action.</p>
+    </div>
+
+    <!-- Nutrition Targets (only for nutrition category) -->
+    <div class="nutrition-targets" *ngIf="isRecurringGoal() && isNutritionCategory()">
+      <div class="form-group">
+        <label>Calories</label>
+        <input 
+          type="number" 
+          formControlName="targetCalories" 
+          placeholder="2000"
+          min="1000"
+          max="10000">
+      </div>
+      <div class="form-group">
+        <label>Protein (g)</label>
+        <input 
+          type="number" 
+          formControlName="targetProtein" 
+          placeholder="150"
+          min="50"
+          max="500">
+      </div>
+      <div class="form-group">
+        <label>Carbs (g)</label>
+        <input 
+          type="number" 
+          formControlName="targetCarbs" 
+          placeholder="200"
+          min="50"
+          max="600">
+      </div>
+      <div class="form-group">
+        <label>Fats (g)</label>
+        <input 
+          type="number" 
+          formControlName="targetFats" 
+          placeholder="65"
+          min="20"
+          max="200">
+      </div>
+    </div>
+
     <!-- Actions -->
     <div class="form-actions">
       <button type="button" class="cancel-btn" (click)="onClose()">Cancel</button>

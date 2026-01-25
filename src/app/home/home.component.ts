@@ -302,7 +302,7 @@ export class HomeComponent implements OnInit {
       
       let description = goal.description || 'Track your daily nutrition';
       if (metadata) {
-        description = `${metadata.targetCalories} cal / ${metadata.targetProtein}g protein`;
+        description = `${metadata.targetCalories} cal | P: ${metadata.targetProtein}g | C: ${metadata.targetCarbs || 0}g | F: ${metadata.targetFats || 0}g`;
       }
       if (nutritionTrackingFailed) {
         description = '❌ Tracking failed';
