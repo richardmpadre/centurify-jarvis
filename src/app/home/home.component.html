@@ -21,30 +21,18 @@
   <!-- Actions Section - Full Width at Top -->
   <section class="actions-section-top">
     <app-action-list
-      *ngIf="isToday()"
       [actions]="dailyActions"
       [isLoading]="isLoadingDashboard"
       [collapsed]="actionsCollapsed"
       [editMode]="actionsEditMode"
+      [selectedDate]="selectedDate"
+      [isToday]="isToday()"
       (actionClick)="onActionClick($event)"
       (actionUncomplete)="onActionUncomplete($event)"
       (toggleCollapse)="onActionsToggleCollapse()"
       (reorder)="onActionsReorder($event)"
       (toggleEditMode)="onActionsToggleEditMode()">
     </app-action-list>
-    
-    <!-- Quick Actions for past dates -->
-    <div class="quick-actions" *ngIf="!isToday()">
-      <button *ngIf="!currentEntry" (click)="addEntryForDate()" class="action-btn primary">
-        + Add Entry
-      </button>
-      <button *ngIf="currentEntry" (click)="editEntry()" class="action-btn secondary">
-        ✎ Edit Entry
-      </button>
-      <button *ngIf="whoopConnected && !currentEntry" (click)="importFromWhoop()" class="action-btn whoop" [disabled]="whoopLoading">
-        {{ whoopLoading ? 'Importing...' : 'Import Whoop' }}
-      </button>
-    </div>
   </section>
 
   <!-- Dashboard Section - Bottom with Wellness Score Prominent -->

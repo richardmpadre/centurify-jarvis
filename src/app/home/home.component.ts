@@ -294,6 +294,9 @@ export class HomeComponent implements OnInit {
     };
     
     // Add nutrition actions from recurring nutrition goals
+    // Check if all meals are completed (auto-complete nutrition goal)
+    const allMealsCompleted = hasMeals && this.mealEntries.every(m => m.completed);
+    
     this.nutritionGoals.forEach(goal => {
       const actionId = `nutrition_goal_${goal.id}`;
       const completion = this.nutritionGoalCompletions.get(goal.id);
@@ -308,12 +311,20 @@ export class HomeComponent implements OnInit {
         description = '❌ Tracking failed';
       }
       
+      // Determine status:
+      // - completed: if RecurringGoalCompletion marked complete, OR all meals completed, OR tracking failed
+      // - in_progress: if has meals but not all complete
+      // - pending: no meals planned yet
+      const nutritionStatus = isCompleted || allMealsCompleted || nutritionTrackingFailed 
+        ? 'completed' 
+        : (hasMeals ? 'in_progress' : 'pending');
+      
       allActions[actionId] = {
         id: actionId,
         title: goal.title,
         description: description,
         icon: '🥗',
-        status: isCompleted || nutritionTrackingFailed ? 'completed' : (hasMeals ? 'in_progress' : 'pending'),
+        status: nutritionStatus,
         type: 'nutrition',
         reopenOnComplete: true
       };
@@ -385,21 +396,33 @@ export class HomeComponent implements OnInit {
     const existingIds = new Set(savedOrder.filter(id => allActions[id]));
     const newIds = Object.keys(allActions).filter(id => !existingIds.has(id) && id !== 'daily_insights');
     
-    // Separate meal actions from other new actions and sort them properly
+    // Separate meal actions, nutrition goals, and other new actions
     const mealOrder = ['meal_breakfast', 'meal_lunch', 'meal_dinner', 'meal_snack'];
     const newMealIds = newIds.filter(id => id.startsWith('meal_')).sort((a, b) => {
       return mealOrder.indexOf(a) - mealOrder.indexOf(b);
     });
-    const newNonMealIds = newIds.filter(id => !id.startsWith('meal_'));
+    const newNutritionGoalIds = newIds.filter(id => id.startsWith('nutrition_goal_'));
+    const newOtherIds = newIds.filter(id => !id.startsWith('meal_') && !id.startsWith('nutrition_goal_'));
     
     // Build order without daily_insights first
     let finalOrder = savedOrder.filter(id => allActions[id] && id !== 'daily_insights');
+    
+    // Insert new nutrition goals right after 'workout' if not already in order
+    if (newNutritionGoalIds.length > 0) {
+      const workoutIndex = finalOrder.indexOf('workout');
+      if (workoutIndex !== -1) {
+        finalOrder.splice(workoutIndex + 1, 0, ...newNutritionGoalIds);
+      } else {
+        // If workout not in order, add nutrition goals at start
+        finalOrder = [...newNutritionGoalIds, ...finalOrder];
+      }
+    }
     
     // Add new meal actions in correct order
     finalOrder = [...finalOrder, ...newMealIds];
     
     // Add other new actions
-    finalOrder = [...finalOrder, ...newNonMealIds];
+    finalOrder = [...finalOrder, ...newOtherIds];
     
     // Always add daily_insights at the end
     if (allActions['daily_insights']) {
@@ -488,7 +511,32 @@ export class HomeComponent implements OnInit {
     // Update HealthEntry with nutrition totals (only counts completed meals)
     await this.updateNutritionTotals();
     
+    // Check if all meals are now complete and update nutrition goal accordingly
+    await this.checkAndUpdateNutritionGoalCompletion();
+    
     this.buildDailyActions();
+  }
+  
+  /**
+   * Check if all meals are completed and update RecurringGoalCompletion accordingly
+   */
+  private async checkAndUpdateNutritionGoalCompletion(): Promise<void> {
+    if (this.mealEntries.length === 0 || this.nutritionGoals.length === 0) return;
+    
+    const allMealsCompleted = this.mealEntries.every(m => m.completed);
+    
+    for (const goal of this.nutritionGoals) {
+      const currentCompletion = this.nutritionGoalCompletions.get(goal.id);
+      const isCurrentlyComplete = currentCompletion?.completed === true;
+      
+      if (allMealsCompleted && !isCurrentlyComplete) {
+        // All meals done - mark nutrition goal complete
+        await this.markNutritionGoalComplete(goal.id);
+      } else if (!allMealsCompleted && isCurrentlyComplete) {
+        // Not all meals done but was marked complete - mark incomplete
+        await this.markNutritionGoalIncomplete(goal.id);
+      }
+    }
   }
   
   getActionOrder(): string[] {
@@ -533,6 +581,9 @@ export class HomeComponent implements OnInit {
         
         // Skip goal_priority actions - their status is derived from whether a goal is selected
         if (action.type === 'goal_priority') return;
+        
+        // Skip nutrition actions - their status comes from RecurringGoalCompletion
+        if (action.type === 'nutrition') return;
         
         // Skip actions that derive status from database fields
         if (autoStatusActions.includes(action.id)) return;
@@ -644,6 +695,9 @@ export class HomeComponent implements OnInit {
       
       // Skip goal_priority actions - their status is derived from whether a goal is selected
       if (action.type === 'goal_priority') return;
+      
+      // Skip nutrition actions - their completion is stored in RecurringGoalCompletion
+      if (action.type === 'nutrition') return;
       
       // Skip actions that derive status from database fields
       if (autoStatusActions.includes(action.id)) return;
@@ -1486,16 +1540,8 @@ export class HomeComponent implements OnInit {
   
   async onNutritionPlanSaved(): Promise<void> {
     await this.updateNutritionTotals();
-    
-    // If using recurring nutrition goals, mark them as complete
-    if (this.nutritionGoals.length > 0) {
-      for (const goal of this.nutritionGoals) {
-        await this.markNutritionGoalComplete(goal.id);
-      }
-    } else {
-      await this.markActionComplete('nutrition');
-    }
-    
+    // Just save the plan - don't mark complete yet
+    // Completion happens when all meals are marked complete or user manually confirms
     this.buildDailyActions();
     this.closeNutritionPanel();
   }

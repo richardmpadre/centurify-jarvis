@@ -1,9 +1,10 @@
-<div class="action-list" [class.collapsed]="collapsed && isAllComplete" [class.edit-mode]="editMode">
+<div class="action-list" [class.collapsed]="collapsed && isAllComplete" [class.edit-mode]="editMode" [class.past-date]="!isToday">
   <!-- Header -->
   <div class="action-list-header" (click)="onHeaderClick()">
     <div class="header-left">
-      <h3>📋 Today's Actions</h3>
+      <h3>{{ headerTitle }}</h3>
       <span class="action-count">{{ completedCount }}/{{ totalCount }}</span>
+      <span class="retroactive-badge" *ngIf="!isToday">Retroactive</span>
     </div>
     <div class="header-right">
       <button class="edit-order-btn" (click)="onEditClick($event)" [class.active]="editMode">

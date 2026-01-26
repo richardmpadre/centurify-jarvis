@@ -44,6 +44,31 @@
   font-size: 0.9rem;
 }
 
+.retroactive-badge {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Past date styling */
+.action-list.past-date {
+  border-color: #fbbf24;
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.15);
+}
+
+.action-list.past-date .progress-bar {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.action-list.past-date .progress-badge.complete {
+  background: #fbbf24;
+}
+
 .header-right {
   display: flex;
   align-items: center;

@@ -31,6 +31,8 @@ export class ActionListComponent {
   @Input() isLoading = false;
   @Input() collapsed = false;
   @Input() editMode = false;
+  @Input() selectedDate = ''; // YYYY-MM-DD format
+  @Input() isToday = true;
   
   @Output() actionClick = new EventEmitter<ActionItem>();
   @Output() actionUncomplete = new EventEmitter<ActionItem>(); // For toggling completed actions back
@@ -40,6 +42,20 @@ export class ActionListComponent {
 
   completedCollapsed = true; // Completed section collapsed by default
   draggedIndex: number | null = null;
+
+  get headerTitle(): string {
+    if (this.isToday) {
+      return "📋 Today's Actions";
+    }
+    // Format the date nicely for past dates
+    const date = new Date(this.selectedDate + 'T12:00:00');
+    const formatted = date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+    return `📋 Actions for ${formatted}`;
+  }
 
   get completedCount(): number {
     return this.actions.filter(a => a.status === 'completed').length;
