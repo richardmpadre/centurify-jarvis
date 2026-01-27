@@ -340,6 +340,17 @@ export class ChatService {
       tasksCompleted?: number;
       tasksTotal?: number;
     }>;
+    healthStats?: {
+      totalMilesRan: number;
+      totalReps: number;
+      totalSets: number;
+      exercisesByName: Array<{
+        name: string;
+        sets: number;
+        reps: number;
+        maxWeight: string;
+      }>;
+    };
   }): Promise<WeeklyInsights> {
     const apiUrl = await this.ensureApiUrl();
     console.log('Generating weekly insights for week', data.weekNumber, 'of', data.year);

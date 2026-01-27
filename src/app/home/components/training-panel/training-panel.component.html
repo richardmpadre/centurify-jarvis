@@ -41,7 +41,7 @@
     </div>
     
     <!-- Actual Stats from Whoop (if merged) -->
-    <div class="training-actual-stats" *ngIf="$any(planned).actualStrain">
+    <div class="training-actual-stats" *ngIf="$any(planned).actualStrain" [class.with-distance-input]="isRunningWorkout()">
       <div class="training-stat">
         <span class="training-stat-value">{{ $any(planned).actualStrain }}</span>
         <span class="training-stat-label">Strain</span>
@@ -61,6 +61,24 @@
       <div class="training-stat">
         <span class="training-stat-value">{{ $any(planned).actualAvgHR }}/{{ $any(planned).actualMaxHR }}</span>
         <span class="training-stat-label">HR</span>
+      </div>
+    </div>
+    
+    <!-- Distance Input for Running/Cardio Workouts -->
+    <div class="distance-input-row" *ngIf="isRunningWorkout() && $any(planned).actualStrain">
+      <label class="distance-label">Distance</label>
+      <div class="distance-input-group">
+        <input 
+          type="number" 
+          class="distance-input"
+          [ngModel]="getActualDistance()"
+          (ngModelChange)="editableDistance = $event"
+          (blur)="saveDistance()"
+          (keyup.enter)="saveDistance()"
+          step="0.1"
+          min="0"
+          placeholder="Enter distance">
+        <span class="distance-unit">{{ getDistanceUnit() }}</span>
       </div>
     </div>
     

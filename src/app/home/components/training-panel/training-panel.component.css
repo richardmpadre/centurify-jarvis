@@ -455,3 +455,52 @@
 .save-edit-btn:hover {
   background: #00e6bb;
 }
+
+/* Distance Input Styles */
+.distance-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(0, 212, 170, 0.2);
+}
+
+.distance-label {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.distance-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.distance-input {
+  width: 80px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 170, 0.3);
+  border-radius: 6px;
+  color: #00d4aa;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.distance-input:focus {
+  outline: none;
+  border-color: #00d4aa;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.distance-input::placeholder {
+  color: #666;
+  font-weight: 400;
+}
+
+.distance-unit {
+  color: #888;
+  font-size: 0.9rem;
+}

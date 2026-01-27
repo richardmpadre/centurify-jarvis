@@ -14,6 +14,14 @@ import {
   WeekDateRange
 } from '../utils/date-utils';
 
+// Health stats for the week
+export interface WeeklyHealthStats {
+  totalMilesRan: number;
+  totalReps: number;
+  totalSets: number;
+  exercisesByName: { name: string; sets: number; reps: number; maxWeight: string }[];
+}
+
 @Component({
   selector: 'app-insights',
   standalone: true,
@@ -32,6 +40,14 @@ export class InsightsComponent implements OnInit {
   isGenerating = false;
   insights: WeeklyInsights | null = null;
   error: string | null = null;
+  
+  // Health pillar stats
+  healthStats: WeeklyHealthStats = {
+    totalMilesRan: 0,
+    totalReps: 0,
+    totalSets: 0,
+    exercisesByName: []
+  };
 
   constructor(
     private chatService: ChatService,
@@ -63,6 +79,9 @@ export class InsightsComponent implements OnInit {
         const meals = await this.mealEntryService.getMealEntriesForDate(date);
         this.mealEntriesByDate[date] = meals;
       }
+      
+      // Calculate health stats
+      this.calculateHealthStats();
       
       // Check if we have cached insights for this week
       this.loadCachedInsights();
@@ -148,7 +167,8 @@ export class InsightsComponent implements OnInit {
         year: this.weekInfo.year,
         startDate: this.weekInfo.startDate,
         endDate: this.weekInfo.endDate,
-        days
+        days,
+        healthStats: this.healthStats
       });
       
       this.insights = result;
@@ -272,5 +292,97 @@ export class InsightsComponent implements OnInit {
         .map(e => e.date)
     );
     return uniqueDatesWithPlanned.size;
+  }
+
+  /**
+   * Calculate health stats for the week (miles ran, lifting volume)
+   */
+  private calculateHealthStats(): void {
+    const dates = getWeekDates(this.currentDate);
+    let totalMiles = 0;
+    let totalReps = 0;
+    let totalSets = 0;
+    const exerciseMap = new Map<string, { sets: number; reps: number; maxWeight: string }>();
+    
+    this.entries
+      .filter(e => dates.includes(e.date) && e.plannedWorkout && e.workoutCompleted)
+      .forEach(entry => {
+        try {
+          const workout = JSON.parse(entry.plannedWorkout!) as any;
+          
+          // Track running distance - prefer actual, fall back to target for completed cardio workouts
+          if (workout.actualDistance) {
+            totalMiles += workout.actualDistance;
+          } else if (workout.cardio && workout.cardio.targetType === 'distance' && workout.cardio.targetValue) {
+            // If no actual distance but it's a completed distance-based cardio workout, use target
+            // Convert km to miles if needed
+            let distance = workout.cardio.targetValue;
+            if (workout.cardio.distanceUnit === 'km') {
+              distance = distance * 0.621371; // Convert km to miles
+            }
+            totalMiles += distance;
+          }
+          
+          // Track lifting exercises
+          if (workout.exercises && Array.isArray(workout.exercises)) {
+            workout.exercises.forEach((ex: any) => {
+              const name = ex.name?.toLowerCase() || 'unknown';
+              const sets = ex.sets || 0;
+              const repsStr = ex.reps || '0';
+              const weight = ex.weight || '';
+              
+              // Parse reps (could be "8-10" or "8")
+              const repsNum = parseInt(repsStr.toString().split('-')[0]) || 0;
+              const totalExReps = sets * repsNum;
+              
+              totalSets += sets;
+              totalReps += totalExReps;
+              
+              // Aggregate by exercise name
+              if (exerciseMap.has(name)) {
+                const existing = exerciseMap.get(name)!;
+                existing.sets += sets;
+                existing.reps += totalExReps;
+                // Keep max weight (simple string comparison, works for most cases)
+                if (this.parseWeight(weight) > this.parseWeight(existing.maxWeight)) {
+                  existing.maxWeight = weight;
+                }
+              } else {
+                exerciseMap.set(name, { sets, reps: totalExReps, maxWeight: weight });
+              }
+            });
+          }
+        } catch {
+          // Skip invalid workout data
+        }
+      });
+    
+    this.healthStats = {
+      totalMilesRan: Math.round(totalMiles * 10) / 10, // Round to 1 decimal
+      totalReps,
+      totalSets,
+      exercisesByName: Array.from(exerciseMap.entries())
+        .map(([name, stats]) => ({
+          name: this.titleCase(name),
+          ...stats
+        }))
+        .sort((a, b) => b.sets - a.sets) // Sort by most sets
+    };
+  }
+
+  /**
+   * Parse weight string to number for comparison
+   */
+  private parseWeight(weight: string): number {
+    if (!weight) return 0;
+    const match = weight.match(/(\d+)/);
+    return match ? parseInt(match[1]) : 0;
+  }
+
+  /**
+   * Convert string to title case
+   */
+  private titleCase(str: string): string {
+    return str.replace(/\b\w/g, char => char.toUpperCase());
   }
 }

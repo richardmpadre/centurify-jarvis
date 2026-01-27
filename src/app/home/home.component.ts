@@ -1113,6 +1113,7 @@ export class HomeComponent implements OnInit {
       actualCalories: this.whoopToMerge.calories,
       actualAvgHR: this.whoopToMerge.avgHR,
       actualMaxHR: this.whoopToMerge.maxHR,
+      actualDistance: this.whoopToMerge.distance,
       whoopStartTime: this.whoopToMerge.startTime
     };
     

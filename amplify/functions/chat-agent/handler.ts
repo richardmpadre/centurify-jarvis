@@ -59,6 +59,18 @@ interface WeeklyInsightsData {
     tasksCompleted?: number;
     tasksTotal?: number;
   }>;
+  // Health pillar stats
+  healthStats?: {
+    totalMilesRan: number;
+    totalReps: number;
+    totalSets: number;
+    exercisesByName: Array<{
+      name: string;
+      sets: number;
+      reps: number;
+      maxWeight: string;
+    }>;
+  };
 }
 
 interface WorkoutPlanData {
@@ -538,7 +550,7 @@ function buildWeeklyInsightsPrompt(data: WeeklyInsightsData | undefined): string
     return 'Generate generic weekly wellness tips.';
   }
 
-  const { weekNumber, year, startDate, endDate, days } = data;
+  const { weekNumber, year, startDate, endDate, days, healthStats } = data;
   
   // Calculate averages
   const daysWithRecovery = days.filter(d => d.recovery != null);
@@ -578,6 +590,25 @@ function buildWeeklyInsightsPrompt(data: WeeklyInsightsData | undefined): string
   const dailyBreakdown = days.map(d => {
     return `  ${d.date}: Recovery ${d.recovery ?? '-'}%, Sleep ${d.sleep ?? '-'}%, Strain ${d.strain ?? '-'}, Workout: ${d.workoutCompleted ? '✓' : d.workoutPlanned ? '✗ planned' : '-'}`;
   }).join('\n');
+  
+  // Build health stats section
+  let healthStatsSection = '';
+  if (healthStats) {
+    const exerciseList = healthStats.exercisesByName.length > 0
+      ? healthStats.exercisesByName.map(ex => 
+          `  - ${ex.name}: ${ex.sets} sets, ${ex.reps} reps${ex.maxWeight ? ` (max: ${ex.maxWeight})` : ''}`
+        ).join('\n')
+      : '  No strength exercises recorded';
+    
+    healthStatsSection = `
+**HEALTH PILLAR - TRAINING VOLUME:**
+- Total Miles Ran: ${healthStats.totalMilesRan} miles
+- Total Sets Lifted: ${healthStats.totalSets}
+- Total Reps Completed: ${healthStats.totalReps}
+- Exercise Breakdown:
+${exerciseList}
+`;
+  }
 
   return `You are Jarvis, a personal health and wellness AI coach. Generate comprehensive WEEKLY insights for Week ${weekNumber} of ${year} (${startDate} to ${endDate}).
 
@@ -597,14 +628,14 @@ function buildWeeklyInsightsPrompt(data: WeeklyInsightsData | undefined): string
 
 **DAILY BREAKDOWN:**
 ${dailyBreakdown}
-
+${healthStatsSection}
 **NOTABLE DAYS:**
 - Best Recovery Day: ${bestDay ? `${bestDay.date} (${bestDay.recovery}%)` : 'N/A'}
 - Lowest Recovery Day: ${worstDay ? `${worstDay.date} (${worstDay.recovery}%)` : 'N/A'}
 
 Generate a comprehensive weekly analysis in the following EXACT JSON format (respond ONLY with valid JSON, no markdown):
 {
-  "summary": "3-4 sentence overview of the week's performance, highlighting key patterns and overall health trend",
+  "summary": "3-4 sentence overview including: biometrics trends, training volume (miles ran, sets lifted), and overall health status",
   "weekly_score": 75,
   "trend": "improving|stable|declining",
   "averages": {
@@ -613,28 +644,28 @@ Generate a comprehensive weekly analysis in the following EXACT JSON format (res
     "strain": ${avgStrain ?? 'null'}
   },
   "highlights": [
-    "Positive achievement 1",
-    "Positive achievement 2",
-    "Positive achievement 3"
+    "Achievement about biometrics or recovery",
+    "Achievement about running/cardio volume",
+    "Achievement about strength training volume or progression"
   ],
   "lowlights": [
     "Area that needs attention 1",
     "Area that needs attention 2"
   ],
   "patterns": [
-    "Pattern observed 1 (e.g., 'Recovery tends to drop mid-week')",
-    "Pattern observed 2"
+    "Pattern about biometrics (e.g., 'Recovery tends to drop mid-week')",
+    "Pattern about training (e.g., 'Running volume was front-loaded this week')"
   ],
   "recommendations": [
-    "Specific actionable recommendation for next week 1",
-    "Specific actionable recommendation for next week 2",
-    "Specific actionable recommendation for next week 3"
+    "Specific recommendation for recovery/sleep",
+    "Specific recommendation for cardio/running",
+    "Specific recommendation for strength training"
   ],
   "best_day": {
     "date": "${bestDay?.date || 'N/A'}",
     "reason": "Why this was the best day"
   },
-  "focus_for_next_week": "One key area to focus on improving next week"
+  "focus_for_next_week": "One key area to focus on improving next week (consider training volume balance)"
 }
 
 **SCORING GUIDELINES (weekly_score 0-100):**
@@ -644,13 +675,18 @@ Generate a comprehensive weekly analysis in the following EXACT JSON format (res
 - Workout Completion: 100% (+15), 80%+ (+10), 60-79% (+5), <60% (-5)
 - Nutrition Adherence: 100% (+10), 80%+ (+7), 60-79% (+3), <60% (+0)
 - Consistency (data tracked 6-7 days): +5, (4-5 days): +0, (<4 days): -5
+- Training Volume Bonus: Good mileage for cardio (+5), consistent lifting (+5)
 
 **Rules:**
 - Be specific about patterns you observe across the 7 days
 - Compare performance early in week vs late in week
 - Note any correlations (e.g., poor sleep affecting next day recovery)
 - Keep highlights and lowlights to 2-4 items each
-- Make recommendations actionable and specific`;
+- Make recommendations actionable and specific
+- **ANALYZE TRAINING VOLUME**: Comment on miles ran (is it enough? too much?), total sets/reps lifted, and weight progression
+- **HEALTH PILLAR INSIGHTS**: Include at least one highlight or pattern about running distance or lifting volume
+- If running data exists, mention pace trends or distance achievements
+- If lifting data exists, note which exercises had the most volume and suggest progression`;
 }
 
 function parseWeeklyInsightsResponse(response: string): {

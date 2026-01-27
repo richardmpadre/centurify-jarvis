@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HealthEntry, PlannedWorkout, PlannedExercise, WhoopWorkout } from '../../../models/health.models';
 import { copyWorkoutToClipboard, getRunTypeLabel } from '../../../utils/workout-utils';
 import { ExerciseEditorComponent } from '../exercise-editor/exercise-editor.component';
@@ -7,7 +8,7 @@ import { ExerciseEditorComponent } from '../exercise-editor/exercise-editor.comp
 @Component({
   selector: 'app-training-panel',
   standalone: true,
-  imports: [CommonModule, ExerciseEditorComponent],
+  imports: [CommonModule, FormsModule, ExerciseEditorComponent],
   templateUrl: './training-panel.component.html',
   styleUrl: './training-panel.component.css'
 })
@@ -26,6 +27,7 @@ export class TrainingPanelComponent {
   copySuccess = false;
   isEditingExercises = false;
   editableExercises: PlannedExercise[] = [];
+  editableDistance: number | null = null;
 
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
@@ -87,20 +89,58 @@ export class TrainingPanelComponent {
     
     const cardio = (planned as any).cardio;
     const actualDuration = (planned as any).actualDuration;
+    const actualDistance = (planned as any).actualDistance;
     
-    // Need distance target and actual duration to calculate pace
-    if (!cardio || !actualDuration || cardio.targetType !== 'distance') return null;
-    
-    const distance = cardio.targetValue;
-    if (!distance || distance <= 0) return null;
+    // Need actual duration and distance to calculate pace
+    if (!actualDuration || !actualDistance || actualDistance <= 0) return null;
     
     // Calculate pace in minutes per unit (mile or km)
-    const paceMinutes = actualDuration / distance;
+    const paceMinutes = actualDuration / actualDistance;
     const minutes = Math.floor(paceMinutes);
     const seconds = Math.round((paceMinutes - minutes) * 60);
     
-    const unit = cardio.distanceUnit === 'km' ? 'km' : 'mi';
+    const unit = cardio?.distanceUnit === 'km' ? 'km' : 'mi';
     return `${minutes}:${seconds.toString().padStart(2, '0')}/${unit}`;
+  }
+  
+  // Check if this is a running/cardio workout that should show distance input
+  isRunningWorkout(): boolean {
+    const planned = this.getPlannedWorkout();
+    if (!planned) return false;
+    return planned.type === 'Running' || planned.type === 'Cycling' || (planned as any).cardio;
+  }
+  
+  // Get the current actual distance value
+  getActualDistance(): number | null {
+    const planned = this.getPlannedWorkout();
+    return planned ? (planned as any).actualDistance ?? null : null;
+  }
+  
+  // Get the distance unit for display
+  getDistanceUnit(): string {
+    const planned = this.getPlannedWorkout();
+    const cardio = planned ? (planned as any).cardio : null;
+    return cardio?.distanceUnit === 'km' ? 'km' : 'mi';
+  }
+  
+  // Initialize editable distance when stats are shown
+  initEditableDistance(): void {
+    if (this.editableDistance === null) {
+      this.editableDistance = this.getActualDistance();
+    }
+  }
+  
+  // Save the distance update
+  saveDistance(): void {
+    const planned = this.getPlannedWorkout();
+    if (!planned || this.editableDistance === null) return;
+    
+    const updatedWorkout: PlannedWorkout = {
+      ...planned,
+      actualDistance: this.editableDistance
+    } as any;
+    
+    this.workoutUpdated.emit(updatedWorkout);
   }
 
   copyToClipboard(): void {
