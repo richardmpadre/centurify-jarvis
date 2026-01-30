@@ -266,12 +266,8 @@
 }
 
 .spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  /* Static icon - no animation to avoid confusion with loading states */
+  display: inline-block;
 }
 
 .action-icon {

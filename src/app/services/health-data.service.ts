@@ -17,6 +17,7 @@ export class HealthDataService {
     sleep?: number;
     recovery?: number;
     weight?: number;
+    muscleMass?: number;
     workoutCount?: number;
     workoutCalories?: number;
     workoutMinutes?: number;
@@ -61,6 +62,7 @@ export class HealthDataService {
     sleep?: number;
     recovery?: number;
     weight?: number;
+    muscleMass?: number;
     workoutCount?: number;
     workoutCalories?: number;
     workoutMinutes?: number;

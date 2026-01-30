@@ -9,7 +9,7 @@ import { HealthEntry, PlannedExercise, PlannedWorkout, CardioWorkoutPlan } from 
 import { ExerciseEditorComponent } from '../exercise-editor/exercise-editor.component';
 
 // Workout types that use cardio-style planning
-const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming', 'Cardio'];
+const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming'];
 
 @Component({
   selector: 'app-workout-planner',
@@ -84,8 +84,49 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       targetValue: [this.DEFAULT_VALUES.targetValue],
       distanceUnit: [this.DEFAULT_VALUES.distanceUnit],
       targetPace: [''],
+      targetSpeed: [''], // Speed in mph (for treadmill)
       cardioNotes: ['']
     });
+  }
+
+  // ===== Speed/Pace Conversion =====
+  
+  /**
+   * Convert speed (mph) to pace (min:sec/mi)
+   * Formula: pace = 60 / speed
+   */
+  onSpeedChange(): void {
+    const speed = parseFloat(this.workoutForm.value.targetSpeed);
+    if (!speed || speed <= 0) return;
+    
+    const paceMinutes = 60 / speed;
+    const minutes = Math.floor(paceMinutes);
+    const seconds = Math.round((paceMinutes - minutes) * 60);
+    const pace = `${minutes}:${seconds.toString().padStart(2, '0')}/mi`;
+    
+    this.workoutForm.patchValue({ targetPace: pace }, { emitEvent: false });
+  }
+  
+  /**
+   * Convert pace (min:sec/mi) to speed (mph)
+   * Formula: speed = 60 / pace_in_minutes
+   */
+  onPaceChange(): void {
+    const pace = this.workoutForm.value.targetPace;
+    if (!pace) return;
+    
+    // Parse pace like "9:00/mi" or "9:30"
+    const match = pace.match(/(\d+):(\d+)/);
+    if (!match) return;
+    
+    const minutes = parseInt(match[1]);
+    const seconds = parseInt(match[2]);
+    const paceInMinutes = minutes + (seconds / 60);
+    
+    if (paceInMinutes <= 0) return;
+    
+    const speed = 60 / paceInMinutes;
+    this.workoutForm.patchValue({ targetSpeed: speed.toFixed(1) }, { emitEvent: false });
   }
 
   ngOnInit(): void {
@@ -155,8 +196,8 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
   private mapCategoryToType(category: string | null): string {
     const categoryMap: Record<string, string> = {
       strength: 'Strength Training',
-      cardio: 'Cardio',
-      hiit: 'HIIT',
+      cardio: 'Running',
+      hiit: 'Strength Training',
       flexibility: 'Yoga',
       sports: 'Other'
     };
@@ -224,6 +265,7 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
         targetValue: planned.cardio.targetValue,
         distanceUnit: planned.cardio.distanceUnit || 'miles',
         targetPace: planned.cardio.targetPace || '',
+        targetSpeed: planned.cardio.targetSpeed || '',
         cardioNotes: planned.cardio.notes || ''
       });
       return;
@@ -293,10 +335,22 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       // Run type
       parts.push(this.getRunTypeLabel(planned.cardio.runType));
       
-      // Target (distance or time)
-      if (planned.cardio.targetType === 'time') {
+      // Target based on type
+      if (planned.cardio.targetType === 'pace') {
+        // Pace-based target
+        if (planned.cardio.targetPace) {
+          parts.push(`@ ${planned.cardio.targetPace}`);
+        }
+        if (planned.targetDuration && planned.targetDuration > 0) {
+          parts.push(`${planned.targetDuration} min`);
+        }
+      } else if (planned.cardio.targetType === 'time') {
         parts.push(`${planned.cardio.targetValue} min`);
+        if (planned.cardio.targetPace) {
+          parts.push(`@ ${planned.cardio.targetPace}`);
+        }
       } else {
+        // Distance-based
         const unit = planned.cardio.distanceUnit === 'km' ? 'km' : 'mi';
         parts.push(`${planned.cardio.targetValue} ${unit}`);
         
@@ -304,11 +358,11 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
         if (planned.targetDuration && planned.targetDuration > 0) {
           parts.push(`~${planned.targetDuration} min`);
         }
-      }
-      
-      // Pace if available
-      if (planned.cardio.targetPace) {
-        parts.push(`@ ${planned.cardio.targetPace}`);
+        
+        // Pace if available
+        if (planned.cardio.targetPace) {
+          parts.push(`@ ${planned.cardio.targetPace}`);
+        }
       }
       
       return parts.join(' • ');
@@ -489,17 +543,22 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     const cardio: CardioWorkoutPlan = {
       runType: form.runType,
       targetType: form.targetType,
-      targetValue: form.targetValue,
+      targetValue: form.targetValue || 0,
       distanceUnit: form.distanceUnit || 'miles',
       targetPace: form.targetPace || undefined,
+      targetSpeed: form.targetSpeed ? parseFloat(form.targetSpeed) : undefined,
       notes: form.cardioNotes || undefined
     };
     
-    // Calculate target duration
+    // Calculate target duration based on target type
     let targetDuration = form.targetDuration;
     if (form.targetType === 'time') {
       targetDuration = form.targetValue;
+    } else if (form.targetType === 'pace') {
+      // For pace targets, use the duration from the form
+      targetDuration = form.targetDuration;
     } else {
+      // For distance targets, estimate duration if possible
       const estimated = this.getEstimatedDuration();
       targetDuration = estimated || form.targetDuration;
     }
@@ -543,7 +602,17 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       const runTypeLabel = this.runTypes.find(rt => rt.value === form.runType)?.label || form.runType;
       text += `Type: ${runTypeLabel}\n`;
       
-      if (form.targetType === 'distance') {
+      // Speed/pace info
+      if (form.targetSpeed) {
+        text += `Speed: ${form.targetSpeed} mph\n`;
+      }
+      if (form.targetPace) {
+        text += `Pace: ${form.targetPace}\n`;
+      }
+      
+      if (form.targetType === 'pace') {
+        text += `Duration: ${form.targetDuration} minutes\n`;
+      } else if (form.targetType === 'distance') {
         const unit = form.distanceUnit || 'miles';
         text += `Target: ${form.targetValue} ${unit}\n`;
         const estimated = this.getEstimatedDuration();
@@ -554,9 +623,6 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
         text += `Target: ${form.targetValue} minutes\n`;
       }
       
-      if (form.targetPace) {
-        text += `Target Pace: ${form.targetPace}\n`;
-      }
       if (form.cardioNotes) {
         text += `Notes: ${form.cardioNotes}\n`;
       }

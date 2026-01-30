@@ -15,8 +15,6 @@
           <option>Running</option>
           <option>Cycling</option>
           <option>Swimming</option>
-          <option>Cardio</option>
-          <option>HIIT</option>
           <option>Yoga</option>
           <option>Rest Day</option>
           <option>Other</option>
@@ -94,6 +92,7 @@
           <select formControlName="targetType">
             <option value="time">Time (minutes)</option>
             <option value="distance">Distance</option>
+            <option value="pace">Pace (speed)</option>
           </select>
         </div>
         <div class="form-group" *ngIf="workoutForm.value.targetType === 'distance'">
@@ -103,18 +102,40 @@
             <option value="km">Kilometers</option>
           </select>
         </div>
-        <div class="form-group" [class.full-width]="workoutForm.value.targetType === 'time'">
+        <div class="form-group" [class.full-width]="workoutForm.value.targetType === 'time'" *ngIf="workoutForm.value.targetType !== 'pace'">
           <label>{{ workoutForm.value.targetType === 'time' ? 'Minutes' : getDistanceLabel() }}</label>
           <input type="number" formControlName="targetValue" min="0.1" step="0.1">
         </div>
       </div>
       
-      <div class="form-row">
+      <div class="form-row" *ngIf="workoutForm.value.targetType === 'pace'">
         <div class="form-group">
-          <label>Target Pace (optional)</label>
-          <input type="text" formControlName="targetPace" placeholder="e.g., 9:00/mi">
+          <label>Speed (mph)</label>
+          <input type="number" formControlName="targetSpeed" placeholder="e.g., 6.0" min="0.1" step="0.1" (input)="onSpeedChange()">
         </div>
         <div class="form-group">
+          <label>Target Pace</label>
+          <input type="text" formControlName="targetPace" placeholder="e.g., 9:00/mi" (input)="onPaceChange()">
+        </div>
+        <div class="form-group">
+          <label>Duration (min)</label>
+          <input type="number" formControlName="targetDuration" min="1">
+        </div>
+      </div>
+      
+      <div class="form-row" *ngIf="workoutForm.value.targetType !== 'pace'">
+        <div class="form-group">
+          <label>Speed (mph)</label>
+          <input type="number" formControlName="targetSpeed" placeholder="e.g., 6.0" min="0.1" step="0.1" (input)="onSpeedChange()">
+        </div>
+        <div class="form-group">
+          <label>Pace</label>
+          <input type="text" formControlName="targetPace" placeholder="e.g., 9:00/mi" (input)="onPaceChange()">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group full-width">
           <label>Notes (optional)</label>
           <input type="text" formControlName="cardioNotes" placeholder="Any specific goals">
         </div>
@@ -150,7 +171,19 @@
           <span class="summary-label">Type</span>
           <span class="summary-value">{{ getRunTypeLabel(workoutForm.value.runType) }}</span>
         </div>
-        <div class="summary-item">
+        <div class="summary-item" *ngIf="workoutForm.value.targetSpeed">
+          <span class="summary-label">Speed</span>
+          <span class="summary-value">{{ workoutForm.value.targetSpeed }} mph</span>
+        </div>
+        <div class="summary-item" *ngIf="workoutForm.value.targetType === 'pace' && workoutForm.value.targetPace">
+          <span class="summary-label">Target Pace</span>
+          <span class="summary-value">{{ workoutForm.value.targetPace }}</span>
+        </div>
+        <div class="summary-item" *ngIf="workoutForm.value.targetType === 'pace'">
+          <span class="summary-label">Duration</span>
+          <span class="summary-value">{{ workoutForm.value.targetDuration }} min</span>
+        </div>
+        <div class="summary-item" *ngIf="workoutForm.value.targetType !== 'pace'">
           <span class="summary-label">Target</span>
           <span class="summary-value">
             {{ workoutForm.value.targetValue }} {{ workoutForm.value.targetType === 'time' ? 'min' : getDistanceUnit() }}
@@ -160,7 +193,7 @@
           <span class="summary-label">Est. Duration</span>
           <span class="summary-value">~{{ getEstimatedDuration() }} min</span>
         </div>
-        <div class="summary-item" *ngIf="workoutForm.value.targetPace">
+        <div class="summary-item" *ngIf="workoutForm.value.targetPace && workoutForm.value.targetType !== 'pace' && !workoutForm.value.targetSpeed">
           <span class="summary-label">Pace</span>
           <span class="summary-value">{{ workoutForm.value.targetPace }}</span>
         </div>

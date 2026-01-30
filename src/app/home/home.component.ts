@@ -156,7 +156,8 @@ export class HomeComponent implements OnInit {
       rhr: [''],
       sleep: [''],
       recovery: [''],
-      weight: ['']
+      weight: [''],
+      muscleMass: ['']
     });
   }
 
@@ -518,7 +519,8 @@ export class HomeComponent implements OnInit {
   }
   
   /**
-   * Check if all meals are completed and update RecurringGoalCompletion accordingly
+   * Check if all meals are completed and auto-complete nutrition goal if not already done
+   * Note: Does NOT un-complete a goal that was already marked complete (e.g., via Save Plan)
    */
   private async checkAndUpdateNutritionGoalCompletion(): Promise<void> {
     if (this.mealEntries.length === 0 || this.nutritionGoals.length === 0) return;
@@ -532,10 +534,8 @@ export class HomeComponent implements OnInit {
       if (allMealsCompleted && !isCurrentlyComplete) {
         // All meals done - mark nutrition goal complete
         await this.markNutritionGoalComplete(goal.id);
-      } else if (!allMealsCompleted && isCurrentlyComplete) {
-        // Not all meals done but was marked complete - mark incomplete
-        await this.markNutritionGoalIncomplete(goal.id);
       }
+      // Don't un-complete if already marked complete (user saved their plan)
     }
   }
   
@@ -1253,7 +1253,7 @@ export class HomeComponent implements OnInit {
     this.healthForm.reset({
       date: this.selectedDate,
       bp: '', temp: '', strain: '', rhr: '',
-      sleep: '', recovery: '', weight: ''
+      sleep: '', recovery: '', weight: '', muscleMass: ''
     });
     this.saveMessage = '';
     this.whoopMessage = '';
@@ -1275,7 +1275,8 @@ export class HomeComponent implements OnInit {
       rhr: e.rhr || '',
       sleep: e.sleep || '',
       recovery: e.recovery || '',
-      weight: e.weight || ''
+      weight: e.weight || '',
+      muscleMass: e.muscleMass || ''
     });
   }
 
@@ -1466,7 +1467,8 @@ export class HomeComponent implements OnInit {
       rhr: f.rhr ? parseFloat(f.rhr) : undefined,
       sleep: f.sleep ? parseFloat(f.sleep) : undefined,
       recovery: f.recovery ? parseFloat(f.recovery) : undefined,
-      weight: f.weight ? parseFloat(f.weight) : undefined
+      weight: f.weight ? parseFloat(f.weight) : undefined,
+      muscleMass: f.muscleMass ? parseFloat(f.muscleMass) : undefined
     };
 
     try {
@@ -1540,11 +1542,21 @@ export class HomeComponent implements OnInit {
   }
   
   async onNutritionPlanSaved(): Promise<void> {
-    await this.updateNutritionTotals();
-    // Just save the plan - don't mark complete yet
-    // Completion happens when all meals are marked complete or user manually confirms
-    this.buildDailyActions();
-    this.closeNutritionPanel();
+    try {
+      await this.updateNutritionTotals();
+      
+      // Mark all nutrition goals as complete when plan is saved
+      for (const goal of this.nutritionGoals) {
+        await this.markNutritionGoalComplete(goal.id);
+      }
+      
+      this.buildDailyActions();
+    } catch (error) {
+      console.error('Error saving nutrition plan:', error);
+    } finally {
+      // Always close the panel, even if there was an error
+      this.closeNutritionPanel();
+    }
   }
 
   async markNutritionGoalComplete(goalId: string): Promise<void> {

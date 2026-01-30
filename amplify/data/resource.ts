@@ -11,6 +11,7 @@ const schema = a.schema({
     sleep: a.float(),
     recovery: a.float(),
     weight: a.float(),
+    muscleMass: a.float(),
     workoutCount: a.integer(),
     workoutCalories: a.float(),
     workoutMinutes: a.float(),

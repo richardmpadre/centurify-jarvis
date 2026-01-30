@@ -9,6 +9,7 @@ export interface HealthEntry {
   sleep?: number | null;
   recovery?: number | null;
   weight?: number | null;
+  muscleMass?: number | null;
   plannedWorkout?: string | null;
   workoutCompleted?: boolean | null;
   trainingNotes?: string | null;
@@ -57,10 +58,11 @@ export interface PlannedExercise {
 // Cardio workout plan details
 export interface CardioWorkoutPlan {
   runType: string; // 'zone2', 'tempo', 'intervals', 'long_run', 'recovery', 'fartlek'
-  targetType: 'time' | 'distance';
-  targetValue: number; // minutes or miles/km
+  targetType: 'time' | 'distance' | 'pace';
+  targetValue: number; // minutes or miles/km (not used for pace target)
   distanceUnit?: 'miles' | 'km'; // unit for distance-based targets
-  targetPace?: string; // e.g., "9:00/mi"
+  targetPace?: string; // e.g., "9:00/mi" - required for pace target type
+  targetSpeed?: number; // Speed in mph (for treadmill)
   notes?: string;
 }
 
