@@ -112,6 +112,24 @@ const schema = a.schema({
     completed: a.boolean().required(), // Whether the goal was completed on this day
     notes: a.string(), // Optional notes about completion
   }).authorization(allow => [allow.owner()]),
+  
+  // Training session history - completed workouts
+  TrainingSession: a.model({
+    date: a.date().required(),
+    startTime: a.datetime(),
+    type: a.string().required(), // 'strength', 'cardio', 'flexibility', 'sports', 'hiit', 'other'
+    name: a.string(),
+    duration: a.integer(), // minutes
+    calories: a.integer(),
+    strain: a.float(), // Whoop strain score
+    avgHR: a.integer(),
+    maxHR: a.integer(),
+    distance: a.float(), // For cardio (miles)
+    exercises: a.string(), // JSON array of completed exercises
+    notes: a.string(),
+    source: a.string(), // 'whoop' or 'manual'
+    whoopWorkoutId: a.string(), // Link to Whoop if synced
+  }).authorization(allow => [allow.owner()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

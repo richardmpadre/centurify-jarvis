@@ -104,3 +104,37 @@ export interface WhoopWorkout {
   distance?: number; // Distance in miles (for running activities)
 }
 
+// Training session types
+export type TrainingType = 'strength' | 'cardio' | 'flexibility' | 'sports' | 'hiit' | 'other';
+export type TrainingSource = 'whoop' | 'manual';
+
+// Completed exercise in a training session
+export interface CompletedExercise {
+  name: string;
+  sets?: number;
+  reps?: string;
+  weight?: number;
+  notes?: string;
+}
+
+// Training session - completed workout history
+export interface TrainingSession {
+  id: string;
+  date: string;
+  startTime?: string | null;
+  type: TrainingType;
+  name?: string | null;
+  duration?: number | null; // minutes
+  calories?: number | null;
+  strain?: number | null; // Whoop strain score
+  avgHR?: number | null;
+  maxHR?: number | null;
+  distance?: number | null; // For cardio (miles)
+  exercises?: CompletedExercise[];
+  notes?: string | null;
+  source: TrainingSource;
+  whoopWorkoutId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

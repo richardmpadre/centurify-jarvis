@@ -304,6 +304,41 @@
   background: rgba(59, 130, 246, 0.1);
 }
 
+/* Quick Links */
+.quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  color: #e0e0e0;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.quick-link:hover {
+  background: rgba(0, 212, 170, 0.1);
+  border-color: rgba(0, 212, 170, 0.3);
+}
+
+.quick-link .link-icon {
+  font-size: 1rem;
+}
+
+.quick-link .link-text {
+  font-weight: 500;
+}
+
 /* History Section */
 .history-section {
   background: #1a1a2e;

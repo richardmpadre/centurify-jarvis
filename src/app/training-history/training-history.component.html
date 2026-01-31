@@ -1,0 +1,328 @@
+<div class="training-history-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <a routerLink="/" class="back-link">← Back</a>
+      <h1>Training History</h1>
+    </div>
+    <div class="header-actions">
+      <button 
+        class="sync-btn" 
+        *ngIf="isWhoopConnected"
+        (click)="syncWhoop()"
+        [disabled]="isSyncing">
+        {{ isSyncing ? 'Syncing...' : 'Sync Whoop' }}
+      </button>
+      <button class="add-btn" (click)="openAddModal()">
+        + Log Workout
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats Summary -->
+  <div class="stats-summary" *ngIf="sessions.length > 0 && !isLoading">
+    <div class="stat-box">
+      <span class="stat-number">{{ totalSessions }}</span>
+      <span class="stat-label">Sessions</span>
+    </div>
+    <div class="stat-box duration">
+      <span class="stat-number">{{ formatDuration(totalDuration) }}</span>
+      <span class="stat-label">Total Time</span>
+    </div>
+    <div class="stat-box calories">
+      <span class="stat-number">{{ totalCalories | number }}</span>
+      <span class="stat-label">Calories</span>
+    </div>
+    <div class="stat-box strain" *ngIf="averageStrain > 0">
+      <span class="stat-number">{{ averageStrain }}</span>
+      <span class="stat-label">Avg Strain</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="controls">
+    <div class="filter-group">
+      <div class="filter-tabs">
+        <button 
+          *ngFor="let type of trainingTypes" 
+          class="filter-tab"
+          [class.active]="typeFilter === type.value"
+          (click)="typeFilter = type.value">
+          {{ type.icon }} {{ type.label }}
+        </button>
+      </div>
+      
+      <div class="filter-tabs source-tabs">
+        <button 
+          class="filter-tab"
+          [class.active]="sourceFilter === 'all'"
+          (click)="sourceFilter = 'all'">
+          All Sources
+        </button>
+        <button 
+          class="filter-tab"
+          [class.active]="sourceFilter === 'whoop'"
+          (click)="sourceFilter = 'whoop'">
+          Whoop
+        </button>
+        <button 
+          class="filter-tab"
+          [class.active]="sourceFilter === 'manual'"
+          (click)="sourceFilter = 'manual'">
+          Manual
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner">⏳</div>
+    <p>Loading training history...</p>
+  </div>
+
+  <!-- Sessions List -->
+  <div class="sessions-list" *ngIf="groupedSessions.length > 0 && !isLoading">
+    <div class="date-group" *ngFor="let group of groupedSessions">
+      <div class="date-header">{{ formatDate(group.date) }}</div>
+      
+      <div class="session-card" *ngFor="let session of group.sessions" (click)="openDetail(session)">
+        <div class="session-type-badge" [style.background]="getTypeInfo(session.type).color">
+          {{ getTypeInfo(session.type).icon }}
+        </div>
+        
+        <div class="session-info">
+          <div class="session-name">{{ session.name || getTypeInfo(session.type).label }}</div>
+          <div class="session-meta">
+            <span *ngIf="session.duration" class="meta-item">
+              ⏱️ {{ formatDuration(session.duration) }}
+            </span>
+            <span *ngIf="session.calories" class="meta-item">
+              🔥 {{ session.calories }} cal
+            </span>
+            <span *ngIf="session.strain" class="meta-item">
+              💪 {{ session.strain | number:'1.1-1' }} strain
+            </span>
+            <span *ngIf="session.distance" class="meta-item">
+              📏 {{ session.distance | number:'1.1-1' }} mi
+            </span>
+          </div>
+        </div>
+        
+        <div class="session-source" [class.whoop]="session.source === 'whoop'">
+          {{ session.source === 'whoop' ? '⌚' : '✏️' }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="sessions.length === 0 && !isLoading">
+    <div class="empty-icon">🏋️</div>
+    <h2>No training sessions yet</h2>
+    <p>Log your first workout or sync from Whoop to start tracking your training history.</p>
+    <div class="empty-actions">
+      <button class="add-btn large" (click)="openAddModal()">+ Log Your First Workout</button>
+      <button class="sync-btn large" *ngIf="isWhoopConnected" (click)="syncWhoop()" [disabled]="isSyncing">
+        {{ isSyncing ? 'Syncing...' : 'Sync from Whoop' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- No Results -->
+  <div class="no-results" *ngIf="sessions.length > 0 && filteredSessions.length === 0 && !isLoading">
+    <p>No sessions match your filters.</p>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" *ngIf="showDetailModal" (click)="closeDetail()"></div>
+  <div class="modal detail-modal" *ngIf="showDetailModal && selectedSession">
+    <div class="modal-header">
+      <div class="modal-title-row">
+        <span class="type-badge" [style.background]="getTypeInfo(selectedSession.type).color">
+          {{ getTypeInfo(selectedSession.type).icon }}
+        </span>
+        <h3>{{ selectedSession.name || getTypeInfo(selectedSession.type).label }}</h3>
+      </div>
+      <button class="close-btn" (click)="closeDetail()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="detail-date">
+        {{ formatDate(selectedSession.date) }}
+        <span *ngIf="selectedSession.startTime"> at {{ formatTime(selectedSession.startTime) }}</span>
+      </div>
+      
+      <div class="detail-stats">
+        <div class="detail-stat" *ngIf="selectedSession.duration">
+          <span class="detail-stat-icon">⏱️</span>
+          <span class="detail-stat-value">{{ formatDuration(selectedSession.duration) }}</span>
+          <span class="detail-stat-label">Duration</span>
+        </div>
+        <div class="detail-stat" *ngIf="selectedSession.calories">
+          <span class="detail-stat-icon">🔥</span>
+          <span class="detail-stat-value">{{ selectedSession.calories }}</span>
+          <span class="detail-stat-label">Calories</span>
+        </div>
+        <div class="detail-stat" *ngIf="selectedSession.strain">
+          <span class="detail-stat-icon">💪</span>
+          <span class="detail-stat-value">{{ selectedSession.strain | number:'1.1-1' }}</span>
+          <span class="detail-stat-label">Strain</span>
+        </div>
+        <div class="detail-stat" *ngIf="selectedSession.distance">
+          <span class="detail-stat-icon">📏</span>
+          <span class="detail-stat-value">{{ selectedSession.distance | number:'1.2-2' }} mi</span>
+          <span class="detail-stat-label">Distance</span>
+        </div>
+      </div>
+      
+      <div class="detail-hr" *ngIf="selectedSession.avgHR || selectedSession.maxHR">
+        <h4>Heart Rate</h4>
+        <div class="hr-stats">
+          <div class="hr-stat" *ngIf="selectedSession.avgHR">
+            <span class="hr-value">{{ selectedSession.avgHR }}</span>
+            <span class="hr-label">Avg BPM</span>
+          </div>
+          <div class="hr-stat" *ngIf="selectedSession.maxHR">
+            <span class="hr-value">{{ selectedSession.maxHR }}</span>
+            <span class="hr-label">Max BPM</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="detail-exercises" *ngIf="selectedSession.exercises && selectedSession.exercises.length > 0">
+        <h4>Exercises</h4>
+        <div class="exercise-item" *ngFor="let exercise of selectedSession.exercises">
+          <span class="exercise-name">{{ exercise.name }}</span>
+          <span class="exercise-details">
+            <span *ngIf="exercise.sets">{{ exercise.sets }} sets</span>
+            <span *ngIf="exercise.sets && exercise.reps"> × </span>
+            <span *ngIf="exercise.reps">{{ exercise.reps }}</span>
+            <span *ngIf="exercise.weight"> &#64; {{ exercise.weight }} lbs</span>
+          </span>
+        </div>
+      </div>
+      
+      <div class="detail-notes" *ngIf="selectedSession.notes">
+        <h4>Notes</h4>
+        <p>{{ selectedSession.notes }}</p>
+      </div>
+      
+      <div class="detail-source">
+        <span class="source-label">Source:</span>
+        <span class="source-value">{{ selectedSession.source === 'whoop' ? 'Whoop' : 'Manual Entry' }}</span>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="delete-btn" (click)="deleteSession(selectedSession)">Delete</button>
+      <button class="edit-btn" *ngIf="selectedSession.source === 'manual'" (click)="openEditModal(selectedSession)">Edit</button>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal-overlay" *ngIf="showAddModal" (click)="closeAddModal()"></div>
+  <div class="modal add-modal" *ngIf="showAddModal">
+    <div class="modal-header">
+      <h3>{{ editingSession ? 'Edit Session' : 'Log Workout' }}</h3>
+      <button class="close-btn" (click)="closeAddModal()">×</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" [(ngModel)]="sessionForm.date">
+        </div>
+        <div class="form-group">
+          <label>Type *</label>
+          <select [(ngModel)]="sessionForm.type">
+            <option value="strength">💪 Strength</option>
+            <option value="cardio">🏃 Cardio</option>
+            <option value="flexibility">🧘 Flexibility</option>
+            <option value="sports">⚽ Sports</option>
+            <option value="hiit">🔥 HIIT</option>
+            <option value="other">📝 Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Workout Name</label>
+        <input type="text" [(ngModel)]="sessionForm.name" placeholder="e.g., Morning Run, Push Day">
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Duration (min)</label>
+          <input type="number" [(ngModel)]="sessionForm.duration" min="0" placeholder="45">
+        </div>
+        <div class="form-group">
+          <label>Calories</label>
+          <input type="number" [(ngModel)]="sessionForm.calories" min="0" placeholder="300">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Avg Heart Rate</label>
+          <input type="number" [(ngModel)]="sessionForm.avgHR" min="0" placeholder="145">
+        </div>
+        <div class="form-group">
+          <label>Max Heart Rate</label>
+          <input type="number" [(ngModel)]="sessionForm.maxHR" min="0" placeholder="175">
+        </div>
+      </div>
+      
+      <div class="form-group" *ngIf="sessionForm.type === 'cardio'">
+        <label>Distance (miles)</label>
+        <input type="number" [(ngModel)]="sessionForm.distance" min="0" step="0.1" placeholder="3.5">
+      </div>
+      
+      <!-- Exercises Section -->
+      <div class="exercises-section" *ngIf="sessionForm.type === 'strength' || sessionForm.type === 'hiit'">
+        <div class="exercises-header">
+          <label>Exercises</label>
+          <button type="button" class="add-exercise-btn" (click)="addExercise()">+ Add Exercise</button>
+        </div>
+        
+        <div class="exercises-form-list">
+          <div class="exercise-form-item" *ngFor="let exercise of sessionForm.exercises; let i = index">
+            <div class="exercise-form-header">
+              <span class="exercise-number">{{ i + 1 }}</span>
+              <button type="button" class="remove-exercise-btn" (click)="removeExercise(i)">×</button>
+            </div>
+            
+            <div class="form-group">
+              <input type="text" [(ngModel)]="exercise.name" placeholder="Exercise name">
+            </div>
+            
+            <div class="exercise-details-row">
+              <div class="form-group small">
+                <input type="number" [(ngModel)]="exercise.sets" placeholder="Sets" min="0">
+              </div>
+              <div class="form-group small">
+                <input type="text" [(ngModel)]="exercise.reps" placeholder="Reps">
+              </div>
+              <div class="form-group small">
+                <input type="number" [(ngModel)]="exercise.weight" placeholder="Weight (lbs)" min="0">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea [(ngModel)]="sessionForm.notes" rows="2" placeholder="How did it go?"></textarea>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="cancel-btn" (click)="closeAddModal()" [disabled]="isSaving">Cancel</button>
+      <button class="submit-btn" (click)="saveSession()" [disabled]="!sessionForm.date || !sessionForm.type || isSaving">
+        {{ isSaving ? 'Saving...' : (editingSession ? 'Save Changes' : 'Log Workout') }}
+      </button>
+    </div>
+  </div>
+</div>

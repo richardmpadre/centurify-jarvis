@@ -5,6 +5,7 @@ import { WhoopCallbackComponent } from './whoop-callback/whoop-callback.componen
 import { PrivacyPolicyComponent } from './privacy-policy/privacy-policy.component';
 import { NutritionComponent } from './nutrition/nutrition.component';
 import { TrainingComponent } from './training/training.component';
+import { TrainingHistoryComponent } from './training-history/training-history.component';
 import { InsightsComponent } from './insights/insights.component';
 import { GoalsComponent } from './goals/goals.component';
 
@@ -15,6 +16,7 @@ export const routes: Routes = [
   { path: 'insights', component: InsightsComponent },
   { path: 'nutrition', component: NutritionComponent },
   { path: 'training', component: TrainingComponent },
+  { path: 'training-history', component: TrainingHistoryComponent },
   { path: 'integrations', component: IntegrationsComponent },
   { path: 'whoop/callback', component: WhoopCallbackComponent },
   { path: 'privacy', component: PrivacyPolicyComponent }
