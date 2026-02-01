@@ -5,11 +5,14 @@ import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../../../services/health-data.service';
 import { ChatService } from '../../../services/chat.service';
 import { WorkoutService, Workout } from '../../../services/workout.service';
-import { HealthEntry, PlannedExercise, PlannedWorkout, CardioWorkoutPlan } from '../../../models/health.models';
+import { HealthEntry, PlannedExercise, PlannedWorkout, CardioWorkoutPlan, ContrastTherapyPlan } from '../../../models/health.models';
 import { ExerciseEditorComponent } from '../exercise-editor/exercise-editor.component';
 
 // Workout types that use cardio-style planning
 const CARDIO_WORKOUT_TYPES = ['Running', 'Cycling', 'Swimming'];
+
+// Workout types that use contrast therapy planning
+const CONTRAST_THERAPY_TYPES = ['Contrast Therapy'];
 
 @Component({
   selector: 'app-workout-planner',
@@ -60,7 +63,13 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
     runType: 'zone2',
     targetType: 'time',
     targetValue: 30,
-    distanceUnit: 'miles'
+    distanceUnit: 'miles',
+    // Contrast therapy defaults
+    hotTemp: 104,
+    hotDuration: 15,
+    coldTemp: 50,
+    coldDuration: 3,
+    contrastRounds: 3
   };
 
   constructor(
@@ -85,7 +94,14 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       distanceUnit: [this.DEFAULT_VALUES.distanceUnit],
       targetPace: [''],
       targetSpeed: [''], // Speed in mph (for treadmill)
-      cardioNotes: ['']
+      cardioNotes: [''],
+      // Contrast therapy fields
+      hotTemp: [this.DEFAULT_VALUES.hotTemp],
+      hotDuration: [this.DEFAULT_VALUES.hotDuration],
+      coldTemp: [this.DEFAULT_VALUES.coldTemp],
+      coldDuration: [this.DEFAULT_VALUES.coldDuration],
+      contrastRounds: [this.DEFAULT_VALUES.contrastRounds],
+      contrastNotes: ['']
     });
   }
 
@@ -147,6 +163,10 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
 
   isRestDay(): boolean {
     return this.workoutForm.value.type === 'Rest Day';
+  }
+
+  isContrastTherapy(): boolean {
+    return CONTRAST_THERAPY_TYPES.includes(this.workoutForm.value.type);
   }
 
   // ===== Template Management =====
@@ -526,6 +546,10 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       return this.buildCardioWorkout();
     }
     
+    if (this.isContrastTherapy()) {
+      return this.buildContrastTherapyWorkout();
+    }
+    
     return this.buildStrengthWorkout();
   }
 
@@ -577,6 +601,29 @@ export class WorkoutPlannerComponent implements OnChanges, OnInit {
       type: form.type,
       targetDuration: form.targetDuration,
       exercises: this.exercises
+    };
+  }
+
+  private buildContrastTherapyWorkout(): PlannedWorkout {
+    const form = this.workoutForm.value;
+    
+    const contrastTherapy: ContrastTherapyPlan = {
+      hotTemp: form.hotTemp || this.DEFAULT_VALUES.hotTemp,
+      hotDuration: form.hotDuration || this.DEFAULT_VALUES.hotDuration,
+      coldTemp: form.coldTemp || this.DEFAULT_VALUES.coldTemp,
+      coldDuration: form.coldDuration || this.DEFAULT_VALUES.coldDuration,
+      rounds: form.contrastRounds || this.DEFAULT_VALUES.contrastRounds,
+      notes: form.contrastNotes || undefined
+    };
+    
+    // Calculate total duration: (hot + cold) * rounds
+    const totalDuration = (contrastTherapy.hotDuration + contrastTherapy.coldDuration) * contrastTherapy.rounds;
+    
+    return {
+      type: form.type,
+      targetDuration: totalDuration,
+      exercises: [],
+      contrastTherapy
     };
   }
 

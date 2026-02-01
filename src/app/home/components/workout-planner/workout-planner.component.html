@@ -1,14 +1,14 @@
 <div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
 <div class="modal workout-modal" *ngIf="isOpen">
   <div class="modal-header">
-    <h3>{{ isRestDay() ? '😴' : isCardioWorkout() ? '🏃' : '🏋️' }} Plan Workout</h3>
+    <h3>{{ isRestDay() ? '😴' : isCardioWorkout() ? '🏃' : isContrastTherapy() ? '🧊' : '🏋️' }} Plan Workout</h3>
     <button class="close-btn" (click)="onClose()">×</button>
   </div>
   
   <form [formGroup]="workoutForm" (ngSubmit)="saveWorkoutPlan()" class="modal-content">
     <!-- Workout Type -->
     <div class="form-row">
-      <div class="form-group" [class.full-width]="isCardioWorkout() || isRestDay()">
+      <div class="form-group" [class.full-width]="isCardioWorkout() || isRestDay() || isContrastTherapy()">
         <label>Workout Type</label>
         <select formControlName="type">
           <option>Strength Training</option>
@@ -16,11 +16,13 @@
           <option>Cycling</option>
           <option>Swimming</option>
           <option>Yoga</option>
+          <option>Sauna</option>
+          <option>Contrast Therapy</option>
           <option>Rest Day</option>
           <option>Other</option>
         </select>
       </div>
-      <div class="form-group" *ngIf="!isCardioWorkout() && !isRestDay()">
+      <div class="form-group" *ngIf="!isCardioWorkout() && !isRestDay() && !isContrastTherapy()">
         <label>Target Duration (min)</label>
         <input type="number" formControlName="targetDuration" min="1">
       </div>
@@ -41,8 +43,62 @@
       </div>
     </div>
     
+    <!-- Contrast Therapy Input -->
+    <div class="contrast-therapy-input" *ngIf="isContrastTherapy()">
+      <h4>🧊 Contrast Therapy Settings</h4>
+      
+      <div class="contrast-section hot">
+        <div class="section-header">
+          <span class="section-icon">🔥</span>
+          <span class="section-title">Hot Phase</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Temperature (°F)</label>
+            <input type="number" formControlName="hotTemp" min="90" max="120" placeholder="104">
+          </div>
+          <div class="form-group">
+            <label>Duration (min)</label>
+            <input type="number" formControlName="hotDuration" min="1" max="30" placeholder="15">
+          </div>
+        </div>
+      </div>
+      
+      <div class="contrast-section cold">
+        <div class="section-header">
+          <span class="section-icon">❄️</span>
+          <span class="section-title">Cold Phase</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Temperature (°F)</label>
+            <input type="number" formControlName="coldTemp" min="32" max="70" placeholder="50">
+          </div>
+          <div class="form-group">
+            <label>Duration (min)</label>
+            <input type="number" formControlName="coldDuration" min="1" max="15" placeholder="3">
+          </div>
+        </div>
+      </div>
+      
+      <div class="contrast-rounds">
+        <div class="form-group">
+          <label>Number of Rounds</label>
+          <input type="number" formControlName="contrastRounds" min="1" max="10" placeholder="3">
+        </div>
+        <div class="rounds-summary">
+          Total: {{ (workoutForm.value.hotDuration + workoutForm.value.coldDuration) * workoutForm.value.contrastRounds }} min
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea formControlName="contrastNotes" rows="2" placeholder="Any special instructions..."></textarea>
+      </div>
+    </div>
+
     <!-- Saved Templates Section -->
-    <div class="templates-section" *ngIf="!isCardioWorkout() && !isRestDay() && savedWorkouts.length > 0">
+    <div class="templates-section" *ngIf="!isCardioWorkout() && !isRestDay() && !isContrastTherapy() && savedWorkouts.length > 0">
       <button type="button" class="templates-toggle-btn" (click)="toggleTemplateList()">
         <span class="templates-icon">📚</span>
         <span>{{ showTemplateList ? 'Hide' : 'Load from' }} Saved Templates ({{ savedWorkouts.length }})</span>

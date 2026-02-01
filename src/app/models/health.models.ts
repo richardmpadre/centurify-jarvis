@@ -66,6 +66,16 @@ export interface CardioWorkoutPlan {
   notes?: string;
 }
 
+// Contrast therapy workout plan details
+export interface ContrastTherapyPlan {
+  hotTemp: number; // Temperature in Fahrenheit
+  hotDuration: number; // Duration in minutes
+  coldTemp: number; // Temperature in Fahrenheit
+  coldDuration: number; // Duration in minutes
+  rounds: number; // Number of hot/cold cycles
+  notes?: string;
+}
+
 // Planned workout for a day
 export interface PlannedWorkout {
   type: string;
@@ -73,6 +83,8 @@ export interface PlannedWorkout {
   exercises: PlannedExercise[];
   // Cardio-specific fields
   cardio?: CardioWorkoutPlan;
+  // Contrast therapy-specific fields
+  contrastTherapy?: ContrastTherapyPlan;
 }
 
 // Morning checklist item definition
@@ -105,7 +117,7 @@ export interface WhoopWorkout {
 }
 
 // Training session types
-export type TrainingType = 'strength' | 'cardio' | 'flexibility' | 'sports' | 'hiit' | 'other';
+export type TrainingType = 'strength' | 'cardio' | 'flexibility' | 'sports' | 'hiit' | 'sauna' | 'contrast_therapy' | 'other';
 export type TrainingSource = 'whoop' | 'manual';
 
 // Completed exercise in a training session

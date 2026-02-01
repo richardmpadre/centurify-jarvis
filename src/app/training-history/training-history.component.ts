@@ -39,6 +39,8 @@ export class TrainingHistoryComponent implements OnInit {
     { value: 'flexibility', label: 'Flexibility', icon: '🧘' },
     { value: 'sports', label: 'Sports', icon: '⚽' },
     { value: 'hiit', label: 'HIIT', icon: '🔥' },
+    { value: 'sauna', label: 'Sauna', icon: '🧖' },
+    { value: 'contrast_therapy', label: 'Contrast Therapy', icon: '🧊' },
     { value: 'other', label: 'Other', icon: '📝' },
   ];
 

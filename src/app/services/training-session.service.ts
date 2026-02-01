@@ -243,6 +243,11 @@ export class TrainingSessionService {
       return 'hiit';
     }
     
+    if (sportName_lower.includes('sauna') || sportName_lower.includes('steam') ||
+        sportName_lower.includes('hot tub')) {
+      return 'sauna';
+    }
+    
     if (sportName_lower.includes('basketball') || sportName_lower.includes('soccer') ||
         sportName_lower.includes('tennis') || sportName_lower.includes('golf') ||
         sportName_lower.includes('baseball') || sportName_lower.includes('football')) {
@@ -292,6 +297,8 @@ export class TrainingSessionService {
       flexibility: { label: 'Flexibility', icon: '🧘', color: '#8b5cf6' },
       sports: { label: 'Sports', icon: '⚽', color: '#22c55e' },
       hiit: { label: 'HIIT', icon: '🔥', color: '#f59e0b' },
+      sauna: { label: 'Sauna', icon: '🧖', color: '#f97316' },
+      contrast_therapy: { label: 'Contrast Therapy', icon: '🧊', color: '#06b6d4' },
       other: { label: 'Other', icon: '📝', color: '#6b7280' },
     };
     return typeMap[type] || typeMap.other;

@@ -438,6 +438,85 @@
   line-height: 1.4;
 }
 
+/* Contrast Therapy Input Section */
+.contrast-therapy-input {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #2a2a4a;
+}
+
+.contrast-therapy-input h4 {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.contrast-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.contrast-section.hot {
+  border-left: 3px solid #ef4444;
+}
+
+.contrast-section.cold {
+  border-left: 3px solid #3b82f6;
+}
+
+.contrast-section .section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.contrast-section .section-icon {
+  font-size: 1.1rem;
+}
+
+.contrast-section .section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.contrast-section.hot .section-title {
+  color: #ef4444;
+}
+
+.contrast-section.cold .section-title {
+  color: #3b82f6;
+}
+
+.contrast-rounds {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.contrast-rounds .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.contrast-rounds .rounds-summary {
+  padding: 0.5rem 1rem;
+  background: rgba(0, 212, 170, 0.1);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 8px;
+  color: #00d4aa;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 /* Cardio Summary Section */
 .cardio-summary {
   margin-bottom: 1rem;
