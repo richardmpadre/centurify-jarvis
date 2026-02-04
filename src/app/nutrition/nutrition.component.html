@@ -3,10 +3,10 @@
   <header class="page-header">
     <div class="header-left">
       <a routerLink="/" class="back-link">← Back</a>
-      <h1>🥗 Nutrition</h1>
+      <h1>🥗 Food Library</h1>
     </div>
     <button class="add-btn" (click)="openAddForm()">
-      + Add Meal
+      + Add Food
     </button>
   </header>
 
@@ -16,7 +16,7 @@
       <span class="search-icon">🔍</span>
       <input 
         type="text" 
-        placeholder="Search meals..." 
+        placeholder="Search foods..." 
         [value]="searchQuery"
         (input)="onSearchChange($event)">
     </div>
@@ -25,36 +25,36 @@
   <!-- Loading State -->
   <div class="loading-state" *ngIf="isLoading">
     <div class="spinner">⏳</div>
-    <p>Loading meals...</p>
+    <p>Loading foods...</p>
   </div>
 
-  <!-- Meals Grid -->
-  <div class="meals-grid" *ngIf="filteredMeals.length > 0 && !isLoading">
-    <div class="meal-card" *ngFor="let meal of filteredMeals">
-      <div class="meal-card-header">
-        <h3 class="meal-name">{{ meal.name }}</h3>
-        <div class="meal-actions">
-          <button class="action-icon" title="Duplicate" (click)="duplicateMeal(meal)">📋</button>
-          <button class="action-icon" title="Edit" (click)="openEditForm(meal)">✏️</button>
-          <button class="action-icon delete" title="Delete" (click)="deleteMeal(meal)">🗑️</button>
+  <!-- Foods Grid -->
+  <div class="foods-grid" *ngIf="filteredFoods.length > 0 && !isLoading">
+    <div class="food-card" *ngFor="let food of filteredFoods">
+      <div class="food-card-header">
+        <h3 class="food-name">{{ food.name }}</h3>
+        <div class="food-actions">
+          <button class="action-icon" title="Duplicate" (click)="duplicateFood(food)">📋</button>
+          <button class="action-icon" title="Edit" (click)="openEditForm(food)">✏️</button>
+          <button class="action-icon delete" title="Delete" (click)="deleteFood(food)">🗑️</button>
         </div>
       </div>
       
-      <div class="meal-macros">
+      <div class="food-macros">
         <div class="macro calories">
-          <span class="macro-value">{{ meal.calories }}</span>
+          <span class="macro-value">{{ food.calories }}</span>
           <span class="macro-label">cal</span>
         </div>
         <div class="macro protein">
-          <span class="macro-value">{{ meal.protein }}g</span>
+          <span class="macro-value">{{ food.protein }}g</span>
           <span class="macro-label">protein</span>
         </div>
         <div class="macro carbs">
-          <span class="macro-value">{{ meal.carbs }}g</span>
+          <span class="macro-value">{{ food.carbs }}g</span>
           <span class="macro-label">carbs</span>
         </div>
         <div class="macro fats">
-          <span class="macro-value">{{ meal.fats }}g</span>
+          <span class="macro-value">{{ food.fats }}g</span>
           <span class="macro-label">fats</span>
         </div>
       </div>
@@ -62,30 +62,30 @@
   </div>
 
   <!-- Empty State -->
-  <div class="empty-state" *ngIf="meals.length === 0 && !isLoading">
+  <div class="empty-state" *ngIf="foods.length === 0 && !isLoading">
     <div class="empty-icon">🍽️</div>
-    <h2>No meals yet</h2>
-    <p>Start building your meal library by adding your first meal.</p>
-    <button class="add-btn large" (click)="openAddForm()">+ Add Your First Meal</button>
+    <h2>No foods yet</h2>
+    <p>Start building your food library by adding your first food.</p>
+    <button class="add-btn large" (click)="openAddForm()">+ Add Your First Food</button>
   </div>
 
   <!-- No Results -->
-  <div class="no-results" *ngIf="meals.length > 0 && filteredMeals.length === 0 && !isLoading">
-    <p>No meals match your search or filter.</p>
+  <div class="no-results" *ngIf="foods.length > 0 && filteredFoods.length === 0 && !isLoading">
+    <p>No foods match your search or filter.</p>
   </div>
 
   <!-- Add/Edit Modal -->
   <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()"></div>
   <div class="modal" *ngIf="showForm">
     <div class="modal-header">
-      <h3>{{ editingMealId ? 'Edit Meal' : 'Add New Meal' }}</h3>
+      <h3>{{ editingFoodId ? 'Edit Food' : 'Add New Food' }}</h3>
       <button class="close-btn" (click)="closeForm()">×</button>
     </div>
     
-    <form [formGroup]="mealForm" (ngSubmit)="submitForm()">
+    <form [formGroup]="foodForm" (ngSubmit)="submitForm()">
       <div class="form-group">
-        <label>Meal Name *</label>
-        <input type="text" formControlName="name" placeholder="e.g., Grilled Chicken Salad">
+        <label>Food Name *</label>
+        <input type="text" formControlName="name" placeholder="e.g., Grilled Chicken Breast">
       </div>
       
       <div class="macros-grid">
@@ -131,8 +131,8 @@
       
       <div class="form-actions">
         <button type="button" class="cancel-btn" (click)="closeForm()" [disabled]="isSaving">Cancel</button>
-        <button type="submit" class="submit-btn" [disabled]="!mealForm.valid || isSaving">
-          {{ isSaving ? 'Saving...' : (editingMealId ? 'Save Changes' : 'Add Meal') }}
+        <button type="submit" class="submit-btn" [disabled]="!foodForm.valid || isSaving">
+          {{ isSaving ? 'Saving...' : (editingFoodId ? 'Save Changes' : 'Add Food') }}
         </button>
       </div>
     </form>

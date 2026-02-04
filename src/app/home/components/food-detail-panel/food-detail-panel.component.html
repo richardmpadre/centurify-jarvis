@@ -1,0 +1,127 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal food-detail-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>{{ getMealTypeIcon() }} {{ getMealTypeLabel() }}</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <!-- Foods for this type -->
+  <div class="food-detail-list" *ngIf="getFoodsForType().length > 0">
+    <div class="food-detail-item" *ngFor="let food of getFoodsForType()">
+      <div class="food-detail-content">
+        <div class="food-detail-header">
+          <span class="food-detail-name">{{ food.name }}</span>
+          <button class="remove-food-btn" (click)="removeFood(food.id)" title="Remove food">×</button>
+        </div>
+        
+        <div class="food-detail-macros">
+          <span class="macro-item">{{ getCalculatedValue(food.calories, food.portion) }} cal</span>
+          <span class="macro-item">{{ getCalculatedValue(food.protein, food.portion) }}g protein</span>
+          <span class="macro-item">{{ getCalculatedValue(food.carbs, food.portion) }}g carbs</span>
+          <span class="macro-item">{{ getCalculatedValue(food.fats, food.portion) }}g fats</span>
+        </div>
+        
+        <div class="portion-control">
+          <label class="portion-label">Portion:</label>
+          <div class="portion-input-group">
+            <button class="portion-btn" (click)="updatePortion(food, food.portion - 0.25)" [disabled]="food.portion <= 0.25">-</button>
+            <input 
+              type="number" 
+              class="portion-input" 
+              [(ngModel)]="food.portion" 
+              (change)="updatePortion(food, food.portion)"
+              min="0.1"
+              step="0.25">
+            <button class="portion-btn" (click)="updatePortion(food, food.portion + 0.25)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Totals for this meal type -->
+    <div class="food-detail-totals">
+      <div class="totals-header">Total for {{ getMealTypeLabel() }}</div>
+      <div class="totals-grid">
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().calories) }}</span>
+          <span class="total-label">calories</span>
+        </span>
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().protein) }}g</span>
+          <span class="total-label">protein</span>
+        </span>
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().carbs) }}g</span>
+          <span class="total-label">carbs</span>
+        </span>
+        <span class="detail-total">
+          <span class="total-value">{{ roundToTwo(getTotals().fats) }}g</span>
+          <span class="total-label">fats</span>
+        </span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="no-foods-detail" *ngIf="getFoodsForType().length === 0">
+    No foods planned for {{ getMealTypeLabel() }}
+  </div>
+  
+  <!-- Add more foods -->
+  <div class="add-food-section">
+    <div class="section-header">
+      <span class="section-icon">➕</span>
+      <label>Add food to {{ getMealTypeLabel() }}</label>
+    </div>
+    
+    <!-- Search Input -->
+    <div class="search-wrapper">
+      <input 
+        type="text" 
+        class="food-search-input"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="filterFoods()"
+        placeholder="🔍 Search foods..."
+        [disabled]="isLoadingFoods">
+    </div>
+    
+    <!-- Filtered Foods List -->
+    <div class="foods-list" *ngIf="!isLoadingFoods && filteredFoods.length > 0">
+      <div 
+        *ngFor="let food of filteredFoods" 
+        class="food-list-item"
+        (click)="addFoodToType(food.id)">
+        <div class="food-item-header">
+          <span class="food-item-name">{{ food.name }}</span>
+          <span class="food-item-calories">{{ food.calories }} cal</span>
+        </div>
+        <div class="food-item-macros">
+          {{ food.protein }}g protein • {{ food.carbs }}g carbs • {{ food.fats }}g fats
+        </div>
+      </div>
+    </div>
+    
+    <div class="no-results" *ngIf="!isLoadingFoods && searchQuery && filteredFoods.length === 0">
+      No foods found matching "{{ searchQuery }}"
+    </div>
+    
+    <div class="loading-foods" *ngIf="isLoadingFoods">
+      Loading foods...
+    </div>
+    
+    <a href="/nutrition" class="add-new-link">
+      <span class="link-icon">+</span>
+      Create new food in library
+    </a>
+  </div>
+  
+  <!-- Actions -->
+  <div class="food-detail-actions">
+    <button 
+      class="complete-food-btn" 
+      [class.completed]="isMealTypeCompleted()"
+      (click)="onMarkComplete()"
+      [disabled]="getFoodsForType().length === 0">
+      {{ isMealTypeCompleted() ? '↩ Mark Incomplete' : '✓ Mark Complete' }}
+    </button>
+  </div>
+</div>

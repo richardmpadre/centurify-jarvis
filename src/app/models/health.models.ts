@@ -14,7 +14,7 @@ export interface HealthEntry {
   workoutCompleted?: boolean | null;
   trainingNotes?: string | null;
   morningChecklist?: string | null;
-  // Aggregate nutrition totals (individual meals in MealEntry table)
+  // Aggregate nutrition totals (individual foods in FoodEntry table)
   totalCalories?: number | null;
   totalProtein?: number | null;
   totalCarbs?: number | null;
@@ -27,8 +27,8 @@ export interface HealthEntry {
   insightsGeneratedAt?: string | null;
 }
 
-// Legacy PlannedMeal interface (kept for backward compatibility)
-export interface PlannedMeal {
+// Legacy PlannedFood interface (kept for backward compatibility)
+export interface PlannedFood {
   id: string;
   name: string;
   type: 'breakfast' | 'lunch' | 'dinner' | 'snack';

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MealService, Meal } from '../services/meal.service';
+import { FoodService, Food } from '../services/food.service';
 
 @Component({
   selector: 'app-nutrition',
@@ -12,19 +12,19 @@ import { MealService, Meal } from '../services/meal.service';
   styleUrl: './nutrition.component.css'
 })
 export class NutritionComponent implements OnInit {
-  meals: Meal[] = [];
-  mealForm: FormGroup;
+  foods: Food[] = [];
+  foodForm: FormGroup;
   showForm = false;
-  editingMealId: string | null = null;
+  editingFoodId: string | null = null;
   searchQuery = '';
   isLoading = false;
   isSaving = false;
 
   constructor(
     private fb: FormBuilder,
-    private mealService: MealService
+    private foodService: FoodService
   ) {
-    this.mealForm = this.fb.group({
+    this.foodForm = this.fb.group({
       name: ['', Validators.required],
       calories: [0, [Validators.required, Validators.min(0)]],
       protein: [0, [Validators.min(0)]],
@@ -36,29 +36,29 @@ export class NutritionComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadMeals();
+    this.loadFoods();
   }
 
-  async loadMeals(): Promise<void> {
+  async loadFoods(): Promise<void> {
     this.isLoading = true;
     try {
-      this.meals = await this.mealService.getAllMeals();
+      this.foods = await this.foodService.getAllFoods();
       // Sort by most recently updated
-      this.meals.sort((a, b) => {
+      this.foods.sort((a, b) => {
         const dateA = new Date(b.updatedAt || b.createdAt || 0).getTime();
         const dateB = new Date(a.updatedAt || a.createdAt || 0).getTime();
         return dateA - dateB;
       });
     } catch (error) {
-      console.error('Failed to load meals:', error);
+      console.error('Failed to load foods:', error);
     } finally {
       this.isLoading = false;
     }
   }
 
   openAddForm(): void {
-    this.editingMealId = null;
-    this.mealForm.reset({
+    this.editingFoodId = null;
+    this.foodForm.reset({
       name: '',
       calories: 0,
       protein: 0,
@@ -70,45 +70,45 @@ export class NutritionComponent implements OnInit {
     this.showForm = true;
   }
 
-  openEditForm(meal: Meal): void {
-    this.editingMealId = meal.id;
-    this.mealForm.patchValue({
-      name: meal.name,
-      calories: meal.calories,
-      protein: meal.protein || 0,
-      fats: meal.fats || 0,
-      carbs: meal.carbs || 0,
-      defaultPortion: meal.defaultPortion || 1,
-      defaultPortionUnit: meal.defaultPortionUnit || 'serving'
+  openEditForm(food: Food): void {
+    this.editingFoodId = food.id;
+    this.foodForm.patchValue({
+      name: food.name,
+      calories: food.calories,
+      protein: food.protein || 0,
+      fats: food.fats || 0,
+      carbs: food.carbs || 0,
+      defaultPortion: food.defaultPortion || 1,
+      defaultPortionUnit: food.defaultPortionUnit || 'serving'
     });
     this.showForm = true;
   }
 
   closeForm(): void {
     this.showForm = false;
-    this.editingMealId = null;
+    this.editingFoodId = null;
   }
 
   async submitForm(): Promise<void> {
     console.log('submitForm called');
-    console.log('Form valid:', this.mealForm.valid);
-    console.log('Form value:', this.mealForm.value);
+    console.log('Form valid:', this.foodForm.valid);
+    console.log('Form value:', this.foodForm.value);
     console.log('Is saving:', this.isSaving);
     
-    if (!this.mealForm.valid || this.isSaving) {
+    if (!this.foodForm.valid || this.isSaving) {
       console.log('Form validation failed or already saving');
       return;
     }
 
     this.isSaving = true;
-    const formValue = this.mealForm.value;
+    const formValue = this.foodForm.value;
     console.log('Starting save with values:', formValue);
 
     try {
-      if (this.editingMealId) {
-        console.log('Updating existing meal:', this.editingMealId);
+      if (this.editingFoodId) {
+        console.log('Updating existing food:', this.editingFoodId);
         // Update existing
-        const updated = await this.mealService.updateMeal(this.editingMealId, {
+        const updated = await this.foodService.updateFood(this.editingFoodId, {
           name: formValue.name,
           calories: formValue.calories || 0,
           protein: formValue.protein || 0,
@@ -121,15 +121,15 @@ export class NutritionComponent implements OnInit {
         console.log('Update result:', updated);
         
         if (updated) {
-          const index = this.meals.findIndex(m => m.id === this.editingMealId);
+          const index = this.foods.findIndex(f => f.id === this.editingFoodId);
           if (index !== -1) {
-            this.meals[index] = updated;
+            this.foods[index] = updated;
           }
         }
       } else {
-        console.log('Creating new meal');
+        console.log('Creating new food');
         // Create new
-        const created = await this.mealService.createMeal({
+        const created = await this.foodService.createFood({
           name: formValue.name,
           calories: formValue.calories || 0,
           protein: formValue.protein || 0,
@@ -142,52 +142,52 @@ export class NutritionComponent implements OnInit {
         console.log('Create result:', created);
         
         if (created) {
-          this.meals.unshift(created);
-          console.log('Meal added to list. Total meals:', this.meals.length);
+          this.foods.unshift(created);
+          console.log('Food added to list. Total foods:', this.foods.length);
         }
       }
       
       console.log('Closing form');
       this.closeForm();
     } catch (error) {
-      console.error('Error saving meal:', error);
+      console.error('Error saving food:', error);
     } finally {
       this.isSaving = false;
     }
   }
 
-  async deleteMeal(meal: Meal): Promise<void> {
-    if (!confirm(`Delete "${meal.name}"?`)) return;
+  async deleteFood(food: Food): Promise<void> {
+    if (!confirm(`Delete "${food.name}"?`)) return;
     
-    const success = await this.mealService.deleteMeal(meal.id);
+    const success = await this.foodService.deleteFood(food.id);
     if (success) {
-      this.meals = this.meals.filter(m => m.id !== meal.id);
+      this.foods = this.foods.filter(f => f.id !== food.id);
     }
   }
 
-  async duplicateMeal(meal: Meal): Promise<void> {
-    const created = await this.mealService.createMeal({
-      name: `${meal.name} (copy)`,
-      calories: meal.calories,
-      protein: meal.protein,
-      fats: meal.fats,
-      carbs: meal.carbs,
-      defaultPortion: meal.defaultPortion,
-      defaultPortionUnit: meal.defaultPortionUnit
+  async duplicateFood(food: Food): Promise<void> {
+    const created = await this.foodService.createFood({
+      name: `${food.name} (copy)`,
+      calories: food.calories,
+      protein: food.protein,
+      fats: food.fats,
+      carbs: food.carbs,
+      defaultPortion: food.defaultPortion,
+      defaultPortionUnit: food.defaultPortionUnit
     });
     
     if (created) {
-      this.meals.unshift(created);
+      this.foods.unshift(created);
     }
   }
 
-  get filteredMeals(): Meal[] {
-    let result = this.meals;
+  get filteredFoods(): Food[] {
+    let result = this.foods;
 
     // Filter by search
     if (this.searchQuery.trim()) {
       const query = this.searchQuery.toLowerCase();
-      result = result.filter(m => m.name.toLowerCase().includes(query));
+      result = result.filter(f => f.name.toLowerCase().includes(query));
     }
 
     return result;

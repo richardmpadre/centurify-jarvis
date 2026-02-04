@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ChatService, DailyInsights } from '../../../services/chat.service';
 import { HealthDataService } from '../../../services/health-data.service';
 import { HealthEntry, PlannedWorkout, WhoopWorkout } from '../../../models/health.models';
-import { MealEntry } from '../../../services/meal-entry.service';
+import { FoodEntry } from '../../../services/food-entry.service';
 
 export interface ScoreCategory {
   value: string;
@@ -41,7 +41,7 @@ export class InsightsPanelComponent implements OnChanges {
   @Input() isOpen = false;
   @Input() currentEntry: HealthEntry | null = null;
   @Input() selectedDate = '';
-  @Input() mealEntries: MealEntry[] = [];
+  @Input() foodEntries: FoodEntry[] = [];
   @Input() whoopWorkouts: WhoopWorkout[] = [];
   @Input() dailyActions: { status: string; title: string }[] = [];
   
@@ -78,12 +78,12 @@ export class InsightsPanelComponent implements OnChanges {
     this.isGenerating = true;
     
     try {
-      const completedMeals = this.mealEntries.filter(m => m.completed);
-      const nutritionTotals = completedMeals.reduce((acc, m) => ({
-        totalCalories: acc.totalCalories + (m.calories || 0) * (m.portion || 1),
-        totalProtein: acc.totalProtein + (m.protein || 0) * (m.portion || 1),
-        totalCarbs: acc.totalCarbs + (m.carbs || 0) * (m.portion || 1),
-        totalFats: acc.totalFats + (m.fats || 0) * (m.portion || 1)
+      const completedFoods = this.foodEntries.filter(f => f.completed);
+      const nutritionTotals = completedFoods.reduce((acc, f) => ({
+        totalCalories: acc.totalCalories + (f.calories || 0) * (f.portion || 1),
+        totalProtein: acc.totalProtein + (f.protein || 0) * (f.portion || 1),
+        totalCarbs: acc.totalCarbs + (f.carbs || 0) * (f.portion || 1),
+        totalFats: acc.totalFats + (f.fats || 0) * (f.portion || 1)
       }), { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0 });
       
       const completedActions = this.dailyActions.filter(a => a.status === 'completed').length;
@@ -102,8 +102,8 @@ export class InsightsPanelComponent implements OnChanges {
         workoutCompleted: this.currentEntry?.workoutCompleted ?? false,
         nutrition: {
           ...nutritionTotals,
-          mealsCompleted: completedMeals.length,
-          mealsPlanned: this.mealEntries.length
+          foodsCompleted: completedFoods.length,
+          foodsPlanned: this.foodEntries.length
         },
         checklistStats: {
           completed: completedActions,

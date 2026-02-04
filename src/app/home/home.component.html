@@ -41,7 +41,7 @@
       [currentEntry]="currentEntry"
       [yesterdayEntry]="yesterdayEntry"
       [whoopWorkouts]="whoopWorkouts"
-      [mealEntries]="mealEntries"
+      [foodEntries]="foodEntries"
       [activeGoals]="activeGoals"
       [isLoading]="isLoadingDashboard"
       [selectedDate]="selectedDate"
@@ -240,25 +240,25 @@
   <app-nutrition-panel
     [isOpen]="showNutritionPanel"
     [selectedDate]="selectedDate"
-    [mealEntries]="mealEntries"
+    [foodEntries]="foodEntries"
     [allEntries]="entries"
     [nutritionTargets]="currentNutritionTargets"
     (close)="closeNutritionPanel()"
-    (mealEntriesChanged)="onMealEntriesChanged($event)"
+    (foodEntriesChanged)="onFoodEntriesChanged($event)"
     (planSaved)="onNutritionPlanSaved()"
     (trackingFailed)="onNutritionTrackingFailed()">
   </app-nutrition-panel>
 
-  <!-- Meal Detail Panel -->
-  <app-meal-detail-panel
-    [isOpen]="showMealDetailPanel"
-    [mealType]="mealDetailType"
+  <!-- Food Detail Panel -->
+  <app-food-detail-panel
+    [isOpen]="showFoodDetailPanel"
+    [mealType]="foodDetailType"
     [selectedDate]="selectedDate"
-    [mealEntries]="mealEntries"
-    (close)="closeMealDetailPanel()"
-    (mealEntriesChanged)="onMealEntriesChanged($event)"
+    [foodEntries]="foodEntries"
+    (close)="closeFoodDetailPanel()"
+    (foodEntriesChanged)="onFoodEntriesChanged($event)"
     (mealTypeCompleted)="onMealTypeCompleted($event)">
-  </app-meal-detail-panel>
+  </app-food-detail-panel>
 
   <!-- Training Panel -->
   <app-training-panel
@@ -297,7 +297,7 @@
     [isOpen]="showInsightsPanel"
     [currentEntry]="currentEntry"
     [selectedDate]="selectedDate"
-    [mealEntries]="mealEntries"
+    [foodEntries]="foodEntries"
     [whoopWorkouts]="whoopWorkouts"
     [dailyActions]="dailyActions"
     (close)="closeInsightsPanel()"

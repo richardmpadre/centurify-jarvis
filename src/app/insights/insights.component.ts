@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatService, WeeklyInsights } from '../services/chat.service';
 import { HealthDataService } from '../services/health-data.service';
-import { MealEntryService, MealEntry } from '../services/meal-entry.service';
+import { FoodEntryService, FoodEntry } from '../services/food-entry.service';
 import { WeeklyInsightsService, WeeklyInsightRecord } from '../services/weekly-insights.service';
 import { HealthEntry, PlannedWorkout } from '../models/health.models';
 import {
@@ -34,7 +34,7 @@ export class InsightsComponent implements OnInit {
   weekInfo: WeekDateRange;
   
   entries: HealthEntry[] = [];
-  mealEntriesByDate: { [date: string]: MealEntry[] } = {};
+  foodEntriesByDate: { [date: string]: FoodEntry[] } = {};
   
   isLoading = false;
   isGenerating = false;
@@ -52,7 +52,7 @@ export class InsightsComponent implements OnInit {
   constructor(
     private chatService: ChatService,
     private healthDataService: HealthDataService,
-    private mealEntryService: MealEntryService,
+    private foodEntryService: FoodEntryService,
     private weeklyInsightsService: WeeklyInsightsService
   ) {
     this.weekInfo = getWeekDateRange(this.currentDate);
@@ -73,11 +73,11 @@ export class InsightsComponent implements OnInit {
       const allEntries = await this.healthDataService.getAllEntries();
       this.entries = allEntries.filter((e: HealthEntry) => dates.includes(e.date));
       
-      // Load meal entries for all 7 days
-      this.mealEntriesByDate = {};
+      // Load food entries for all 7 days
+      this.foodEntriesByDate = {};
       for (const date of dates) {
-        const meals = await this.mealEntryService.getMealEntriesForDate(date);
-        this.mealEntriesByDate[date] = meals;
+        const foods = await this.foodEntryService.getFoodEntriesForDate(date);
+        this.foodEntriesByDate[date] = foods;
       }
       
       // Calculate health stats
@@ -134,8 +134,8 @@ export class InsightsComponent implements OnInit {
       // Build day data for each day of the week
       const days = dates.map(date => {
         const entry = this.entries.find(e => e.date === date);
-        const meals = this.mealEntriesByDate[date] || [];
-        const completedMeals = meals.filter(m => m.completed);
+        const foods = this.foodEntriesByDate[date] || [];
+        const completedFoods = foods.filter(f => f.completed);
         
         // Check if workout was planned (supports both strength and cardio)
         let workoutPlanned = false;
@@ -157,8 +157,8 @@ export class InsightsComponent implements OnInit {
           rhr: entry?.rhr ?? null,
           workoutCompleted,
           workoutPlanned,
-          mealsCompleted: completedMeals.length,
-          mealsPlanned: meals.length
+          foodsCompleted: completedFoods.length,
+          foodsPlanned: foods.length
         };
       });
       

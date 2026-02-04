@@ -7,15 +7,15 @@ export interface ActionItem {
   description: string;
   icon: string;
   status: 'pending' | 'in_progress' | 'completed';
-  type: 'biometrics' | 'workout' | 'nutrition' | 'life_events' | 'jarvis' | 'custom' | 'meal' | 'insights' | 'goal_priority';
+  type: 'biometrics' | 'workout' | 'nutrition' | 'life_events' | 'jarvis' | 'custom' | 'food' | 'insights' | 'goal_priority';
   priority?: number;
   dependsOn?: string[]; // IDs of actions that must complete first
   createsEntry?: string; // Type of entry this creates when completed
   externalLink?: string;
-  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'; // For meal actions
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack'; // For food actions
   yearlyGoalId?: string; // For goal_priority actions - the yearly goal this action relates to
   // If set, clicking on completed action reopens the panel/form instead of toggling status
-  // This is used for actions whose status is auto-derived from data (e.g., biometrics, meals)
+  // This is used for actions whose status is auto-derived from data (e.g., biometrics, foods)
   reopenOnComplete?: boolean;
 }
 
@@ -94,7 +94,7 @@ export class ActionListComponent {
 
   get visibleActions(): ActionItem[] {
     if (this.editMode) {
-      // In edit mode, show all actions (including meal actions for reordering)
+      // In edit mode, show all actions (including food actions for reordering)
       return this.actions;
     }
     // Filter out actions whose dependencies aren't met

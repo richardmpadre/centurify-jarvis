@@ -18,8 +18,8 @@ interface NutritionData {
   totalProtein?: number;
   totalCarbs?: number;
   totalFats?: number;
-  mealsCompleted?: number;
-  mealsPlanned?: number;
+  foodsCompleted?: number;
+  foodsPlanned?: number;
 }
 
 interface InsightsData extends HealthData {
@@ -54,8 +54,8 @@ interface WeeklyInsightsData {
     rhr?: number | null;
     workoutCompleted?: boolean;
     workoutPlanned?: boolean;
-    mealsCompleted?: number;
-    mealsPlanned?: number;
+    foodsCompleted?: number;
+    foodsPlanned?: number;
     tasksCompleted?: number;
     tasksTotal?: number;
   }>;
@@ -407,7 +407,7 @@ function buildDailyInsightsPrompt(data: InsightsData | undefined): string {
     : '  - No workouts recorded';
 
   const nutritionDetails = data.nutrition 
-    ? `  - Calories: ${data.nutrition.totalCalories ?? 0} (${data.nutrition.mealsCompleted ?? 0}/${data.nutrition.mealsPlanned ?? 0} meals completed)
+    ? `  - Calories: ${data.nutrition.totalCalories ?? 0} (${data.nutrition.foodsCompleted ?? 0}/${data.nutrition.foodsPlanned ?? 0} foods completed)
   - Protein: ${data.nutrition.totalProtein ?? 0}g
   - Carbs: ${data.nutrition.totalCarbs ?? 0}g
   - Fats: ${data.nutrition.totalFats ?? 0}g`
@@ -471,8 +471,8 @@ Start with base of 50, then ADD/SUBTRACT points for each category based on ACTUA
 - Completed planned → +15 | Unplanned workout → +10 | Planned but skipped → -5 | Rest day → +0
 
 **Nutrition (max +15, min -5):**
-- Current: ${data.nutrition?.mealsCompleted ?? 0}/${data.nutrition?.mealsPlanned ?? 0} meals
-- 100% meals → +15 | 75%+ → +10 | 50-74% → +5 | <50% → -5 | No plan → +0
+- Current: ${data.nutrition?.foodsCompleted ?? 0}/${data.nutrition?.foodsPlanned ?? 0} foods
+- 100% foods → +15 | 75%+ → +10 | 50-74% → +5 | <50% → -5 | No plan → +0
 
 **Tasks (max +10, min 0):**
 - Current: ${data.checklistStats?.completed ?? 0}/${data.checklistStats?.total ?? 0} tasks
@@ -572,10 +572,10 @@ function buildWeeklyInsightsPrompt(data: WeeklyInsightsData | undefined): string
   const workoutsCompleted = days.filter(d => d.workoutCompleted).length;
   
   // Calculate nutrition stats
-  const totalMealsPlanned = days.reduce((sum, d) => sum + (d.mealsPlanned || 0), 0);
-  const totalMealsCompleted = days.reduce((sum, d) => sum + (d.mealsCompleted || 0), 0);
-  const nutritionAdherence = totalMealsPlanned > 0 
-    ? Math.round((totalMealsCompleted / totalMealsPlanned) * 100) 
+  const totalFoodsPlanned = days.reduce((sum, d) => sum + (d.foodsPlanned || 0), 0);
+  const totalFoodsCompleted = days.reduce((sum, d) => sum + (d.foodsCompleted || 0), 0);
+  const nutritionAdherence = totalFoodsPlanned > 0 
+    ? Math.round((totalFoodsCompleted / totalFoodsPlanned) * 100) 
     : null;
   
   // Find best and worst days
@@ -623,7 +623,7 @@ ${exerciseList}
 - Completion Rate: ${workoutsPlanned > 0 ? Math.round((workoutsCompleted / workoutsPlanned) * 100) : 0}%
 
 **NUTRITION ADHERENCE:**
-- Meals Completed: ${totalMealsCompleted}/${totalMealsPlanned}
+- Foods Completed: ${totalFoodsCompleted}/${totalFoodsPlanned}
 - Adherence Rate: ${nutritionAdherence ?? 0}%
 
 **DAILY BREAKDOWN:**

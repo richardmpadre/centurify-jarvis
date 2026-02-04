@@ -4,8 +4,8 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, FormsModule } 
 import { RouterLink } from '@angular/router';
 import { HealthDataService } from '../services/health-data.service';
 import { WhoopService } from '../services/whoop.service';
-import { MealService } from '../services/meal.service';
-import { MealEntryService, MealEntry } from '../services/meal-entry.service';
+import { FoodService } from '../services/food.service';
+import { FoodEntryService, FoodEntry } from '../services/food-entry.service';
 import { GoalService } from '../services/goal.service';
 import { RecurringGoalService } from '../services/recurring-goal.service';
 import { ActionListComponent, ActionItem } from './components/action-list/action-list.component';
@@ -15,14 +15,14 @@ import { ChatPanelComponent } from './components/chat-panel/chat-panel.component
 import { WorkoutPlannerComponent } from './components/workout-planner/workout-planner.component';
 import { TrainingPanelComponent } from './components/training-panel/training-panel.component';
 import { NutritionPanelComponent } from './components/nutrition-panel/nutrition-panel.component';
-import { MealDetailPanelComponent } from './components/meal-detail-panel/meal-detail-panel.component';
+import { FoodDetailPanelComponent } from './components/food-detail-panel/food-detail-panel.component';
 import { GoalPriorityPanelComponent, DailyGoalSelection } from './components/goal-priority-panel/goal-priority-panel.component';
 import { GoalDetailPanelComponent } from './components/goal-detail-panel/goal-detail-panel.component';
 import { 
   HealthEntry, 
   PlannedExercise, 
   PlannedWorkout, 
-  PlannedMeal,
+  PlannedFood,
   WhoopWorkout 
 } from '../models/health.models';
 import { Goal, NutritionGoalMetadata, RecurringGoalCompletion } from '../models/goal.models';
@@ -49,7 +49,7 @@ import {
     WorkoutPlannerComponent,
     TrainingPanelComponent,
     NutritionPanelComponent,
-    MealDetailPanelComponent,
+    FoodDetailPanelComponent,
     GoalPriorityPanelComponent,
     GoalDetailPanelComponent
   ],
@@ -108,7 +108,7 @@ export class HomeComponent implements OnInit {
   
   // Nutrition panel
   showNutritionPanel = false;
-  mealEntries: MealEntry[] = [];
+  foodEntries: FoodEntry[] = [];
   
   // Recurring nutrition goals
   nutritionGoals: Goal[] = [];
@@ -118,9 +118,9 @@ export class HomeComponent implements OnInit {
   // Goals
   activeGoals: Goal[] = [];
 
-  // Meal detail panel
-  showMealDetailPanel = false;
-  mealDetailType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
+  // Food detail panel
+  showFoodDetailPanel = false;
+  foodDetailType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
   
   // Training completion panel
   showTrainingPanel = false;
@@ -143,8 +143,8 @@ export class HomeComponent implements OnInit {
     private fb: FormBuilder,
     private healthDataService: HealthDataService,
     private whoopService: WhoopService,
-    private mealService: MealService,
-    private mealEntryService: MealEntryService,
+    private foodService: FoodService,
+    private foodEntryService: FoodEntryService,
     private goalService: GoalService,
     private recurringGoalService: RecurringGoalService
   ) {
@@ -237,9 +237,9 @@ export class HomeComponent implements OnInit {
     const hasRecovery = this.currentEntry?.recovery != null;
     const hasWorkoutPlan = this.getPlannedWorkout() !== null;
     const workoutCompleted = this.currentEntry?.workoutCompleted === true;
-    const hasMeals = this.mealEntries.length > 0;
+    const hasFoods = this.foodEntries.length > 0;
     const nutritionTrackingFailed = this.currentEntry?.nutritionTrackingFailed === true;
-    const nutritionCompleted = hasMeals || nutritionTrackingFailed;
+    const nutritionCompleted = hasFoods || nutritionTrackingFailed;
     
     // Define all actions
     const allActions: { [id: string]: ActionItem } = {
@@ -295,8 +295,8 @@ export class HomeComponent implements OnInit {
     };
     
     // Add nutrition actions from recurring nutrition goals
-    // Check if all meals are completed (auto-complete nutrition goal)
-    const allMealsCompleted = hasMeals && this.mealEntries.every(m => m.completed);
+    // Check if all foods are completed (auto-complete nutrition goal)
+    const allFoodsCompleted = hasFoods && this.foodEntries.every(f => f.completed);
     
     this.nutritionGoals.forEach(goal => {
       const actionId = `nutrition_goal_${goal.id}`;
@@ -313,12 +313,12 @@ export class HomeComponent implements OnInit {
       }
       
       // Determine status:
-      // - completed: if RecurringGoalCompletion marked complete, OR all meals completed, OR tracking failed
-      // - in_progress: if has meals but not all complete
-      // - pending: no meals planned yet
-      const nutritionStatus = isCompleted || allMealsCompleted || nutritionTrackingFailed 
+      // - completed: if RecurringGoalCompletion marked complete, OR all foods completed, OR tracking failed
+      // - in_progress: if has foods but not all complete
+      // - pending: no foods planned yet
+      const nutritionStatus = isCompleted || allFoodsCompleted || nutritionTrackingFailed 
         ? 'completed' 
-        : (hasMeals ? 'in_progress' : 'pending');
+        : (hasFoods ? 'in_progress' : 'pending');
       
       allActions[actionId] = {
         id: actionId,
@@ -331,10 +331,10 @@ export class HomeComponent implements OnInit {
       };
     });
     
-    // Add meal actions to the actions map if nutrition is planned
-    if (hasMeals) {
-      const mealActions = this.buildMealActions();
-      mealActions.forEach(action => {
+    // Add food actions to the actions map if nutrition is planned
+    if (hasFoods) {
+      const foodActions = this.buildFoodActions();
+      foodActions.forEach(action => {
         allActions[action.id] = action;
       });
     }
@@ -397,13 +397,13 @@ export class HomeComponent implements OnInit {
     const existingIds = new Set(savedOrder.filter(id => allActions[id]));
     const newIds = Object.keys(allActions).filter(id => !existingIds.has(id) && id !== 'daily_insights');
     
-    // Separate meal actions, nutrition goals, and other new actions
-    const mealOrder = ['meal_breakfast', 'meal_lunch', 'meal_dinner', 'meal_snack'];
-    const newMealIds = newIds.filter(id => id.startsWith('meal_')).sort((a, b) => {
-      return mealOrder.indexOf(a) - mealOrder.indexOf(b);
+    // Separate food actions, nutrition goals, and other new actions
+    const foodOrder = ['food_breakfast', 'food_lunch', 'food_dinner', 'food_snack'];
+    const newFoodIds = newIds.filter(id => id.startsWith('food_')).sort((a, b) => {
+      return foodOrder.indexOf(a) - foodOrder.indexOf(b);
     });
     const newNutritionGoalIds = newIds.filter(id => id.startsWith('nutrition_goal_'));
-    const newOtherIds = newIds.filter(id => !id.startsWith('meal_') && !id.startsWith('nutrition_goal_'));
+    const newOtherIds = newIds.filter(id => !id.startsWith('food_') && !id.startsWith('nutrition_goal_'));
     
     // Build order without daily_insights first
     let finalOrder = savedOrder.filter(id => allActions[id] && id !== 'daily_insights');
@@ -419,8 +419,8 @@ export class HomeComponent implements OnInit {
       }
     }
     
-    // Add new meal actions in correct order
-    finalOrder = [...finalOrder, ...newMealIds];
+    // Add new food actions in correct order
+    finalOrder = [...finalOrder, ...newFoodIds];
     
     // Add other new actions
     finalOrder = [...finalOrder, ...newOtherIds];
@@ -436,52 +436,52 @@ export class HomeComponent implements OnInit {
     this.loadActionStates();
   }
   
-  buildMealActions(): ActionItem[] {
-    const mealsByType: { [key: string]: MealEntry[] } = {
+  buildFoodActions(): ActionItem[] {
+    const foodsByType: { [key: string]: FoodEntry[] } = {
       breakfast: [],
       lunch: [],
       dinner: [],
       snack: []
     };
     
-    // Group meals by type
-    this.mealEntries.forEach(meal => {
-      if (mealsByType[meal.mealType]) {
-        mealsByType[meal.mealType].push(meal);
+    // Group foods by type
+    this.foodEntries.forEach(food => {
+      if (foodsByType[food.mealType]) {
+        foodsByType[food.mealType].push(food);
       }
     });
     
     const actions: ActionItem[] = [];
-    const mealOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
-    const mealIcons: { [key: string]: string } = {
+    const foodOrder = ['breakfast', 'lunch', 'dinner', 'snack'];
+    const foodIcons: { [key: string]: string } = {
       breakfast: '🌅',
       lunch: '☀️',
       dinner: '🌙',
       snack: '🍎'
     };
-    const mealLabels: { [key: string]: string } = {
+    const foodLabels: { [key: string]: string } = {
       breakfast: 'Breakfast',
       lunch: 'Lunch',
       dinner: 'Dinner',
       snack: 'Snack'
     };
     
-    mealOrder.forEach(type => {
-      const typeMeals = mealsByType[type];
-      if (typeMeals.length > 0) {
-        const mealNames = typeMeals.map(m => m.name).join(', ');
-        const totalCals = typeMeals.reduce((sum, m) => sum + (m.calories || 0) * (m.portion || 1), 0);
-        const allCompleted = typeMeals.every(m => m.completed);
+    foodOrder.forEach(type => {
+      const typeFoods = foodsByType[type];
+      if (typeFoods.length > 0) {
+        const foodNames = typeFoods.map(f => f.name).join(', ');
+        const totalCals = typeFoods.reduce((sum, f) => sum + (f.calories || 0) * (f.portion || 1), 0);
+        const allCompleted = typeFoods.every(f => f.completed);
         
         actions.push({
-          id: `meal_${type}`,
-          title: mealLabels[type],
-          description: `${mealNames} (${totalCals} cal)`,
-          icon: mealIcons[type],
+          id: `food_${type}`,
+          title: foodLabels[type],
+          description: `${foodNames} (${totalCals} cal)`,
+          icon: foodIcons[type],
           status: allCompleted ? 'completed' : 'pending',
-          type: 'meal',
+          type: 'food',
           mealType: type as 'breakfast' | 'lunch' | 'dinner' | 'snack',
-          reopenOnComplete: true // Opens meal detail panel when clicked
+          reopenOnComplete: true // Opens food detail panel when clicked
         });
       }
     });
@@ -490,49 +490,49 @@ export class HomeComponent implements OnInit {
   }
   
   async toggleMealTypeCompleted(mealType: string): Promise<void> {
-    const typeMeals = this.mealEntries.filter(m => m.mealType === mealType);
-    const allCompleted = typeMeals.every(m => m.completed);
+    const typeFoods = this.foodEntries.filter(f => f.mealType === mealType);
+    const allCompleted = typeFoods.every(f => f.completed);
     const newStatus = !allCompleted;
     
-    console.log(`Toggle ${mealType}: ${typeMeals.length} meals, allCompleted=${allCompleted}, setting to ${newStatus}`);
+    console.log(`Toggle ${mealType}: ${typeFoods.length} foods, allCompleted=${allCompleted}, setting to ${newStatus}`);
     
-    // Toggle all meals of this type
-    for (const meal of typeMeals) {
-      console.log(`  Updating meal ${meal.name} (${meal.id}) to completed: ${newStatus}`);
-      await this.mealEntryService.toggleMealCompleted(meal.id, newStatus);
+    // Toggle all foods of this type
+    for (const food of typeFoods) {
+      console.log(`  Updating food ${food.name} (${food.id}) to completed: ${newStatus}`);
+      await this.foodEntryService.toggleFoodCompleted(food.id, newStatus);
     }
     
-    // Reload meal entries
-    await this.loadMealEntries();
+    // Reload food entries
+    await this.loadFoodEntries();
     
     // Verify the update
-    const updatedTypeMeals = this.mealEntries.filter(m => m.mealType === mealType);
-    console.log(`After reload - ${mealType} meals:`, updatedTypeMeals.map(m => ({ name: m.name, completed: m.completed })));
+    const updatedTypeFoods = this.foodEntries.filter(f => f.mealType === mealType);
+    console.log(`After reload - ${mealType} foods:`, updatedTypeFoods.map(f => ({ name: f.name, completed: f.completed })));
     
-    // Update HealthEntry with nutrition totals (only counts completed meals)
+    // Update HealthEntry with nutrition totals (only counts completed foods)
     await this.updateNutritionTotals();
     
-    // Check if all meals are now complete and update nutrition goal accordingly
+    // Check if all foods are now complete and update nutrition goal accordingly
     await this.checkAndUpdateNutritionGoalCompletion();
     
     this.buildDailyActions();
   }
   
   /**
-   * Check if all meals are completed and auto-complete nutrition goal if not already done
+   * Check if all foods are completed and auto-complete nutrition goal if not already done
    * Note: Does NOT un-complete a goal that was already marked complete (e.g., via Save Plan)
    */
   private async checkAndUpdateNutritionGoalCompletion(): Promise<void> {
-    if (this.mealEntries.length === 0 || this.nutritionGoals.length === 0) return;
+    if (this.foodEntries.length === 0 || this.nutritionGoals.length === 0) return;
     
-    const allMealsCompleted = this.mealEntries.every(m => m.completed);
+    const allFoodsCompleted = this.foodEntries.every(f => f.completed);
     
     for (const goal of this.nutritionGoals) {
       const currentCompletion = this.nutritionGoalCompletions.get(goal.id);
       const isCurrentlyComplete = currentCompletion?.completed === true;
       
-      if (allMealsCompleted && !isCurrentlyComplete) {
-        // All meals done - mark nutrition goal complete
+      if (allFoodsCompleted && !isCurrentlyComplete) {
+        // All foods done - mark nutrition goal complete
         await this.markNutritionGoalComplete(goal.id);
       }
       // Don't un-complete if already marked complete (user saved their plan)
@@ -576,8 +576,8 @@ export class HomeComponent implements OnInit {
     try {
       const saved = JSON.parse(this.currentEntry.morningChecklist);
       this.dailyActions.forEach(action => {
-        // Skip meal actions - their status comes from MealEntry.completed
-        if (action.type === 'meal') return;
+        // Skip food actions - their status comes from FoodEntry.completed
+        if (action.type === 'food') return;
         
         // Skip goal_priority actions - their status is derived from whether a goal is selected
         if (action.type === 'goal_priority') return;
@@ -626,10 +626,10 @@ export class HomeComponent implements OnInit {
         this.openNutritionPanel();
         break;
         
-      case 'meal':
-        // Open meal detail panel
+      case 'food':
+        // Open food detail panel
         if (action.mealType) {
-          this.openMealDetailPanel(action.mealType);
+          this.openFoodDetailPanel(action.mealType);
         }
         break;
         
@@ -690,8 +690,8 @@ export class HomeComponent implements OnInit {
     
     // Update with current action states for manual actions only
     this.dailyActions.forEach(action => {
-      // Skip meal actions - their completion is stored in MealEntry.completed
-      if (action.type === 'meal') return;
+      // Skip food actions - their completion is stored in FoodEntry.completed
+      if (action.type === 'food') return;
       
       // Skip goal_priority actions - their status is derived from whether a goal is selected
       if (action.type === 'goal_priority') return;
@@ -1163,8 +1163,8 @@ export class HomeComponent implements OnInit {
       this.loadWhoopWorkoutExercises();
       this.loadSelectedDailyGoals();
       
-      // Load meal entries from database
-      await this.loadMealEntries();
+      // Load food entries from database
+      await this.loadFoodEntries();
       
       // Reload nutrition goal completions for the selected date
       await this.loadNutritionGoals();
@@ -1517,21 +1517,21 @@ export class HomeComponent implements OnInit {
     this.showNutritionPanel = false;
   }
   
-  openMealDetailPanel(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): void {
-    this.mealDetailType = mealType;
-    this.showMealDetailPanel = true;
+  openFoodDetailPanel(mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'): void {
+    this.foodDetailType = mealType;
+    this.showFoodDetailPanel = true;
   }
   
-  closeMealDetailPanel(): void {
-    this.showMealDetailPanel = false;
+  closeFoodDetailPanel(): void {
+    this.showFoodDetailPanel = false;
   }
   
-  async onMealEntriesChanged(entries: MealEntry[]): Promise<void> {
-    console.log('Parent: onMealEntriesChanged called with', entries.length, 'entries');
-    this.mealEntries = entries;
+  async onFoodEntriesChanged(entries: FoodEntry[]): Promise<void> {
+    console.log('Parent: onFoodEntriesChanged called with', entries.length, 'entries');
+    this.foodEntries = entries;
     
-    // Reload meal entries from database to ensure consistency
-    await this.loadMealEntries();
+    // Reload food entries from database to ensure consistency
+    await this.loadFoodEntries();
     
     await this.updateNutritionTotals();
     this.buildDailyActions();
@@ -1612,18 +1612,18 @@ export class HomeComponent implements OnInit {
     }
   }
   
-  async loadMealEntries(): Promise<void> {
+  async loadFoodEntries(): Promise<void> {
     try {
-      this.mealEntries = await this.mealEntryService.getMealEntriesForDate(this.selectedDate);
+      this.foodEntries = await this.foodEntryService.getFoodEntriesForDate(this.selectedDate);
     } catch (error) {
-      console.error('Error loading meal entries:', error);
-      this.mealEntries = [];
+      console.error('Error loading food entries:', error);
+      this.foodEntries = [];
     }
   }
   
   private async updateNutritionTotals(): Promise<void> {
-    const completedMeals = this.mealEntries.filter(m => m.completed);
-    const totals = this.mealEntryService.calculateDailyTotals(completedMeals);
+    const completedFoods = this.foodEntries.filter(f => f.completed);
+    const totals = this.foodEntryService.calculateDailyTotals(completedFoods);
     
     const payload = {
       date: this.selectedDate,

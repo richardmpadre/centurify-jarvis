@@ -79,13 +79,13 @@
     </div>
 
     <!-- Nutrition Cards -->
-    <div class="stat-card calories-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('calories') >= 100">
+    <div class="stat-card calories-card" [class.has-data]="foodEntries.length > 0" [class.complete]="getNutritionProgress('calories') >= 100">
       <div class="stat-icon">🔥</div>
       <div class="stat-content">
-        <div class="stat-value" *ngIf="mealEntries.length > 0">
+        <div class="stat-value" *ngIf="foodEntries.length > 0">
           {{ getCompletedNutrition().calories }}<span class="planned">/{{ getPlannedNutrition().calories }}</span><span class="unit">cal</span>
         </div>
-        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-value" *ngIf="foodEntries.length === 0">--</div>
         <div class="stat-label">Calories</div>
         <div class="stat-comparison" *ngIf="getComparison('calories')" [class]="getComparisonClass('calories')">
           {{ formatComparison('calories') }}
@@ -93,13 +93,13 @@
       </div>
     </div>
 
-    <div class="stat-card protein-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('protein') >= 100">
+    <div class="stat-card protein-card" [class.has-data]="foodEntries.length > 0" [class.complete]="getNutritionProgress('protein') >= 100">
       <div class="stat-icon">🥩</div>
       <div class="stat-content">
-        <div class="stat-value" *ngIf="mealEntries.length > 0">
+        <div class="stat-value" *ngIf="foodEntries.length > 0">
           {{ getCompletedNutrition().protein }}<span class="planned">/{{ getPlannedNutrition().protein }}</span><span class="unit">g</span>
         </div>
-        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-value" *ngIf="foodEntries.length === 0">--</div>
         <div class="stat-label">Protein</div>
         <div class="stat-comparison" *ngIf="getComparison('protein')" [class]="getComparisonClass('protein')">
           {{ formatComparison('protein') }}
@@ -107,13 +107,13 @@
       </div>
     </div>
 
-    <div class="stat-card carbs-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('carbs') >= 100">
+    <div class="stat-card carbs-card" [class.has-data]="foodEntries.length > 0" [class.complete]="getNutritionProgress('carbs') >= 100">
       <div class="stat-icon">🍞</div>
       <div class="stat-content">
-        <div class="stat-value" *ngIf="mealEntries.length > 0">
+        <div class="stat-value" *ngIf="foodEntries.length > 0">
           {{ getCompletedNutrition().carbs }}<span class="planned">/{{ getPlannedNutrition().carbs }}</span><span class="unit">g</span>
         </div>
-        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-value" *ngIf="foodEntries.length === 0">--</div>
         <div class="stat-label">Carbs</div>
         <div class="stat-comparison" *ngIf="getComparison('carbs')" [class]="getComparisonClass('carbs')">
           {{ formatComparison('carbs') }}
@@ -121,13 +121,13 @@
       </div>
     </div>
 
-    <div class="stat-card fats-card" [class.has-data]="mealEntries.length > 0" [class.complete]="getNutritionProgress('fats') >= 100">
+    <div class="stat-card fats-card" [class.has-data]="foodEntries.length > 0" [class.complete]="getNutritionProgress('fats') >= 100">
       <div class="stat-icon">🥑</div>
       <div class="stat-content">
-        <div class="stat-value" *ngIf="mealEntries.length > 0">
+        <div class="stat-value" *ngIf="foodEntries.length > 0">
           {{ getCompletedNutrition().fats }}<span class="planned">/{{ getPlannedNutrition().fats }}</span><span class="unit">g</span>
         </div>
-        <div class="stat-value" *ngIf="mealEntries.length === 0">--</div>
+        <div class="stat-value" *ngIf="foodEntries.length === 0">--</div>
         <div class="stat-label">Fats</div>
         <div class="stat-comparison" *ngIf="getComparison('fats')" [class]="getComparisonClass('fats')">
           {{ formatComparison('fats') }}

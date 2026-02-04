@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HealthEntry, PlannedWorkout, WhoopWorkout, PlannedExercise } from '../../../models/health.models';
-import { MealEntry } from '../../../services/meal-entry.service';
+import { FoodEntry } from '../../../services/food-entry.service';
 import { Goal, GOAL_TYPE_CONFIG, GOAL_STATUS_CONFIG } from '../../../models/goal.models';
 
 @Component({
@@ -16,7 +16,7 @@ export class DashboardComponent {
   @Input() currentEntry: HealthEntry | null = null;
   @Input() yesterdayEntry: HealthEntry | null = null;
   @Input() whoopWorkouts: WhoopWorkout[] = [];
-  @Input() mealEntries: MealEntry[] = [];
+  @Input() foodEntries: FoodEntry[] = [];
   @Input() activeGoals: Goal[] = [];
   @Input() isLoading = false;
   @Input() selectedDate = '';
@@ -79,15 +79,15 @@ export class DashboardComponent {
     }
   }
 
-  // Nutrition - calculate from meal entries directly for accuracy
+  // Nutrition - calculate from food entries directly for accuracy
   getCompletedNutrition(): { calories: number; protein: number; fats: number; carbs: number } {
-    // Only count meals that are marked as completed
-    const completedMeals = this.mealEntries.filter(m => m.completed);
-    const totals = completedMeals.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
-      protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
-      carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1),
-      fats: totals.fats + (meal.fats || 0) * (meal.portion || 1)
+    // Only count foods that are marked as completed
+    const completedFoods = this.foodEntries.filter(f => f.completed);
+    const totals = completedFoods.reduce((totals, food) => ({
+      calories: totals.calories + (food.calories || 0) * (food.portion || 1),
+      protein: totals.protein + (food.protein || 0) * (food.portion || 1),
+      carbs: totals.carbs + (food.carbs || 0) * (food.portion || 1),
+      fats: totals.fats + (food.fats || 0) * (food.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
     
     // Round all values to whole numbers
@@ -100,12 +100,12 @@ export class DashboardComponent {
   }
 
   getPlannedNutrition(): { calories: number; protein: number; fats: number; carbs: number } {
-    // All planned meals (completed or not)
-    const totals = this.mealEntries.reduce((totals, meal) => ({
-      calories: totals.calories + (meal.calories || 0) * (meal.portion || 1),
-      protein: totals.protein + (meal.protein || 0) * (meal.portion || 1),
-      carbs: totals.carbs + (meal.carbs || 0) * (meal.portion || 1),
-      fats: totals.fats + (meal.fats || 0) * (meal.portion || 1)
+    // All planned foods (completed or not)
+    const totals = this.foodEntries.reduce((totals, food) => ({
+      calories: totals.calories + (food.calories || 0) * (food.portion || 1),
+      protein: totals.protein + (food.protein || 0) * (food.portion || 1),
+      carbs: totals.carbs + (food.carbs || 0) * (food.portion || 1),
+      fats: totals.fats + (food.fats || 0) * (food.portion || 1)
     }), { calories: 0, protein: 0, fats: 0, carbs: 0 });
     
     // Round all values to whole numbers
@@ -118,7 +118,7 @@ export class DashboardComponent {
   }
 
   hasNutritionData(): boolean {
-    return this.mealEntries.length > 0 || (this.currentEntry?.totalCalories ?? 0) > 0;
+    return this.foodEntries.length > 0 || (this.currentEntry?.totalCalories ?? 0) > 0;
   }
 
   getNutritionProgress(type: 'calories' | 'protein' | 'carbs' | 'fats'): number {

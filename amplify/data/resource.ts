@@ -34,8 +34,8 @@ const schema = a.schema({
     insightsGeneratedAt: a.datetime(), // When insights were generated
   }).authorization(allow => [allow.owner()]),
   
-  // Individual meals eaten (daily meal entries)
-  MealEntry: a.model({
+  // Individual foods eaten (daily food entries)
+  FoodEntry: a.model({
     date: a.date().required(),
     mealType: a.string().required(), // breakfast, lunch, dinner, snack
     name: a.string().required(),
@@ -43,13 +43,13 @@ const schema = a.schema({
     protein: a.float(),
     carbs: a.float(),
     fats: a.float(),
-    completed: a.boolean(), // Has the user eaten this meal?
-    mealId: a.string(), // Optional link to Meal library
+    completed: a.boolean(), // Has the user eaten this food?
+    foodId: a.string(), // Optional link to Food library
     portion: a.float(), // Portion size multiplier (e.g., 1.0 = 1 serving)
   }).authorization(allow => [allow.owner()]),
   
-  // Meal library - saved meal templates for reuse
-  Meal: a.model({
+  // Food library - saved food templates for reuse
+  Food: a.model({
     name: a.string().required(),
     calories: a.integer().required(),
     protein: a.float(),

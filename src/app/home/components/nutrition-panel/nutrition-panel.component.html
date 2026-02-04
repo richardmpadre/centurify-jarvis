@@ -54,7 +54,7 @@
     </div>
 
     <!-- Daily Totals (when no targets or showing additional macros) -->
-    <div class="nutrition-totals" *ngIf="mealEntries.length > 0">
+    <div class="nutrition-totals" *ngIf="foodEntries.length > 0">
       <div class="total-item" *ngIf="!hasTargets()">
         <span class="total-value">{{ getNutritionTotals().calories }}</span>
         <span class="total-label">Calories</span>
@@ -73,71 +73,71 @@
       </div>
     </div>
     
-    <!-- Today's Meals -->
-    <div class="meal-list" *ngIf="mealEntries.length > 0">
-      <h4 class="section-label">Today's Meals</h4>
+    <!-- Today's Foods -->
+    <div class="food-list" *ngIf="foodEntries.length > 0">
+      <h4 class="section-label">Today's Foods</h4>
       
       <!-- Breakfast Section -->
-      <div class="meal-type-group" *ngIf="hasMealsForType('breakfast')">
-        <div class="meal-type-header">
-          <span class="meal-type-emoji">🌅</span>
-          <span class="meal-type-title">Breakfast</span>
-          <span class="meal-type-summary">{{ roundToTwo(getMealTypeTotals('breakfast').calories) }} cal</span>
+      <div class="food-type-group" *ngIf="hasFoodsForType('breakfast')">
+        <div class="food-type-header">
+          <span class="food-type-emoji">🌅</span>
+          <span class="food-type-title">Breakfast</span>
+          <span class="food-type-summary">{{ roundToTwo(getFoodTypeTotals('breakfast').calories) }} cal</span>
         </div>
-        <div class="meal-item" *ngFor="let meal of getMealsByType('breakfast')">
-          <div class="meal-info">
-            <span class="meal-name">{{ meal.name }}</span>
-            <span class="meal-macros">{{ roundToTwo(meal.calories * (meal.portion || 1)) }} cal • {{ roundToTwo((meal.protein || 0) * (meal.portion || 1)) }}p / {{ roundToTwo((meal.carbs || 0) * (meal.portion || 1)) }}c / {{ roundToTwo((meal.fats || 0) * (meal.portion || 1)) }}f</span>
+        <div class="food-item" *ngFor="let food of getFoodsByType('breakfast')">
+          <div class="food-info">
+            <span class="food-name">{{ food.name }}</span>
+            <span class="food-macros">{{ roundToTwo(food.calories * (food.portion || 1)) }} cal • {{ roundToTwo((food.protein || 0) * (food.portion || 1)) }}p / {{ roundToTwo((food.carbs || 0) * (food.portion || 1)) }}c / {{ roundToTwo((food.fats || 0) * (food.portion || 1)) }}f</span>
           </div>
-          <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+          <button class="remove-food-btn" (click)="removeFood(food.id)">×</button>
         </div>
       </div>
 
       <!-- Lunch Section -->
-      <div class="meal-type-group" *ngIf="hasMealsForType('lunch')">
-        <div class="meal-type-header">
-          <span class="meal-type-emoji">☀️</span>
-          <span class="meal-type-title">Lunch</span>
-          <span class="meal-type-summary">{{ roundToTwo(getMealTypeTotals('lunch').calories) }} cal</span>
+      <div class="food-type-group" *ngIf="hasFoodsForType('lunch')">
+        <div class="food-type-header">
+          <span class="food-type-emoji">☀️</span>
+          <span class="food-type-title">Lunch</span>
+          <span class="food-type-summary">{{ roundToTwo(getFoodTypeTotals('lunch').calories) }} cal</span>
         </div>
-        <div class="meal-item" *ngFor="let meal of getMealsByType('lunch')">
-          <div class="meal-info">
-            <span class="meal-name">{{ meal.name }}</span>
-            <span class="meal-macros">{{ roundToTwo(meal.calories * (meal.portion || 1)) }} cal • {{ roundToTwo((meal.protein || 0) * (meal.portion || 1)) }}p / {{ roundToTwo((meal.carbs || 0) * (meal.portion || 1)) }}c / {{ roundToTwo((meal.fats || 0) * (meal.portion || 1)) }}f</span>
+        <div class="food-item" *ngFor="let food of getFoodsByType('lunch')">
+          <div class="food-info">
+            <span class="food-name">{{ food.name }}</span>
+            <span class="food-macros">{{ roundToTwo(food.calories * (food.portion || 1)) }} cal • {{ roundToTwo((food.protein || 0) * (food.portion || 1)) }}p / {{ roundToTwo((food.carbs || 0) * (food.portion || 1)) }}c / {{ roundToTwo((food.fats || 0) * (food.portion || 1)) }}f</span>
           </div>
-          <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+          <button class="remove-food-btn" (click)="removeFood(food.id)">×</button>
         </div>
       </div>
 
       <!-- Dinner Section -->
-      <div class="meal-type-group" *ngIf="hasMealsForType('dinner')">
-        <div class="meal-type-header">
-          <span class="meal-type-emoji">🌙</span>
-          <span class="meal-type-title">Dinner</span>
-          <span class="meal-type-summary">{{ roundToTwo(getMealTypeTotals('dinner').calories) }} cal</span>
+      <div class="food-type-group" *ngIf="hasFoodsForType('dinner')">
+        <div class="food-type-header">
+          <span class="food-type-emoji">🌙</span>
+          <span class="food-type-title">Dinner</span>
+          <span class="food-type-summary">{{ roundToTwo(getFoodTypeTotals('dinner').calories) }} cal</span>
         </div>
-        <div class="meal-item" *ngFor="let meal of getMealsByType('dinner')">
-          <div class="meal-info">
-            <span class="meal-name">{{ meal.name }}</span>
-            <span class="meal-macros">{{ roundToTwo(meal.calories * (meal.portion || 1)) }} cal • {{ roundToTwo((meal.protein || 0) * (meal.portion || 1)) }}p / {{ roundToTwo((meal.carbs || 0) * (meal.portion || 1)) }}c / {{ roundToTwo((meal.fats || 0) * (meal.portion || 1)) }}f</span>
+        <div class="food-item" *ngFor="let food of getFoodsByType('dinner')">
+          <div class="food-info">
+            <span class="food-name">{{ food.name }}</span>
+            <span class="food-macros">{{ roundToTwo(food.calories * (food.portion || 1)) }} cal • {{ roundToTwo((food.protein || 0) * (food.portion || 1)) }}p / {{ roundToTwo((food.carbs || 0) * (food.portion || 1)) }}c / {{ roundToTwo((food.fats || 0) * (food.portion || 1)) }}f</span>
           </div>
-          <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+          <button class="remove-food-btn" (click)="removeFood(food.id)">×</button>
         </div>
       </div>
 
       <!-- Snacks Section -->
-      <div class="meal-type-group" *ngIf="hasMealsForType('snack')">
-        <div class="meal-type-header">
-          <span class="meal-type-emoji">🍎</span>
-          <span class="meal-type-title">Snacks</span>
-          <span class="meal-type-summary">{{ roundToTwo(getMealTypeTotals('snack').calories) }} cal</span>
+      <div class="food-type-group" *ngIf="hasFoodsForType('snack')">
+        <div class="food-type-header">
+          <span class="food-type-emoji">🍎</span>
+          <span class="food-type-title">Snacks</span>
+          <span class="food-type-summary">{{ roundToTwo(getFoodTypeTotals('snack').calories) }} cal</span>
         </div>
-        <div class="meal-item" *ngFor="let meal of getMealsByType('snack')">
-          <div class="meal-info">
-            <span class="meal-name">{{ meal.name }}</span>
-            <span class="meal-macros">{{ roundToTwo(meal.calories * (meal.portion || 1)) }} cal • {{ roundToTwo((meal.protein || 0) * (meal.portion || 1)) }}p / {{ roundToTwo((meal.carbs || 0) * (meal.portion || 1)) }}c / {{ roundToTwo((meal.fats || 0) * (meal.portion || 1)) }}f</span>
+        <div class="food-item" *ngFor="let food of getFoodsByType('snack')">
+          <div class="food-info">
+            <span class="food-name">{{ food.name }}</span>
+            <span class="food-macros">{{ roundToTwo(food.calories * (food.portion || 1)) }} cal • {{ roundToTwo((food.protein || 0) * (food.portion || 1)) }}p / {{ roundToTwo((food.carbs || 0) * (food.portion || 1)) }}c / {{ roundToTwo((food.fats || 0) * (food.portion || 1)) }}f</span>
           </div>
-          <button class="remove-meal-btn" (click)="removeMeal(meal.id)">×</button>
+          <button class="remove-food-btn" (click)="removeFood(food.id)">×</button>
         </div>
       </div>
     </div>
@@ -145,20 +145,20 @@
     <!-- Quick Add Section -->
     <div class="quick-add-section">
       <div class="section-header">
-        <label class="quick-add-label">Add a meal:</label>
+        <label class="quick-add-label">Add a food:</label>
         <button 
           type="button"
           class="copy-yesterday-btn"
-          (click)="copyYesterdaysMeals()"
-          [disabled]="isCopyingYesterday || !hasYesterdaysMeals()"
-          title="Copy all meals from yesterday">
+          (click)="copyYesterdaysFoods()"
+          [disabled]="isCopyingYesterday || !hasYesterdaysFoods()"
+          title="Copy all foods from yesterday">
           {{ isCopyingYesterday ? '⏳ Copying...' : '📋 Copy Yesterday' }}
         </button>
       </div>
       
       <div class="quick-add-row">
         <!-- Meal Type Selector -->
-        <div class="meal-type-selector">
+        <div class="food-type-selector">
           <button 
             type="button"
             class="type-btn" 
@@ -190,18 +190,18 @@
       <div class="search-wrapper">
         <input 
           type="text" 
-          class="meal-search-input"
+          class="food-search-input"
           [(ngModel)]="searchQuery"
-          (ngModelChange)="filterMeals()"
-          placeholder="🔍 Search meals..."
-          [disabled]="isLoadingMeals">
+          (ngModelChange)="filterFoods()"
+          placeholder="🔍 Search foods..."
+          [disabled]="isLoadingFoods">
       </div>
       
       <!-- Portion Selection Panel -->
-      <div class="portion-selection-panel" *ngIf="selectedMealForAdd">
+      <div class="portion-selection-panel" *ngIf="selectedFoodForAdd">
         <div class="portion-panel-header">
-          <span class="portion-meal-name">{{ selectedMealForAdd.name }}</span>
-          <button class="cancel-selection-btn" (click)="cancelMealSelection()">×</button>
+          <span class="portion-food-name">{{ selectedFoodForAdd.name }}</span>
+          <button class="cancel-selection-btn" (click)="cancelFoodSelection()">×</button>
         </div>
         <div class="portion-inputs">
           <div class="portion-input-group">
@@ -229,54 +229,54 @@
         <div class="portion-preview">
           <span class="preview-label">Nutrition for {{ portionAmount }} {{ portionUnit }}:</span>
           <span class="preview-macros">
-            {{ roundToTwo(selectedMealForAdd.calories * portionAmount) }} cal • 
-            {{ roundToTwo((selectedMealForAdd.protein || 0) * portionAmount) }}p / 
-            {{ roundToTwo((selectedMealForAdd.carbs || 0) * portionAmount) }}c / 
-            {{ roundToTwo((selectedMealForAdd.fats || 0) * portionAmount) }}f
+            {{ roundToTwo(selectedFoodForAdd.calories * portionAmount) }} cal • 
+            {{ roundToTwo((selectedFoodForAdd.protein || 0) * portionAmount) }}p / 
+            {{ roundToTwo((selectedFoodForAdd.carbs || 0) * portionAmount) }}c / 
+            {{ roundToTwo((selectedFoodForAdd.fats || 0) * portionAmount) }}f
           </span>
         </div>
-        <button class="confirm-add-btn" (click)="confirmAddMeal()">
+        <button class="confirm-add-btn" (click)="confirmAddFood()">
           + Add to {{ getMealTypeLabel(selectedMealType) }}
         </button>
       </div>
 
-      <!-- Filtered Meals List -->
-      <div class="meals-list" *ngIf="!isLoadingMeals && filteredMeals.length > 0 && !selectedMealForAdd">
+      <!-- Filtered Foods List -->
+      <div class="foods-list" *ngIf="!isLoadingFoods && filteredFoods.length > 0 && !selectedFoodForAdd">
         <div 
-          *ngFor="let meal of filteredMeals" 
-          class="meal-list-item"
-          (click)="selectMealForAdd(meal)">
-          <div class="meal-item-header">
-            <span class="meal-item-name">{{ meal.name }}</span>
-            <span class="meal-item-calories">{{ meal.calories }} cal</span>
+          *ngFor="let food of filteredFoods" 
+          class="food-list-item"
+          (click)="selectFoodForAdd(food)">
+          <div class="food-item-header">
+            <span class="food-item-name">{{ food.name }}</span>
+            <span class="food-item-calories">{{ food.calories }} cal</span>
           </div>
-          <div class="meal-item-macros">
-            {{ meal.protein }}g protein • {{ meal.carbs }}g carbs • {{ meal.fats }}g fats
+          <div class="food-item-macros">
+            {{ food.protein }}g protein • {{ food.carbs }}g carbs • {{ food.fats }}g fats
           </div>
-          <div class="meal-item-portion" *ngIf="meal.defaultPortion && meal.defaultPortionUnit">
-            Default: {{ meal.defaultPortion }} {{ meal.defaultPortionUnit }}
+          <div class="food-item-portion" *ngIf="food.defaultPortion && food.defaultPortionUnit">
+            Default: {{ food.defaultPortion }} {{ food.defaultPortionUnit }}
           </div>
         </div>
       </div>
       
-      <div class="no-results" *ngIf="!isLoadingMeals && searchQuery && filteredMeals.length === 0">
-        No meals found matching "{{ searchQuery }}"
+      <div class="no-results" *ngIf="!isLoadingFoods && searchQuery && filteredFoods.length === 0">
+        No foods found matching "{{ searchQuery }}"
       </div>
       
-      <div class="loading-meals" *ngIf="isLoadingMeals">
-        Loading meals...
+      <div class="loading-foods" *ngIf="isLoadingFoods">
+        Loading foods...
       </div>
       
-      <div class="no-saved-meals" *ngIf="!isLoadingMeals && savedMeals.length === 0">
-        No meals in your library yet.
-        <a href="/nutrition" class="add-meals-link">Add some →</a>
+      <div class="no-saved-foods" *ngIf="!isLoadingFoods && savedFoods.length === 0">
+        No foods in your library yet.
+        <a href="/nutrition" class="add-foods-link">Add some →</a>
       </div>
     </div>
     
     <!-- Footer -->
     <div class="nutrition-footer">
-      <a href="/nutrition" class="manage-meals-link">
-        📋 Manage Meals Library
+      <a href="/nutrition" class="manage-foods-link">
+        📋 Manage Food Library
       </a>
       <button 
         class="mark-failed-btn" 
@@ -287,7 +287,7 @@
       <button 
         class="save-plan-btn" 
         (click)="onSavePlan()"
-        [disabled]="mealEntries.length === 0">
+        [disabled]="foodEntries.length === 0">
         ✓ Save Plan
       </button>
     </div>

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 
-export interface Meal {
+export interface Food {
   id: string;
   name: string;
   calories: number;
@@ -18,49 +18,49 @@ export interface Meal {
 @Injectable({
   providedIn: 'root'
 })
-export class MealService {
+export class FoodService {
   private client = generateClient<Schema>();
 
-  async getAllMeals(): Promise<Meal[]> {
+  async getAllFoods(): Promise<Food[]> {
     try {
-      const response = await this.client.models.Meal.list();
-      return (response.data || []).map(m => ({
-        id: m.id,
-        name: m.name,
-        calories: m.calories,
-        protein: m.protein ?? null,
-        carbs: m.carbs ?? null,
-        fats: m.fats ?? null,
-        defaultPortion: m.defaultPortion ?? null,
-        defaultPortionUnit: m.defaultPortionUnit ?? null,
-        createdAt: m.createdAt,
-        updatedAt: m.updatedAt
+      const response = await this.client.models.Food.list();
+      return (response.data || []).map(f => ({
+        id: f.id,
+        name: f.name,
+        calories: f.calories,
+        protein: f.protein ?? null,
+        carbs: f.carbs ?? null,
+        fats: f.fats ?? null,
+        defaultPortion: f.defaultPortion ?? null,
+        defaultPortionUnit: f.defaultPortionUnit ?? null,
+        createdAt: f.createdAt,
+        updatedAt: f.updatedAt
       }));
     } catch (error) {
-      console.error('Error fetching meals:', error);
+      console.error('Error fetching foods:', error);
       return [];
     }
   }
 
-  async createMeal(meal: Omit<Meal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Meal | null> {
+  async createFood(food: Omit<Food, 'id' | 'createdAt' | 'updatedAt'>): Promise<Food | null> {
     try {
-      console.log('MealService: Creating meal with data:', meal);
+      console.log('FoodService: Creating food with data:', food);
       
-      const response = await this.client.models.Meal.create({
-        name: meal.name,
-        calories: Math.round(meal.calories), // Must be integer
-        protein: meal.protein,
-        carbs: meal.carbs,
-        fats: meal.fats,
-        defaultPortion: meal.defaultPortion,
-        defaultPortionUnit: meal.defaultPortionUnit
+      const response = await this.client.models.Food.create({
+        name: food.name,
+        calories: Math.round(food.calories), // Must be integer
+        protein: food.protein,
+        carbs: food.carbs,
+        fats: food.fats,
+        defaultPortion: food.defaultPortion,
+        defaultPortionUnit: food.defaultPortionUnit
       });
       
-      console.log('MealService: Create response:', response);
+      console.log('FoodService: Create response:', response);
       
       // Check for errors in response
       if (response.errors && response.errors.length > 0) {
-        console.error('MealService: API returned errors:', response.errors);
+        console.error('FoodService: API returned errors:', response.errors);
         response.errors.forEach((error: any, index: number) => {
           console.error(`Error ${index + 1}:`, {
             message: error.message,
@@ -73,7 +73,7 @@ export class MealService {
       }
       
       if (response.data) {
-        const createdMeal = {
+        const createdFood = {
           id: response.data.id,
           name: response.data.name,
           calories: response.data.calories,
@@ -85,26 +85,26 @@ export class MealService {
           createdAt: response.data.createdAt,
           updatedAt: response.data.updatedAt
         };
-        console.log('MealService: Returning created meal:', createdMeal);
-        return createdMeal;
+        console.log('FoodService: Returning created food:', createdFood);
+        return createdFood;
       }
       
-      console.log('MealService: No data in response');
+      console.log('FoodService: No data in response');
       return null;
     } catch (error) {
-      console.error('MealService: Error creating meal:', error);
+      console.error('FoodService: Error creating food:', error);
       return null;
     }
   }
 
-  async updateMeal(id: string, meal: Partial<Omit<Meal, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Meal | null> {
+  async updateFood(id: string, food: Partial<Omit<Food, 'id' | 'createdAt' | 'updatedAt'>>): Promise<Food | null> {
     try {
-      const updateData = { ...meal };
+      const updateData = { ...food };
       if (updateData.calories !== undefined) {
         updateData.calories = Math.round(updateData.calories); // Must be integer
       }
       
-      const response = await this.client.models.Meal.update({
+      const response = await this.client.models.Food.update({
         id,
         ...updateData
       });
@@ -125,17 +125,17 @@ export class MealService {
       }
       return null;
     } catch (error) {
-      console.error('Error updating meal:', error);
+      console.error('Error updating food:', error);
       return null;
     }
   }
 
-  async deleteMeal(id: string): Promise<boolean> {
+  async deleteFood(id: string): Promise<boolean> {
     try {
-      await this.client.models.Meal.delete({ id });
+      await this.client.models.Food.delete({ id });
       return true;
     } catch (error) {
-      console.error('Error deleting meal:', error);
+      console.error('Error deleting food:', error);
       return false;
     }
   }
