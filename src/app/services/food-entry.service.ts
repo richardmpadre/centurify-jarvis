@@ -33,12 +33,27 @@ export class FoodEntryService {
 
   async getFoodEntriesForDate(date: string): Promise<FoodEntry[]> {
     try {
-      const response = await this.client.models.FoodEntry.list({
-        filter: { date: { eq: date } }
-      });
-      const entries = (response.data || []).map(f => this.mapToFoodEntry(f));
-      console.log(`Loaded ${entries.length} food entries for ${date}:`, entries.map(e => ({ name: e.name, mealType: e.mealType, completed: e.completed })));
-      return entries;
+      const allEntries: FoodEntry[] = [];
+      let nextToken: string | null | undefined = undefined;
+      
+      // Handle pagination to get ALL entries
+      do {
+        const listOptions: { filter: { date: { eq: string } }; nextToken?: string | null } = {
+          filter: { date: { eq: date } }
+        };
+        if (nextToken) {
+          listOptions.nextToken = nextToken;
+        }
+        
+        const response = await this.client.models.FoodEntry.list(listOptions);
+        
+        const entries = (response.data || []).map((f: any) => this.mapToFoodEntry(f));
+        allEntries.push(...entries);
+        nextToken = response.nextToken;
+      } while (nextToken);
+      
+      console.log(`Loaded ${allEntries.length} food entries for ${date}:`, allEntries.map(e => ({ name: e.name, mealType: e.mealType, completed: e.completed })));
+      return allEntries;
     } catch (error) {
       console.error('Error fetching food entries:', error);
       return [];

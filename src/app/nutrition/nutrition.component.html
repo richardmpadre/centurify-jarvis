@@ -28,35 +28,25 @@
     <p>Loading foods...</p>
   </div>
 
-  <!-- Foods Grid -->
-  <div class="foods-grid" *ngIf="filteredFoods.length > 0 && !isLoading">
-    <div class="food-card" *ngFor="let food of filteredFoods">
-      <div class="food-card-header">
-        <h3 class="food-name">{{ food.name }}</h3>
-        <div class="food-actions">
-          <button class="action-icon" title="Duplicate" (click)="duplicateFood(food)">📋</button>
-          <button class="action-icon" title="Edit" (click)="openEditForm(food)">✏️</button>
-          <button class="action-icon delete" title="Delete" (click)="deleteFood(food)">🗑️</button>
-        </div>
+  <!-- Foods List -->
+  <div class="foods-list" *ngIf="filteredFoods.length > 0 && !isLoading">
+    <div class="food-row" *ngFor="let food of filteredFoods">
+      <div class="food-info">
+        <span class="food-name">{{ food.name }}</span>
+        <span class="food-macros">
+          <span class="macro-cal">{{ food.calories }} cal</span>
+          <span class="macro-sep">•</span>
+          <span class="macro-p">{{ food.protein }}g P</span>
+          <span class="macro-sep">•</span>
+          <span class="macro-c">{{ food.carbs }}g C</span>
+          <span class="macro-sep">•</span>
+          <span class="macro-f">{{ food.fats }}g F</span>
+        </span>
       </div>
-      
-      <div class="food-macros">
-        <div class="macro calories">
-          <span class="macro-value">{{ food.calories }}</span>
-          <span class="macro-label">cal</span>
-        </div>
-        <div class="macro protein">
-          <span class="macro-value">{{ food.protein }}g</span>
-          <span class="macro-label">protein</span>
-        </div>
-        <div class="macro carbs">
-          <span class="macro-value">{{ food.carbs }}g</span>
-          <span class="macro-label">carbs</span>
-        </div>
-        <div class="macro fats">
-          <span class="macro-value">{{ food.fats }}g</span>
-          <span class="macro-label">fats</span>
-        </div>
+      <div class="food-actions">
+        <button class="action-icon" title="Duplicate" (click)="duplicateFood(food)">📋</button>
+        <button class="action-icon" title="Edit" (click)="openEditForm(food)">✏️</button>
+        <button class="action-icon delete" title="Delete" (click)="deleteFood(food)">🗑️</button>
       </div>
     </div>
   </div>
