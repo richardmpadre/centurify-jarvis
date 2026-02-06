@@ -67,7 +67,9 @@
     </div>
 
     <!-- Weight Card -->
-    <div class="stat-card weight-card" [class.has-data]="currentEntry?.weight">
+    <div class="stat-card weight-card clickable" 
+         [class.has-data]="currentEntry?.weight"
+         (click)="onViewWeightTrend()">
       <div class="stat-icon">⚖️</div>
       <div class="stat-content">
         <div class="stat-value">{{ currentEntry?.weight || '--' }}<span class="unit" *ngIf="currentEntry?.weight">lbs</span></div>

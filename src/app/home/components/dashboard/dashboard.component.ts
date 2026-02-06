@@ -28,6 +28,7 @@ export class DashboardComponent {
   @Output() mergeWorkout = new EventEmitter<WhoopWorkout>();
   @Output() openInsights = new EventEmitter<void>();
   @Output() viewActivities = new EventEmitter<void>();
+  @Output() viewWeightTrend = new EventEmitter<void>();
 
   getPlannedWorkout(): PlannedWorkout | null {
     if (!this.currentEntry?.plannedWorkout) return null;
@@ -150,6 +151,10 @@ export class DashboardComponent {
 
   onViewActivities(): void {
     this.viewActivities.emit();
+  }
+
+  onViewWeightTrend(): void {
+    this.viewWeightTrend.emit();
   }
 
   // Daily comparison methods

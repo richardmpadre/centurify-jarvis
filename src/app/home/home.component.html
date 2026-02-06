@@ -51,7 +51,8 @@
       (openWhoopWorkout)="openWhoopWorkoutEditor($event)"
       (mergeWorkout)="promptMergeWithPlanned($event)"
       (openInsights)="openInsightsPanel()"
-      (viewActivities)="openTrainingPanel()">
+      (viewActivities)="openTrainingPanel()"
+      (viewWeightTrend)="openWeightTrendModal()">
     </app-dashboard>
 
     <!-- Bottom sidebar with Whoop and History -->
@@ -322,6 +323,13 @@
     (close)="closeGoalDetailPanel()"
     (goalCompleted)="onGoalCompleted($event)">
   </app-goal-detail-panel>
+
+  <!-- Weight Trend Modal -->
+  <app-weight-trend-modal
+    [isOpen]="showWeightTrendModal"
+    [allEntries]="entries"
+    (close)="closeWeightTrendModal()">
+  </app-weight-trend-modal>
 
   <!-- Chat Panel -->
   <app-chat-panel

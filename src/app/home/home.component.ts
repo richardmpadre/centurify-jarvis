@@ -18,6 +18,7 @@ import { NutritionPanelComponent } from './components/nutrition-panel/nutrition-
 import { FoodDetailPanelComponent } from './components/food-detail-panel/food-detail-panel.component';
 import { GoalPriorityPanelComponent, DailyGoalSelection } from './components/goal-priority-panel/goal-priority-panel.component';
 import { GoalDetailPanelComponent } from './components/goal-detail-panel/goal-detail-panel.component';
+import { WeightTrendModalComponent } from './components/weight-trend-modal/weight-trend-modal.component';
 import { 
   HealthEntry, 
   PlannedExercise, 
@@ -51,7 +52,8 @@ import {
     NutritionPanelComponent,
     FoodDetailPanelComponent,
     GoalPriorityPanelComponent,
-    GoalDetailPanelComponent
+    GoalDetailPanelComponent,
+    WeightTrendModalComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css'
@@ -138,6 +140,9 @@ export class HomeComponent implements OnInit {
   showGoalDetailPanel = false;
   currentGoalDetailId: string | null = null;
   currentGoalParentTitle: string = '';
+
+  // Weight Trend modal
+  showWeightTrendModal = false;
 
   constructor(
     private fb: FormBuilder,
@@ -979,6 +984,16 @@ export class HomeComponent implements OnInit {
     
     this.buildDailyActions();
     this.closeGoalDetailPanel();
+  }
+  
+  // ==================== WEIGHT TREND MODAL ====================
+  
+  openWeightTrendModal(): void {
+    this.showWeightTrendModal = true;
+  }
+  
+  closeWeightTrendModal(): void {
+    this.showWeightTrendModal = false;
   }
   
   getPlannedWorkout(): PlannedWorkout | null {

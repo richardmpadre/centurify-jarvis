@@ -1,0 +1,119 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()"></div>
+<div class="modal weight-trend-modal" *ngIf="isOpen">
+  <div class="modal-header">
+    <h3>Weight Trend</h3>
+    <button class="close-btn" (click)="onClose()">×</button>
+  </div>
+  
+  <div class="modal-content">
+    <!-- Time Range Toggle -->
+    <div class="range-toggle">
+      <button 
+        class="range-btn" 
+        [class.active]="selectedRange === '7'"
+        (click)="selectRange('7')">
+        7 Days
+      </button>
+      <button 
+        class="range-btn" 
+        [class.active]="selectedRange === '30'"
+        (click)="selectRange('30')">
+        30 Days
+      </button>
+      <button 
+        class="range-btn" 
+        [class.active]="selectedRange === '90'"
+        (click)="selectRange('90')">
+        90 Days
+      </button>
+    </div>
+    
+    <!-- Chart -->
+    <div class="chart-container">
+      <svg *ngIf="weightData.length > 0" [attr.viewBox]="'0 0 ' + chartWidth + ' ' + chartHeight" class="weight-chart">
+        <!-- Grid lines -->
+        <g class="grid-lines">
+          <line *ngFor="let label of yAxisLabels"
+            [attr.x1]="chartPadding.left"
+            [attr.y1]="label.y"
+            [attr.x2]="chartWidth - chartPadding.right"
+            [attr.y2]="label.y"
+            class="grid-line" />
+        </g>
+        
+        <!-- Area fill -->
+        <path [attr.d]="areaPath" class="chart-area" />
+        
+        <!-- Line -->
+        <path [attr.d]="linePath" class="chart-line" />
+        
+        <!-- Data points -->
+        <g class="data-points">
+          <circle *ngFor="let point of weightData; let i = index"
+            [attr.cx]="getXPosition(i)"
+            [attr.cy]="getYPosition(point.weight)"
+            r="4"
+            class="data-point">
+            <title>{{ point.displayDate }}: {{ point.weight }} lbs</title>
+          </circle>
+        </g>
+        
+        <!-- Y-axis labels -->
+        <g class="y-axis">
+          <text *ngFor="let label of yAxisLabels"
+            [attr.x]="chartPadding.left - 8"
+            [attr.y]="label.y + 4"
+            class="axis-label y-label">
+            {{ label.value }}
+          </text>
+        </g>
+        
+        <!-- X-axis labels -->
+        <g class="x-axis">
+          <text *ngFor="let label of xAxisLabels"
+            [attr.x]="label.x"
+            [attr.y]="chartHeight - 8"
+            class="axis-label x-label">
+            {{ label.label }}
+          </text>
+        </g>
+      </svg>
+      
+      <!-- No data state -->
+      <div class="no-data" *ngIf="weightData.length === 0">
+        <div class="no-data-icon">⚖️</div>
+        <p>No weight data for the last {{ selectedRange }} days</p>
+      </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="stats-section" *ngIf="weightData.length > 0">
+      <div class="stat-row current">
+        <span class="stat-label">Current</span>
+        <span class="stat-value">{{ stats.current?.toFixed(1) || '--' }} lbs</span>
+      </div>
+      
+      <div class="stat-row change" [class]="getChangeClass()">
+        <span class="stat-label">Change</span>
+        <span class="stat-value">
+          {{ formatChange() }}
+          <span class="change-percent">{{ formatChangePercent() }}</span>
+        </span>
+      </div>
+      
+      <div class="stat-row">
+        <span class="stat-label">Average</span>
+        <span class="stat-value">{{ stats.average?.toFixed(1) || '--' }} lbs</span>
+      </div>
+      
+      <div class="stat-row">
+        <span class="stat-label">Range</span>
+        <span class="stat-value">{{ stats.min?.toFixed(1) || '--' }} - {{ stats.max?.toFixed(1) || '--' }} lbs</span>
+      </div>
+      
+      <div class="data-points-info">
+        {{ stats.dataPoints }} data point{{ stats.dataPoints === 1 ? '' : 's' }} in selected range
+      </div>
+    </div>
+  </div>
+</div>
