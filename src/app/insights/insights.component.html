@@ -29,6 +29,44 @@
       <div class="empty-icon">📊</div>
       <h3>Weekly Insights</h3>
       <p>Generate AI-powered insights for this week based on your health data, workouts, and nutrition.</p>
+      
+      <!-- Week-over-Week Comparison (always show if data exists) -->
+      <div class="comparison-section" *ngIf="weeklyComparison && (weeklyComparison.recovery.current != null || weeklyComparison.sleep.current != null || weeklyComparison.strain.current != null)">
+        <h4>This Week vs Last Week</h4>
+        <div class="comparison-grid">
+          <div class="comparison-card recovery" *ngIf="weeklyComparison.recovery.current != null">
+            <span class="metric-label">Recovery</span>
+            <span class="metric-value">{{ weeklyComparison.recovery.current }}%</span>
+            <span class="metric-change" *ngIf="weeklyComparison.recovery.change" [class]="getComparisonClass('recovery')">
+              {{ formatComparisonValue('recovery') }}
+            </span>
+            <span class="metric-previous" *ngIf="weeklyComparison.recovery.previous != null">
+              Last week: {{ weeklyComparison.recovery.previous }}%
+            </span>
+          </div>
+          <div class="comparison-card sleep" *ngIf="weeklyComparison.sleep.current != null">
+            <span class="metric-label">Sleep</span>
+            <span class="metric-value">{{ weeklyComparison.sleep.current }}%</span>
+            <span class="metric-change" *ngIf="weeklyComparison.sleep.change" [class]="getComparisonClass('sleep')">
+              {{ formatComparisonValue('sleep') }}
+            </span>
+            <span class="metric-previous" *ngIf="weeklyComparison.sleep.previous != null">
+              Last week: {{ weeklyComparison.sleep.previous }}%
+            </span>
+          </div>
+          <div class="comparison-card strain" *ngIf="weeklyComparison.strain.current != null">
+            <span class="metric-label">Strain</span>
+            <span class="metric-value">{{ weeklyComparison.strain.current }}</span>
+            <span class="metric-change" *ngIf="weeklyComparison.strain.change" [class]="getComparisonClass('strain')">
+              {{ formatComparisonValue('strain') }}
+            </span>
+            <span class="metric-previous" *ngIf="weeklyComparison.strain.previous != null">
+              Last week: {{ weeklyComparison.strain.previous }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
       <div class="week-summary">
         <span class="summary-item">
           <strong>{{ getDaysWithData() }}</strong>/7 days tracked
@@ -63,21 +101,30 @@
         </div>
       </div>
 
-      <!-- Averages Cards -->
+      <!-- Averages Cards with Week-over-Week Comparison -->
       <div class="averages-section">
         <h4>Weekly Averages</h4>
         <div class="averages-grid">
           <div class="average-card recovery">
             <span class="avg-value">{{ insights.averages.recovery ?? '--' }}<span class="unit" *ngIf="insights.averages.recovery">%</span></span>
             <span class="avg-label">Recovery</span>
+            <span class="comparison" *ngIf="weeklyComparison?.recovery?.change" [class]="getComparisonClass('recovery')">
+              {{ formatComparisonValue('recovery') }}
+            </span>
           </div>
           <div class="average-card sleep">
             <span class="avg-value">{{ insights.averages.sleep ?? '--' }}<span class="unit" *ngIf="insights.averages.sleep">%</span></span>
             <span class="avg-label">Sleep</span>
+            <span class="comparison" *ngIf="weeklyComparison?.sleep?.change" [class]="getComparisonClass('sleep')">
+              {{ formatComparisonValue('sleep') }}
+            </span>
           </div>
           <div class="average-card strain">
             <span class="avg-value">{{ insights.averages.strain ?? '--' }}</span>
             <span class="avg-label">Strain</span>
+            <span class="comparison" *ngIf="weeklyComparison?.strain?.change" [class]="getComparisonClass('strain')">
+              {{ formatComparisonValue('strain') }}
+            </span>
           </div>
         </div>
       </div>

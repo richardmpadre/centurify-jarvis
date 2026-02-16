@@ -29,7 +29,7 @@ export class NutritionPanelComponent implements OnChanges {
   searchQuery = '';
   selectedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack' = 'breakfast';
   isLoadingFoods = false;
-  isCopyingYesterday = false;
+  isCopyingLatest = false;
   
   // Portion editing when adding a food
   selectedFoodForAdd: Food | null = null;
@@ -299,23 +299,24 @@ export class NutritionPanelComponent implements OnChanges {
     this.close.emit();
   }
 
-  async copyYesterdaysFoods(): Promise<void> {
-    this.isCopyingYesterday = true;
+  /**
+   * Copy meals from the most recent day that has food entries (looking back up to 14 days).
+   * This is more flexible than copying only yesterday — helpful when the user missed a day.
+   */
+  async copyLatestFoods(): Promise<void> {
+    this.isCopyingLatest = true;
     try {
-      // Get yesterday's date
-      const yesterday = this.getYesterdayDate();
-      
-      // Get yesterday's food entries
-      const yesterdayFoods = await this.foodEntryService.getFoodEntriesForDate(yesterday);
-      
-      if (yesterdayFoods.length === 0) {
-        alert('No foods found for yesterday');
+      // Find the most recent day and its food entries in one pass (avoids double-fetch)
+      const sourceFoods = await this.getLatestFoodEntries();
+
+      if (!sourceFoods || sourceFoods.length === 0) {
+        alert('No previous meals found in the last 14 days');
         return;
       }
-      
-      // Create new food entries for today based on yesterday's
+
+      // Create new food entries for the selected date based on the source day
       const newEntries: FoodEntry[] = [];
-      for (const food of yesterdayFoods) {
+      for (const food of sourceFoods) {
         const created = await this.foodEntryService.createFoodEntry({
           date: this.selectedDate,
           mealType: food.mealType,
@@ -328,39 +329,44 @@ export class NutritionPanelComponent implements OnChanges {
           foodId: food.foodId || null,
           portion: food.portion || 1
         });
-        
+
         if (created) {
           newEntries.push(created);
         }
       }
-      
+
       // Emit the combined list
       const allEntries = [...this.foodEntries, ...newEntries];
       this.foodEntriesChanged.emit(allEntries);
-      
+
     } catch (error) {
-      console.error('Error copying yesterday\'s foods:', error);
-      alert('Failed to copy yesterday\'s foods');
+      console.error('Error copying latest foods:', error);
+      alert('Failed to copy latest meals');
     } finally {
-      this.isCopyingYesterday = false;
+      this.isCopyingLatest = false;
     }
   }
 
-  hasYesterdaysFoods(): boolean {
-    // Check if we have allEntries to look at
-    if (!this.allEntries || this.allEntries.length === 0) {
-      return false;
-    }
-    
-    const yesterday = this.getYesterdayDate();
-    // Check if there are any entries for yesterday
-    return this.allEntries.some((entry: any) => entry.date === yesterday);
-  }
+  /**
+   * Walk backward from the day before selectedDate, up to 14 days,
+   * and return the food entries from the first date that has any.
+   * Returns null if no day with food entries is found.
+   */
+  private async getLatestFoodEntries(): Promise<FoodEntry[] | null> {
+    const MAX_DAYS_BACK = 14;
+    const base = new Date(this.selectedDate);
 
-  private getYesterdayDate(): string {
-    const today = new Date(this.selectedDate);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+    for (let i = 1; i <= MAX_DAYS_BACK; i++) {
+      const candidate = new Date(base);
+      candidate.setDate(candidate.getDate() - i);
+      const dateStr = candidate.toISOString().split('T')[0];
+
+      const entries = await this.foodEntryService.getFoodEntriesForDate(dateStr);
+      if (entries.length > 0) {
+        return entries;
+      }
+    }
+
+    return null;
   }
 }

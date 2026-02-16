@@ -34,12 +34,20 @@ export class InsightsComponent implements OnInit {
   weekInfo: WeekDateRange;
   
   entries: HealthEntry[] = [];
+  previousWeekEntries: HealthEntry[] = [];
   foodEntriesByDate: { [date: string]: FoodEntry[] } = {};
   
   isLoading = false;
   isGenerating = false;
   insights: WeeklyInsights | null = null;
   error: string | null = null;
+  
+  // Week-over-week comparison
+  weeklyComparison: {
+    recovery: { current: number | null; previous: number | null; change: number | null };
+    sleep: { current: number | null; previous: number | null; change: number | null };
+    strain: { current: number | null; previous: number | null; change: number | null };
+  } | null = null;
   
   // Health pillar stats
   healthStats: WeeklyHealthStats = {
@@ -68,10 +76,13 @@ export class InsightsComponent implements OnInit {
     
     try {
       const dates = getWeekDates(this.currentDate);
+      const previousWeekDate = getPreviousWeek(this.currentDate);
+      const previousDates = getWeekDates(previousWeekDate);
       
       // Load health entries for all 7 days
       const allEntries = await this.healthDataService.getAllEntries();
       this.entries = allEntries.filter((e: HealthEntry) => dates.includes(e.date));
+      this.previousWeekEntries = allEntries.filter((e: HealthEntry) => previousDates.includes(e.date));
       
       // Load food entries for all 7 days
       this.foodEntriesByDate = {};
@@ -82,6 +93,9 @@ export class InsightsComponent implements OnInit {
       
       // Calculate health stats
       this.calculateHealthStats();
+      
+      // Calculate week-over-week comparison
+      this.calculateWeeklyComparison();
       
       // Check if we have cached insights for this week
       this.loadCachedInsights();
@@ -384,5 +398,78 @@ export class InsightsComponent implements OnInit {
    */
   private titleCase(str: string): string {
     return str.replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  /**
+   * Calculate week-over-week comparison for recovery, sleep, and strain
+   */
+  private calculateWeeklyComparison(): void {
+    const currentAvg = this.calculateAverages(this.entries);
+    const previousAvg = this.calculateAverages(this.previousWeekEntries);
+
+    this.weeklyComparison = {
+      recovery: this.calculateMetricComparison(currentAvg.recovery, previousAvg.recovery),
+      sleep: this.calculateMetricComparison(currentAvg.sleep, previousAvg.sleep),
+      strain: this.calculateMetricComparison(currentAvg.strain, previousAvg.strain, 1)
+    };
+  }
+
+  /**
+   * Calculate averages for a set of entries
+   */
+  private calculateAverages(entries: HealthEntry[]): { recovery: number | null; sleep: number | null; strain: number | null } {
+    const recoveryValues = entries.map(e => e.recovery).filter((v): v is number => v != null);
+    const sleepValues = entries.map(e => e.sleep).filter((v): v is number => v != null);
+    const strainValues = entries.map(e => e.strain).filter((v): v is number => v != null);
+
+    return {
+      recovery: recoveryValues.length > 0 ? Math.round(recoveryValues.reduce((a, b) => a + b, 0) / recoveryValues.length) : null,
+      sleep: sleepValues.length > 0 ? Math.round(sleepValues.reduce((a, b) => a + b, 0) / sleepValues.length) : null,
+      strain: strainValues.length > 0 ? Math.round((strainValues.reduce((a, b) => a + b, 0) / strainValues.length) * 10) / 10 : null
+    };
+  }
+
+  /**
+   * Calculate comparison between current and previous values
+   */
+  private calculateMetricComparison(
+    current: number | null, 
+    previous: number | null,
+    decimals: number = 0
+  ): { current: number | null; previous: number | null; change: number | null } {
+    let change: number | null = null;
+    
+    if (current != null && previous != null && previous !== 0) {
+      const diff = current - previous;
+      change = decimals > 0 ? Math.round(diff * 10) / 10 : Math.round(diff);
+    }
+
+    return { current, previous, change };
+  }
+
+  /**
+   * Get comparison class for styling (positive/negative)
+   */
+  getComparisonClass(metric: 'recovery' | 'sleep' | 'strain'): string {
+    if (!this.weeklyComparison) return '';
+    const change = this.weeklyComparison[metric].change;
+    if (change === null || change === 0) return '';
+    
+    // For recovery and sleep, higher is better
+    // For strain, higher means more activity (context-dependent, but generally positive)
+    return change > 0 ? 'positive' : 'negative';
+  }
+
+  /**
+   * Format comparison value for display
+   */
+  formatComparisonValue(metric: 'recovery' | 'sleep' | 'strain'): string {
+    if (!this.weeklyComparison) return '';
+    const change = this.weeklyComparison[metric].change;
+    if (change === null || change === 0) return '';
+    
+    const sign = change > 0 ? '+' : '';
+    const suffix = metric === 'strain' ? '' : '%';
+    return `${sign}${change}${suffix} vs last week`;
   }
 }

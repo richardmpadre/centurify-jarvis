@@ -149,10 +149,10 @@
         <button 
           type="button"
           class="copy-yesterday-btn"
-          (click)="copyYesterdaysFoods()"
-          [disabled]="isCopyingYesterday || !hasYesterdaysFoods()"
-          title="Copy all foods from yesterday">
-          {{ isCopyingYesterday ? '⏳ Copying...' : '📋 Copy Yesterday' }}
+          (click)="copyLatestFoods()"
+          [disabled]="isCopyingLatest"
+          title="Copy meals from your most recent logged day">
+          {{ isCopyingLatest ? '⏳ Copying...' : '📋 Copy Latest' }}
         </button>
       </div>
       
